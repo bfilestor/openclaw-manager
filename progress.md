@@ -83,6 +83,27 @@ src/internal/agent/handler_test.go
 src/internal/skills/handler.go,
 src/internal/skills/handler_test.go
 
+- 完成 Issue-E4-S1-I26
+-- 功能总结
+实现 Revision Repository：支持 Save/List/FindByID，保存时计算 SHA256；按 target_type/target_id 维度维护历史，自动裁剪仅保留最新 50 条。
+-- 涉及文件
+src/internal/config/revision_repo.go,
+src/internal/config/revision_repo_test.go
+
+- 完成 Issue-E4-S1-I27
+-- 功能总结
+实现 openclaw.json 管理 API：GET 读取、PUT 写入（JSON 校验+原子写入+保存 Revision）、GET revisions、POST restore（按 revision_id 恢复并再生成一条 revision）。
+-- 涉及文件
+src/internal/config/openclaw_json_handler.go,
+src/internal/config/openclaw_json_handler_test.go
+
+- 完成 Issue-E6-S1-I35
+-- 功能总结
+实现 Skills 删除 API：DELETE /skills/{name}，支持 global/agent 两种 scope；实现 name 参数校验、防路径穿越、白名单校验、不存在返回 404。
+-- 涉及文件
+src/internal/skills/delete_handler.go,
+src/internal/skills/delete_handler_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

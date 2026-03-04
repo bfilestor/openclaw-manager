@@ -154,8 +154,8 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E4-S1-I26 | Revision Repository（Save、List倒序、FindByID、最多保留50条自动裁剪） | P1 | 2 | Todo | E1-S1-I3 | Integration | - | 按created_at降序 |
-| E4-S1-I27 | openclaw.json 读写 API（GET/PUT、JSON校验、原子写入、Revision、可选restart） | P1 | 3 | Todo | E4-S1-I26, E1-S3-I9, E1-S2-I6, E2-S3-I19 | Integration | - | 并发写入安全 |
+| E4-S1-I26 | Revision Repository（Save、List倒序、FindByID、最多保留50条自动裁剪） | P1 | 2 | Done | E1-S1-I3 | Integration | Passed | 已实现 SHA256、List 倒序、FindByID、50 条自动裁剪 |
+| E4-S1-I27 | openclaw.json 读写 API（GET/PUT、JSON校验、原子写入、Revision、可选restart） | P1 | 3 | Done | E4-S1-I26, E1-S3-I9, E1-S2-I6, E2-S3-I19 | Integration | Passed | 已实现 GET/PUT、Revision 列表与 restore、原子写入 |
 
 ### Story E4-S2：Agent Identity 编辑
 
@@ -195,7 +195,7 @@
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
 | E6-S1-I34 | Skills 扫描与列表 API（GET /skills?scope=global\|agent，目录扫描，字段含size_bytes） | P1 | 2 | Done | E1-S2-I6, E5-S1-I29, E2-S3-I19 | Unit + Integration | Passed | 已实现 global/agent 双 scope 扫描与 size_bytes/has_meta 返回 |
-| E6-S1-I35 | Skills 删除 API（DELETE /skills/{name}，Operator权限，任务化，白名单校验） | P1 | 2 | Todo | E6-S1-I34, E8-S1-I42, E2-S3-I19 | Integration | - | skill名称防路径穿越 |
+| E6-S1-I35 | Skills 删除 API（DELETE /skills/{name}，Operator权限，任务化，白名单校验） | P1 | 2 | Done | E6-S1-I34, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现 global/agent 删除与白名单/参数校验 |
 
 ### Story E6-S2：Skills 安装
 
