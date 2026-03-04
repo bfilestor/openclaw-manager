@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: OpenClaw Manager API
+  version: 1.1.0
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: 用户登录
+  /api/v1/gateway/status:
+    get:
+      summary: Gateway 状态
+  /api/v1/backups:
+    get:
+      summary: 备份列表
+    post:
+      summary: 创建备份
+  /api/v1/backups/{id}/restore:
+    post:
+      summary: 还原备份（dry_run 支持）
+  /api/v1/tasks/{id}/events:
+    get:
+      summary: SSE 任务日志流

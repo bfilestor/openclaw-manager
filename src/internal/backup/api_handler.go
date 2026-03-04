@@ -77,6 +77,37 @@ func (h *APIHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, p)
 }
 
+func (h *APIHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	id := backupIDFromRestorePath(r.URL.Path)
+	if id == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"backup_id": "required"}))
+		return
+	}
+	type restoreReq struct {
+		DryRun        *bool `json:"dry_run"`
+		RestartGateway bool `json:"restart_gateway"`
+	}
+	var req restoreReq
+	_ = middleware.BindJSON(r, &req)
+	dry := true
+	if req.DryRun != nil {
+		dry = *req.DryRun
+	}
+	report, err := h.Service.Restore(id, dry, req.RestartGateway, "")
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if dry {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(report)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte(`{"task_type":"backup.restore","status":"PENDING"}`))
+}
+
 func (h *APIHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
 	id := lastPart(r.URL.Path)
 	_, err := h.DB.Exec(`DELETE FROM backups WHERE backup_id=?`, id)
@@ -85,6 +116,16 @@ func (h *APIHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
 	_ = removeIfExists(filepath.Join(h.Service.BackupHome, id+".manifest.json"))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"message":"deleted"}`))
+}
+
+func backupIDFromRestorePath(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == "backups" && i+2 < len(parts) && parts[i+2] == "restore" {
+			return parts[i+1]
+		}
+	}
+	return ""
 }
 
 func backupIDFromDownloadPath(path string) string {

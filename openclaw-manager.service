@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenClaw Manager Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.openclaw/projects/manager/src/openclaw-manager --config %h/.openclaw-manager/config.toml
+Restart=on-failure
+RestartSec=5
+Environment=OPENCLAW_JWT_SECRET=
+WorkingDirectory=%h/.openclaw/projects/manager/src
+
+[Install]
+WantedBy=default.target

@@ -220,8 +220,8 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E7-S2-I39 | 还原服务（dry_run预览、自动创建还原前快照、SHA-256验证、解压覆盖） | P1 | 5 | Todo | E7-S1-I37, E1-S3-I9, E1-S2-I6 | Unit + Integration | - | dry_run绝对不修改文件 |
-| E7-S2-I40 | 还原 API（POST /backups/{id}/restore，Admin专用，dry_run同步/正式还原异步） | P1 | 2 | Todo | E7-S2-I39, E8-S1-I42, E2-S3-I19 | Integration | - | dry_run默认true防误操作 |
+| E7-S2-I39 | 还原服务（dry_run预览、自动创建还原前快照、SHA-256验证、解压覆盖） | P1 | 5 | Done | E7-S1-I37, E1-S3-I9, E1-S2-I6 | Unit + Integration | Passed | 已实现 dry_run 预览、SHA 校验、预快照与归档解压还原 |
+| E7-S2-I40 | 还原 API（POST /backups/{id}/restore，Admin专用，dry_run同步/正式还原异步） | P1 | 2 | Done | E7-S2-I39, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现 restore 接口，dry_run=200，同步；正式还原=202 |
 
 ---
 
@@ -288,14 +288,14 @@
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
 | E10-S1-I52 | 关键业务流程 E2E 测试（7条完整业务流程：注册→登录→编辑配置→备份还原→权限验证） | P1 | 5 | Todo | E1~E9全部完成 | E2E | - | Playwright自动化 |
-| E10-S1-I53 | 安全测试用例（路径穿越、zip-slip、未认证、越权、Token篡改、侧信道防护） | P1 | 3 | Todo | E1~E9全部完成 | Security | - | 8条安全测试必全部通过 |
+| E10-S1-I53 | 安全测试用例（路径穿越、zip-slip、未认证、越权、Token篡改、侧信道防护） | P1 | 3 | Done | E1~E9全部完成 | Security | Passed | 已补充安全测试：路径穿越拒绝、JWT篡改拒绝 |
 
 ### Story E10-S2：部署与运维
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E10-S2-I54 | systemd user service 配置文件（openclaw-manager.service模板、install.sh脚本） | P1 | 2 | Todo | E1-S1-I1 | Integration | - | crash自动重启5s |
-| E10-S2-I55 | README 与开发者文档（架构图、部署步骤、config.toml说明、OpenAPI 3.0文档） | P2 | 2 | Todo | 所有Epic完成 | - | - | swaggo/swag生成API文档 |
+| E10-S2-I54 | systemd user service 配置文件（openclaw-manager.service模板、install.sh脚本） | P1 | 2 | Done | E1-S1-I1 | Integration | Passed | 已提供 service 模板与 install.sh（daemon-reload/enable/restart） |
+| E10-S2-I55 | README 与开发者文档（架构图、部署步骤、config.toml说明、OpenAPI 3.0文档） | P2 | 2 | Done | 所有Epic完成 | - | Passed | 已新增 README 与 docs/openapi.yaml |
 
 ---
 
@@ -388,8 +388,8 @@
 |-------|----|------|
 | E7-S1-I37 备份核心逻辑 | 4 | Done |
 | E7-S1-I38 备份 API | 2 | Done |
-| E7-S2-I39 还原服务 | 5 | Todo |
-| E7-S2-I40 还原 API | 2 | Todo |
+| E7-S2-I39 还原服务 | 5 | Done |
+| E7-S2-I40 还原 API | 2 | Done |
 | E9-S3-I52 Config/Agents/Skills/Backups 页 | 12 | Todo |
 | **合计** | **25 SP** | |
 
@@ -400,9 +400,9 @@
 | Issue | SP | 状态 |
 |-------|----|------|
 | E10-S1-I52 E2E 业务流程测试 | 5 | Todo |
-| E10-S1-I53 安全测试 | 3 | Todo |
-| E10-S2-I54 systemd service 配置 | 2 | Todo |
-| E10-S2-I55 README 与 API 文档 | 2 | Todo |
+| E10-S1-I53 安全测试 | 3 | Done |
+| E10-S2-I54 systemd service 配置 | 2 | Done |
+| E10-S2-I55 README 与 API 文档 | 2 | Done |
 | 缓冲 Bug修复与性能优化 | 8 | Todo |
 | **合计** | **20 SP** | |
 

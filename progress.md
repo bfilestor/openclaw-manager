@@ -181,6 +181,40 @@ src/internal/backup/service_test.go
 src/internal/backup/api_handler.go,
 src/internal/backup/api_handler_test.go
 
+- 完成 Issue-E7-S2-I39
+-- 功能总结
+实现还原服务 Restore：支持 dry_run 预览将覆盖文件列表；校验备份 SHA-256；正式还原前自动创建 pre-restore 快照，并执行归档解压恢复。
+-- 涉及文件
+src/internal/backup/restore.go,
+src/internal/backup/restore_test.go
+
+- 完成 Issue-E7-S2-I40
+-- 功能总结
+实现还原 API：POST /backups/{id}/restore；dry_run=true 返回同步预览（200），dry_run=false 返回异步风格响应（202）。
+-- 涉及文件
+src/internal/backup/api_handler.go,
+src/internal/backup/restore_api_test.go
+
+- 完成 Issue-E10-S2-I54
+-- 功能总结
+新增 systemd user service 部署模板与安装脚本：openclaw-manager.service + scripts/install.sh，支持 daemon-reload/enable/restart。
+-- 涉及文件
+openclaw-manager.service,
+scripts/install.sh
+
+- 完成 Issue-E10-S2-I55
+-- 功能总结
+补充 README 与 API 文档：新增项目部署说明、config.toml 示例以及 docs/openapi.yaml（OpenAPI 3.0 简版）。
+-- 涉及文件
+README.md,
+docs/openapi.yaml
+
+- 完成 Issue-E10-S1-I53
+-- 功能总结
+补充安全测试用例：路径穿越拒绝、JWT 篡改拒绝，形成基础安全回归测试。
+-- 涉及文件
+src/internal/security/security_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...
