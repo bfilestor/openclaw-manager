@@ -49,3 +49,11 @@ src/internal/middleware/error_test.go,
 src/internal/middleware/bind.go,
 src/internal/middleware/bind_test.go,
 doc/todo-list.md
+
+- 完成 Issue-E1-S2-I6
+-- 功能总结
+Issue-E1-S2-I6，完成路径白名单安全模块：实现 `PathValidator.Validate` 与 `JoinAndValidate`，支持 `filepath.Clean`、符号链接解析（`EvalSymlinks`）、`~` 路径展开、空字节/空路径拦截，确保路径只能落在允许 base 目录内。
+-- 涉及文件
+src/internal/storage/pathvalidator.go,
+src/internal/storage/pathvalidator_test.go,
+doc/todo-list.md
