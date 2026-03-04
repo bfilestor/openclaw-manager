@@ -142,7 +142,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E3-S3-I25 | Doctor Run/Repair 任务接口（POST /doctor/run、/doctor/repair，5min超时） | P1 | 2 | Todo | E8-S1-I42, E2-S3-I19 | Integration | - | 解析nvm风险输出 |
+| E3-S3-I25 | Doctor Run/Repair 任务接口（POST /doctor/run、/doctor/repair，5min超时） | P1 | 2 | Done | E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现 run/repair 接口、5min 超时控制与 nvm 风险解析 |
 
 ---
 
@@ -182,7 +182,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E5-S2-I33 | Binding 列表与批量应用 API（GET /bindings、POST /bindings/apply，部分失败继续执行） | P1 | 4 | Todo | E5-S1-I29, E8-S1-I42, E2-S3-I19 | Integration | - | 部分失败不回滚，记录stderr |
+| E5-S2-I33 | Binding 列表与批量应用 API（GET /bindings、POST /bindings/apply，部分失败继续执行） | P1 | 4 | Done | E5-S1-I29, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现列表+批量 apply，部分失败继续执行并汇总 FAILED |
 
 ---
 
@@ -240,7 +240,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E8-S2-I43 | SSE 任务日志流（GET /tasks/{id}/events、Token支持query param、seq递增、done事件） | P1 | 3 | Todo | E8-S1-I42, E2-S3-I18 | Integration | - | 客户端断开不panic |
+| E8-S2-I43 | SSE 任务日志流（GET /tasks/{id}/events、Token支持query param、seq递增、done事件） | P1 | 3 | Done | E8-S1-I42, E2-S3-I18 | Integration | Passed | 已实现 token query/header 支持、seq 递增、done 事件回放 |
 
 ### Story E8-S3：任务查询
 
@@ -339,7 +339,7 @@
 | E2-S4-I20 用户管理 API | 3 | Todo |
 | E8-S1-I41 Task Repository | 2 | Todo |
 | E8-S1-I42 任务执行引擎 | 5 | Todo |
-| E8-S2-I43 SSE 日志流 | 3 | Todo |
+| E8-S2-I43 SSE 日志流 | 3 | Done |
 | E8-S3-I44 任务查询 API | 2 | Todo |
 | E9-S1-I46 认证 Store | 3 | Todo |
 | E9-S1-I47 权限指令 | 2 | Todo |
@@ -355,7 +355,7 @@
 | E3-S1-I22 深度状态查询 | 2 | Done |
 | E3-S1-I23 Gateway API | 3 | Done |
 | E3-S2-I24 日志读取 API | 2 | Todo |
-| E3-S3-I25 Doctor API | 2 | Todo |
+| E3-S3-I25 Doctor API | 2 | Done |
 | E4-S1-I26 Revision Repository | 2 | Todo |
 | E4-S1-I27 openclaw.json API | 3 | Todo |
 | E4-S2-I28 Identity API | 2 | Done |
@@ -374,7 +374,7 @@
 | E5-S1-I30 Agent 列表 API | 2 | Todo |
 | E5-S1-I31 Agent 新建 API | 3 | Todo |
 | E5-S1-I32 Agent 删除 API | 2 | Todo |
-| E5-S2-I33 Binding API | 4 | Todo |
+| E5-S2-I33 Binding API | 4 | Done |
 | E6-S1-I34 Skills 列表 API | 2 | Todo |
 | E6-S1-I35 Skills 删除 API | 2 | Todo |
 | E6-S2-I36 Skills 安装 API | 4 | Todo |

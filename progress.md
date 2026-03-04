@@ -125,6 +125,27 @@ src/internal/config/identity_handler_test.go
 src/internal/gateway/systemctl.go,
 src/internal/gateway/systemctl_test.go
 
+- 完成 Issue-E3-S3-I25
+-- 功能总结
+实现 Doctor Run/Repair API：POST /doctor/run 与 /doctor/repair；执行 openclaw doctor 命令并提供 5 分钟超时控制；解析输出中的 .nvm 路径风险标记。
+-- 涉及文件
+src/internal/gateway/doctor_handler.go,
+src/internal/gateway/doctor_handler_test.go
+
+- 完成 Issue-E5-S2-I33
+-- 功能总结
+实现 Binding 列表与批量应用 API：GET /bindings、POST /bindings/apply；支持 add/remove 批量执行，部分失败继续执行并汇总失败计数，最终状态可为 FAILED。
+-- 涉及文件
+src/internal/agent/binding_handler.go,
+src/internal/agent/binding_handler_test.go
+
+- 完成 Issue-E8-S2-I43
+-- 功能总结
+实现任务 SSE 日志流：GET /tasks/{id}/events；支持 token query/header 鉴权、stdout/stderr 回放、seq 递增与 done 事件输出。
+-- 涉及文件
+src/internal/task/sse_handler.go,
+src/internal/task/sse_handler_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...
