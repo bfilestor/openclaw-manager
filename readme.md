@@ -22,7 +22,8 @@
 | 部署     | systemd user service  | 无需 sudo（MVP 阶段）  
 
 ### 1.2 开发测试步骤
-1. 首先阅读doc/openclaw_requirements_v1.1.md，了解项目整体框架，开发需求
+0. 先执行git pull 获取最新代码 
+1. 再阅读doc/openclaw_requirements_v1.1.md，了解项目整体框架，开发需求
 2. 然后阅读doc/todo-list.md，按照依赖顺序，查找可以进行开发的issue
 3. 根据issue编号，在doc/dev-plan.md，查找对应的供能描述和测试用例,如果功能需求不明确，可参考doc/openclaw_requirements_v1.1.md，找到对应issue描述，了解具体功能需求
 4. 根据功能描述，测试用例进行功能编写及测试用例编写
