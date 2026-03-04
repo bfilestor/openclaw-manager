@@ -215,6 +215,45 @@ docs/openapi.yaml
 -- 涉及文件
 src/internal/security/security_test.go
 
+- 完成 Issue-E8-S1-I42
+-- 功能总结
+实现任务执行引擎 Engine：支持 worker pool 并发执行、handler 注册、按任务类型超时控制、gateway 生命周期任务互斥冲突处理、PENDING 任务取消。
+-- 涉及文件
+src/internal/task/engine.go,
+src/internal/task/engine_test.go
+
+- 完成 Issue-E9-S1-I45
+-- 功能总结
+初始化前端工程骨架（Vite + Vue3 + Pinia + Router + Element Plus），实现基础 Layout 与路由守卫（未登录跳转 /login，非 Admin 访问 /admin/users 跳转 /dashboard）。
+-- 涉及文件
+src/frontend/package.json,
+src/frontend/vite.config.ts,
+src/frontend/index.html,
+src/frontend/src/main.ts,
+src/frontend/src/App.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E9-S1-I46
+-- 功能总结
+实现认证 Store 与 Token 管理：AccessToken 内存存储，axios 请求拦截自动带 token，401 时触发 refresh，refresh 防并发（Promise 复用）。
+-- 涉及文件
+src/frontend/src/stores/auth.ts,
+src/frontend/src/stores/auth.test.ts
+
+- 完成 Issue-E9-S1-I47
+-- 功能总结
+实现权限工具与指令：canAccess 角色比较（Viewer/Operator/Admin），v-permission 指令对无权限元素进行 disabled + tooltip 处理。
+-- 涉及文件
+src/frontend/src/permission.ts,
+src/frontend/src/permission.test.ts
+
+- 完成 Issue-E9-S2-I48
+-- 功能总结
+实现登录与注册页面：登录表单、注册表单、密码强度（弱/中/强）提示、注册成功跳转登录。
+-- 涉及文件
+src/frontend/src/views/LoginView.vue,
+src/frontend/src/views/RegisterView.vue
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

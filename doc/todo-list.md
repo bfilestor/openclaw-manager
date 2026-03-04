@@ -234,7 +234,7 @@
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
 | E8-S1-I41 | 任务 Repository（Create/FindByID/UpdateStatus/UpdateResult/List，时间戳自动更新） | P0 | 2 | Done | E1-S1-I3 | Integration | Passed | 已实现状态流转时间戳自动更新与多条件筛选 |
-| E8-S1-I42 | 任务执行引擎（Worker Pool最大3并发、Handler注册、超时context、Gateway互斥、SSE推送） | P0 | 5 | Todo | E8-S1-I41, E1-S1-I2 | Unit + Integration | - | Gateway任务全局互斥锁 |
+| E8-S1-I42 | 任务执行引擎（Worker Pool最大3并发、Handler注册、超时context、Gateway互斥、SSE推送） | P0 | 5 | Done | E8-S1-I41, E1-S1-I2 | Unit + Integration | Passed | 已实现 worker pool、handler 注册、超时控制、gateway 互斥与取消 |
 
 ### Story E8-S2：实时日志流
 
@@ -258,15 +258,15 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E9-S1-I45 | Vue 3 项目初始化与路由守卫（Vite+TS+Element Plus+Pinia、路由守卫、全局Layout） | P0 | 3 | Todo | E1-S2-I4 | E2E | - | 未登录→/login，非Admin→/dashboard |
-| E9-S1-I46 | 认证 Store（Pinia）与 Token 管理（内存存储、axios拦截器、自动刷新、防并发） | P0 | 3 | Todo | E9-S1-I45 | Unit | - | AccessToken不存localStorage |
-| E9-S1-I47 | 权限指令 v-permission 与工具函数（canAccess composable、403全局toast） | P0 | 2 | Todo | E9-S1-I46 | Unit | - | 权限不足按钮disabled+tooltip |
+| E9-S1-I45 | Vue 3 项目初始化与路由守卫（Vite+TS+Element Plus+Pinia、路由守卫、全局Layout） | P0 | 3 | Done | E1-S2-I4 | E2E | Passed | 已完成 Vite+Vue3+Pinia+Router 基础骨架与路由守卫 |
+| E9-S1-I46 | 认证 Store（Pinia）与 Token 管理（内存存储、axios拦截器、自动刷新、防并发） | P0 | 3 | Done | E9-S1-I45 | Unit | Passed | 已实现内存 token、axios 拦截器与 refresh 防并发 |
+| E9-S1-I47 | 权限指令 v-permission 与工具函数（canAccess composable、403全局toast） | P0 | 2 | Done | E9-S1-I46 | Unit | Passed | 已实现 canAccess 与 v-permission 指令 |
 
 ### Story E9-S2：认证页面
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E9-S2-I48 | 登录页与注册页（表单校验、密码强度条、注册成功跳转、错误提示） | P0 | 3 | Todo | E9-S1-I46 | E2E | - | 密码强度条：弱/中/强 |
+| E9-S2-I48 | 登录页与注册页（表单校验、密码强度条、注册成功跳转、错误提示） | P0 | 3 | Done | E9-S1-I46 | E2E | Passed | 已实现 Login/Register 页面、强度提示与跳转 |
 
 ### Story E9-S3：业务页面
 
@@ -319,8 +319,8 @@
 | E2-S1-I10 User Repository | 2 | Done |
 | E2-S1-I11 密码哈希服务 | 1 | Done |
 | E2-S1-I12 注册 API | 3 | Done |
-| E9-S1-I45 Vue 项目初始化 | 3 | Todo |
-| E9-S2-I48 登录注册页 | 3 | Todo |
+| E9-S1-I45 Vue 项目初始化 | 3 | Done |
+| E9-S2-I48 登录注册页 | 3 | Done |
 | **合计** | **30 SP** | |
 
 ### Sprint 2（第3-4周）— 认证完整 + 任务引擎
@@ -338,11 +338,11 @@
 | E2-S3-I19 RequireRole | 1 | Todo |
 | E2-S4-I20 用户管理 API | 3 | Todo |
 | E8-S1-I41 Task Repository | 2 | Todo |
-| E8-S1-I42 任务执行引擎 | 5 | Todo |
+| E8-S1-I42 任务执行引擎 | 5 | Done |
 | E8-S2-I43 SSE 日志流 | 3 | Done |
 | E8-S3-I44 任务查询 API | 2 | Todo |
-| E9-S1-I46 认证 Store | 3 | Todo |
-| E9-S1-I47 权限指令 | 2 | Todo |
+| E9-S1-I46 认证 Store | 3 | Done |
+| E9-S1-I47 权限指令 | 2 | Done |
 | **合计** | **34 SP** | |
 
 ### Sprint 3（第5-6周）— Gateway + 配置管理
