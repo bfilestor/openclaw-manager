@@ -104,6 +104,27 @@ src/internal/config/openclaw_json_handler_test.go
 src/internal/skills/delete_handler.go,
 src/internal/skills/delete_handler_test.go
 
+- 完成 Issue-E3-S1-I23
+-- 功能总结
+实现 Gateway API Handler：GET status、POST start/stop/restart；增加 gateway 生命周期操作互斥，冲突时返回 409 与 running_task_id。
+-- 涉及文件
+src/internal/gateway/api_handler.go,
+src/internal/gateway/api_handler_test.go
+
+- 完成 Issue-E4-S2-I28
+-- 功能总结
+实现 Agent Identity 读写 API：GET/PUT IDENTITY.md、GET revisions；写入采用原子写入，加入 1MB 内容限制与路径白名单校验。
+-- 涉及文件
+src/internal/config/identity_handler.go,
+src/internal/config/identity_handler_test.go
+
+- 完成 Issue-E3-S1-I22（补充收口）
+-- 功能总结
+深度状态查询模块完成收口并在本轮保持回归通过：并发聚合 systemctl 与 openclaw 状态，支持 NVMWarning 检测，openclaw 超时场景保留 systemctl 结果。
+-- 涉及文件
+src/internal/gateway/systemctl.go,
+src/internal/gateway/systemctl_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

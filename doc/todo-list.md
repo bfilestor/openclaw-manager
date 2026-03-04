@@ -130,7 +130,7 @@
 |-------|------|--------|----|------|------|----------|----------|------|
 | E3-S1-I21 | SystemctlService — user service 封装（Start/Stop/Restart/Status、30s超时、Mock实现） | P1 | 3 | Done | E1-S1-I1 | Unit + Integration | Passed | 已实现命令封装、超时处理、service 名称校验与解析 |
 | E3-S1-I22 | Gateway 深度状态查询（并发聚合systemctl+openclaw CLI、NVMWarning检测） | P1 | 2 | Done | E3-S1-I21 | Unit | Passed | 已实现并发查询、bind/log/node 解析与 NVMWarning 检测，openclaw 超时时保留 systemctl 部分结果 |
-| E3-S1-I23 | Gateway API（GET status、POST start/stop/restart，Operator权限，互斥409） | P1 | 3 | Todo | E3-S1-I22, E2-S3-I19, E8-S1-I42 | Integration | - | 并发启停返回409+running_task_id |
+| E3-S1-I23 | Gateway API（GET status、POST start/stop/restart，Operator权限，互斥409） | P1 | 3 | Done | E3-S1-I22, E2-S3-I19, E8-S1-I42 | Integration | Passed | 已实现 status/start/stop/restart 与互斥冲突 409 返回 |
 
 ### Story E3-S2：日志查看
 
@@ -161,7 +161,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E4-S2-I28 | Agent Identity 读写 API（GET/PUT IDENTITY.md、Revision、白名单路径、1MB限制） | P1 | 2 | Todo | E4-S1-I26, E1-S3-I9, E5-S1-I29 | Integration | - | Viewer可读不可写 |
+| E4-S2-I28 | Agent Identity 读写 API（GET/PUT IDENTITY.md、Revision、白名单路径、1MB限制） | P1 | 2 | Done | E4-S1-I26, E1-S3-I9, E5-S1-I29 | Integration | Passed | 已实现 GET/PUT/revisions，含白名单校验与 1MB 限制 |
 
 ---
 
@@ -352,13 +352,13 @@
 | Issue | SP | 状态 |
 |-------|----|------|
 | E3-S1-I21 SystemctlService | 3 | Todo |
-| E3-S1-I22 深度状态查询 | 2 | Todo |
-| E3-S1-I23 Gateway API | 3 | Todo |
+| E3-S1-I22 深度状态查询 | 2 | Done |
+| E3-S1-I23 Gateway API | 3 | Done |
 | E3-S2-I24 日志读取 API | 2 | Todo |
 | E3-S3-I25 Doctor API | 2 | Todo |
 | E4-S1-I26 Revision Repository | 2 | Todo |
 | E4-S1-I27 openclaw.json API | 3 | Todo |
-| E4-S2-I28 Identity API | 2 | Todo |
+| E4-S2-I28 Identity API | 2 | Done |
 | E9-S3-I49 Dashboard 页 | 3 | Todo |
 | E9-S3-I50 用户管理页 | 3 | Todo |
 | E9-S3-I51 Tasks 日志页 | 3 | Todo |
