@@ -129,7 +129,7 @@
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
 | E3-S1-I21 | SystemctlService — user service 封装（Start/Stop/Restart/Status、30s超时、Mock实现） | P1 | 3 | Done | E1-S1-I1 | Unit + Integration | Passed | 已实现命令封装、超时处理、service 名称校验与解析 |
-| E3-S1-I22 | Gateway 深度状态查询（并发聚合systemctl+openclaw CLI、NVMWarning检测） | P1 | 2 | Todo | E3-S1-I21 | Unit | - | openclaw超时不影响systemctl结果 |
+| E3-S1-I22 | Gateway 深度状态查询（并发聚合systemctl+openclaw CLI、NVMWarning检测） | P1 | 2 | Done | E3-S1-I21 | Unit | Passed | 已实现并发查询、bind/log/node 解析与 NVMWarning 检测，openclaw 超时时保留 systemctl 部分结果 |
 | E3-S1-I23 | Gateway API（GET status、POST start/stop/restart，Operator权限，互斥409） | P1 | 3 | Todo | E3-S1-I22, E2-S3-I19, E8-S1-I42 | Integration | - | 并发启停返回409+running_task_id |
 
 ### Story E3-S2：日志查看

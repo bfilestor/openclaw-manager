@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +25,15 @@ type ServiceStatus struct {
 	ExecStart            string `json:"exec_start"`
 	FragmentPath         string `json:"fragment_path"`
 	ActiveEnterTimestamp string `json:"active_enter_timestamp"`
+}
+
+type GatewayDeepStatus struct {
+	Service    *ServiceStatus `json:"service"`
+	BindAddr   string         `json:"bind_addr"`
+	Port       int            `json:"port"`
+	LogPath    string         `json:"log_path"`
+	NodePath   string         `json:"node_path"`
+	NVMWarning bool           `json:"nvm_warning"`
 }
 
 type Executor interface {
@@ -47,8 +59,8 @@ func NewSystemctlService(exec Executor) *SystemctlService {
 	return &SystemctlService{exec: exec, timeout: 30 * time.Second}
 }
 
-func (s *SystemctlService) Start(service string) error { return s.runAction("start", service) }
-func (s *SystemctlService) Stop(service string) error { return s.runAction("stop", service) }
+func (s *SystemctlService) Start(service string) error   { return s.runAction("start", service) }
+func (s *SystemctlService) Stop(service string) error    { return s.runAction("stop", service) }
 func (s *SystemctlService) Restart(service string) error { return s.runAction("restart", service) }
 
 func (s *SystemctlService) runAction(action, service string) error {
@@ -107,6 +119,152 @@ func (s *SystemctlService) Status(service string) (*ServiceStatus, error) {
 		}
 	}
 	return st, nil
+}
+
+func (s *SystemctlService) DeepStatus(service string) (*GatewayDeepStatus, error) {
+	if !validServiceName(service) {
+		return nil, ErrInvalidServiceName
+	}
+
+	result := &GatewayDeepStatus{}
+	var statusErr error
+	var openclawErr error
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		st, err := s.Status(service)
+		mu.Lock()
+		result.Service = st
+		statusErr = err
+		mu.Unlock()
+	}()
+
+	go func() {
+		defer wg.Done()
+		parsed, err := s.fetchOpenclawDeepStatus()
+		mu.Lock()
+		if parsed != nil {
+			result.BindAddr = parsed.BindAddr
+			result.Port = parsed.Port
+			result.LogPath = parsed.LogPath
+			result.NodePath = parsed.NodePath
+			result.NVMWarning = parsed.NVMWarning
+		}
+		openclawErr = err
+		mu.Unlock()
+	}()
+
+	wg.Wait()
+
+	switch {
+	case statusErr == nil && openclawErr == nil:
+		return result, nil
+	case statusErr != nil && openclawErr != nil:
+		return result, errors.Join(statusErr, openclawErr)
+	case statusErr != nil:
+		return result, statusErr
+	default:
+		return result, openclawErr
+	}
+}
+
+func (s *SystemctlService) fetchOpenclawDeepStatus() (*GatewayDeepStatus, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	defer cancel()
+
+	out, err := s.exec.Run(ctx, "openclaw", "gateway", "status", "--deep")
+	parsed := parseOpenclawDeepOutput(string(out))
+
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return parsed, ErrCommandTimeout
+	}
+	if err != nil {
+		return parsed, fmt.Errorf("openclaw gateway status --deep failed: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	return parsed, nil
+}
+
+func parseOpenclawDeepOutput(out string) *GatewayDeepStatus {
+	result := &GatewayDeepStatus{}
+	for _, raw := range strings.Split(out, "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" {
+			continue
+		}
+
+		key, value, ok := parseLineKeyValue(line)
+		if !ok {
+			continue
+		}
+
+		switch key {
+		case "bind", "bindaddr", "bindaddress":
+			addr, port := parseBindAddress(value)
+			if addr != "" {
+				result.BindAddr = addr
+			}
+			if port > 0 {
+				result.Port = port
+			}
+		case "log", "logpath", "logfile", "log_path", "log_file":
+			result.LogPath = value
+		case "node", "nodepath", "node_path":
+			result.NodePath = value
+			result.NVMWarning = strings.Contains(strings.ToLower(value), ".nvm")
+		}
+	}
+	return result
+}
+
+func parseLineKeyValue(line string) (string, string, bool) {
+	idx := strings.IndexAny(line, "=:")
+	if idx <= 0 {
+		return "", "", false
+	}
+
+	key := strings.ToLower(strings.TrimSpace(line[:idx]))
+	key = strings.ReplaceAll(key, " ", "")
+	value := strings.TrimSpace(line[idx+1:])
+	value = strings.Trim(value, `"'`)
+	if value == "" {
+		return "", "", false
+	}
+	return key, value, true
+}
+
+func parseBindAddress(value string) (string, int) {
+	clean := strings.TrimSpace(value)
+	if clean == "" {
+		return "", 0
+	}
+	if idx := strings.IndexAny(clean, " \t"); idx > 0 {
+		clean = clean[:idx]
+	}
+
+	host, portStr, err := net.SplitHostPort(clean)
+	if err == nil {
+		port, convErr := strconv.Atoi(portStr)
+		if convErr != nil {
+			return host, 0
+		}
+		return host, port
+	}
+
+	parts := strings.Split(clean, ":")
+	if len(parts) == 2 {
+		port, convErr := strconv.Atoi(parts[1])
+		if convErr != nil {
+			return parts[0], 0
+		}
+		return parts[0], port
+	}
+
+	return clean, 0
 }
 
 var serviceNameRe = regexp.MustCompile(`^[a-zA-Z0-9_.@-]+$`)
