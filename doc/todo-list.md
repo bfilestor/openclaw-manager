@@ -173,8 +173,8 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E5-S1-I29 | Agent Repository 与路径解析（CLI输出解析、GetWorkspacePath、60s缓存TTL） | P1 | 2 | Todo | E1-S2-I6 | Unit + Integration | - | agent_id防路径穿越 |
-| E5-S1-I30 | Agent 列表与详情 API（GET /agents、GET /agents/{id}，Viewer权限） | P1 | 2 | Todo | E5-S1-I29, E2-S3-I19 | Integration | - | 空列表返回[]非null |
+| E5-S1-I29 | Agent Repository 与路径解析（CLI输出解析、GetWorkspacePath、60s缓存TTL） | P1 | 2 | Done | E1-S2-I6 | Unit + Integration | Passed | 已实现 JSON 解析、60s 缓存与 agent_id 校验 |
+| E5-S1-I30 | Agent 列表与详情 API（GET /agents、GET /agents/{id}，Viewer权限） | P1 | 2 | Done | E5-S1-I29, E2-S3-I19 | Integration | Passed | 已实现列表/详情接口，详情不存在返回 404 |
 | E5-S1-I31 | Agent 新建 API（POST /agents，Admin权限，任务化，格式校验） | P2 | 3 | Todo | E5-S1-I29, E8-S1-I42, E2-S3-I19 | Integration | - | P2，下一迭代 |
 | E5-S1-I32 | Agent 删除 API（DELETE /agents/{id}，Admin权限，先unbind再delete） | P2 | 2 | Todo | E5-S1-I29, E8-S1-I42 | Integration | - | P2，下一迭代 |
 
@@ -194,7 +194,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E6-S1-I34 | Skills 扫描与列表 API（GET /skills?scope=global\|agent，目录扫描，字段含size_bytes） | P1 | 2 | Todo | E1-S2-I6, E5-S1-I29, E2-S3-I19 | Unit + Integration | - | 目录不存在返回空数组 |
+| E6-S1-I34 | Skills 扫描与列表 API（GET /skills?scope=global\|agent，目录扫描，字段含size_bytes） | P1 | 2 | Done | E1-S2-I6, E5-S1-I29, E2-S3-I19 | Unit + Integration | Passed | 已实现 global/agent 双 scope 扫描与 size_bytes/has_meta 返回 |
 | E6-S1-I35 | Skills 删除 API（DELETE /skills/{name}，Operator权限，任务化，白名单校验） | P1 | 2 | Todo | E6-S1-I34, E8-S1-I42, E2-S3-I19 | Integration | - | skill名称防路径穿越 |
 
 ### Story E6-S2：Skills 安装

@@ -62,6 +62,27 @@ src/internal/task/handler_test.go
 src/internal/gateway/logs.go,
 src/internal/gateway/logs_test.go
 
+- 完成 Issue-E5-S1-I29
+-- 功能总结
+实现 Agent Repository：调用 openclaw agents list --bindings --json 解析 Agent 列表；提供 GetWorkspacePath；加入 60s TTL 缓存；对 agent_id 做格式与路径穿越防护。
+-- 涉及文件
+src/internal/agent/repo.go,
+src/internal/agent/repo_test.go
+
+- 完成 Issue-E5-S1-I30
+-- 功能总结
+实现 Agent 列表与详情 API：GET /agents、GET /agents/{id}；支持空列表返回 []；详情不存在返回 404。
+-- 涉及文件
+src/internal/agent/handler.go,
+src/internal/agent/handler_test.go
+
+- 完成 Issue-E6-S1-I34
+-- 功能总结
+实现 Skills 列表 API：GET /skills?scope=global|agent；支持 global 与 agent scope 扫描；返回 name/scope/agent_id/size_bytes/has_meta 字段。
+-- 涉及文件
+src/internal/skills/handler.go,
+src/internal/skills/handler_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...
