@@ -202,3 +202,40 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"access_token":"` + access + `","expires_in":900,"token_type":"Bearer"}`))
 }
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	token, err := extractBearerToken(r.Header.Get("Authorization"))
+	if err != nil {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	claims, err := h.JWT.VerifyAccessToken(token)
+	if err != nil {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if claims.ID != "" {
+		_ = h.TokenRepo.AddBlacklist(claims.ID, claims.ExpiresAt.Time)
+	}
+
+	if cookie, err := r.Cookie("refresh_token"); err == nil && cookie.Value != "" {
+		if rt, findErr := h.TokenRepo.FindByHash(HashToken(cookie.Value)); findErr == nil {
+			_ = h.TokenRepo.Revoke(rt.TokenID)
+		}
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"logged out"}`))
+}

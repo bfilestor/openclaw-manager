@@ -103,7 +103,7 @@
 | E2-S2-I14 | RefreshToken Repository 与黑名单（SHA-256哈希存储、Revoke、CleanExpired） | P0 | 2 | Done | E1-S1-I3, E2-S2-I13 | Integration | Passed | RefreshToken不存明文 |
 | E2-S2-I15 | 登录 API — POST /api/v1/auth/login（bcrypt验证、签发双Token、HttpOnly Cookie） | P0 | 3 | Done | E2-S2-I13, E2-S2-I14, E2-S1-I11 | Integration | Passed | 响应体不含refresh_token明文 |
 | E2-S2-I16 | Token 刷新 API — POST /api/v1/auth/refresh（Cookie取token、验证、签发新AccessToken） | P0 | 2 | Done | E2-S2-I14, E2-S2-I13 | Integration | Passed | 已实现 Cookie 校验、撤销/过期校验、disabled 用户拦截 |
-| E2-S2-I17 | 注销 API — POST /api/v1/auth/logout（jti入黑名单、撤销RefreshToken、清Cookie） | P1 | 1 | Todo | E2-S2-I14, E2-S3-I18 | Integration | - | 注销后旧Token立即失效 |
+| E2-S2-I17 | 注销 API — POST /api/v1/auth/logout（jti入黑名单、撤销RefreshToken、清Cookie） | P1 | 1 | Done | E2-S2-I14, E2-S3-I18 | Integration | Passed | 已实现 jti 黑名单、refresh 撤销、Cookie 清除 |
 
 ### Story E2-S3：权限中间件
 
@@ -116,7 +116,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E2-S4-I20 | 用户管理 API（GET /me、改密码、用户列表、修改角色、删除、禁用，Admin专用） | P1 | 3 | Todo | E2-S3-I18, E2-S3-I19, E2-S1-I10 | Integration | - | 禁止Admin自删/自降级/删最后Admin |
+| E2-S4-I20 | 用户管理 API（GET /me、改密码、用户列表、修改角色、删除、禁用，Admin专用） | P1 | 3 | Done | E2-S3-I18, E2-S3-I19, E2-S1-I10 | Integration | Passed | 已实现核心接口与自操作/最后Admin保护 |
 
 ---
 
@@ -128,7 +128,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E3-S1-I21 | SystemctlService — user service 封装（Start/Stop/Restart/Status、30s超时、Mock实现） | P1 | 3 | Todo | E1-S1-I1 | Unit + Integration | - | service名称安全校验 |
+| E3-S1-I21 | SystemctlService — user service 封装（Start/Stop/Restart/Status、30s超时、Mock实现） | P1 | 3 | Done | E1-S1-I1 | Unit + Integration | Passed | 已实现命令封装、超时处理、service 名称校验与解析 |
 | E3-S1-I22 | Gateway 深度状态查询（并发聚合systemctl+openclaw CLI、NVMWarning检测） | P1 | 2 | Todo | E3-S1-I21 | Unit | - | openclaw超时不影响systemctl结果 |
 | E3-S1-I23 | Gateway API（GET status、POST start/stop/restart，Operator权限，互斥409） | P1 | 3 | Todo | E3-S1-I22, E2-S3-I19, E8-S1-I42 | Integration | - | 并发启停返回409+running_task_id |
 
