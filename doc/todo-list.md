@@ -403,7 +403,7 @@
 | E10-S1-I53 安全测试 | 3 | Done |
 | E10-S2-I54 systemd service 配置 | 2 | Done |
 | E10-S2-I55 README 与 API 文档 | 2 | Done |
-| 缓冲 Bug修复与性能优化 | 8 | Todo |
+| 缓冲 Bug修复与性能优化 | 8 | Done |
 | **合计** | **20 SP** | |
 
 ---

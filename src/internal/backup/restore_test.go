@@ -26,3 +26,8 @@ func TestRestoreDryRunAndApply(t *testing.T) {
 	b, _ := os.ReadFile(filepath.Join(home, "openclaw.json"))
 	if string(b) != `{"x":999}` { t.Fatalf("dry run should not modify file") }
 }
+
+func TestAllowedRestoreTarget(t *testing.T) {
+	if !isAllowedRestoreTarget("/tmp/a/b", []string{"/tmp/a"}) { t.Fatalf("expected allowed") }
+	if isAllowedRestoreTarget("/etc/passwd", []string{"/tmp/a"}) { t.Fatalf("expected denied") }
+}

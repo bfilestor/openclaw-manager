@@ -65,6 +65,12 @@ func TestGetTaskAndCancel(t *testing.T) {
 		t.Fatalf("viewer cancel expect 403 got %d", w2.Code)
 	}
 
+	w2b := httptest.NewRecorder()
+	h.CancelTask(w2b, withUC(httptest.NewRequest(http.MethodPost, "/api/v1/tasks/cancel", nil), "op", user.RoleOperator))
+	if w2b.Code != http.StatusBadRequest {
+		t.Fatalf("invalid cancel path expect 400 got %d", w2b.Code)
+	}
+
 	w3 := httptest.NewRecorder()
 	h.CancelTask(w3, withUC(httptest.NewRequest(http.MethodPost, "/api/v1/tasks/"+taskID+"/cancel", nil), "op", user.RoleOperator))
 	if w3.Code != http.StatusOK {

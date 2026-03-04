@@ -70,13 +70,10 @@ func (h *Handler) CancelTask(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleOperator)))
 		return
 	}
-	taskID := strings.TrimSuffix(lastPart(r.URL.Path), "cancel")
-	taskID = strings.TrimSuffix(taskID, "/")
-	if strings.Contains(r.URL.Path, "/cancel") {
-		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(parts) >= 2 {
-			taskID = parts[len(parts)-2]
-		}
+	taskID := taskIDFromCancelPath(r.URL.Path)
+	if taskID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"task_id": "required"}))
+		return
 	}
 	t, err := h.Repo.FindByID(taskID)
 	if err != nil {
@@ -101,4 +98,14 @@ func lastPart(path string) string {
 		return ""
 	}
 	return parts[len(parts)-1]
+}
+
+func taskIDFromCancelPath(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i := 0; i < len(parts)-2; i++ {
+		if parts[i] == "tasks" && parts[i+2] == "cancel" {
+			return parts[i+1]
+		}
+	}
+	return ""
 }

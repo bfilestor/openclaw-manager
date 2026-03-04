@@ -42,7 +42,8 @@ func (s *Service) Restore(backupID string, dryRun bool, restartGateway bool, cre
 	}
 	// pre-restore snapshot
 	_, _ = s.Create([]string{"openclaw_json", "global_skills", "workspaces", "manager_revisions"}, "pre-restore-"+backupID, createdBy)
-	if err := extractArchiveToRoot(archive); err != nil { return nil, err }
+	allowed := s.allowedRestorePrefixes()
+	if err := extractArchiveToRoot(archive, allowed); err != nil { return nil, err }
 	if restartGateway {
 		// MVP: just annotate; actual restart handled by gateway API in integration stage
 	}
@@ -68,7 +69,7 @@ func listArchiveFiles(archive string) ([]string, error) {
 	return out, nil
 }
 
-func extractArchiveToRoot(archive string) error {
+func extractArchiveToRoot(archive string, allowedPrefixes []string) error {
 	f, err := os.Open(archive)
 	if err != nil { return err }
 	defer f.Close()
@@ -82,6 +83,9 @@ func extractArchiveToRoot(archive string) error {
 		if err != nil { return err }
 		if h.FileInfo().IsDir() { continue }
 		target := "/" + strings.TrimPrefix(h.Name, "/")
+		if !isAllowedRestoreTarget(target, allowedPrefixes) {
+			continue
+		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil { return err }
 		tf, err := os.Create(target)
 		if err != nil { return err }
@@ -106,4 +110,26 @@ func sha256Bytes(b []byte) string {
 func insertRestoreAudit(db *sql.DB, backupID, createdBy string) {
 	_, _ = db.Exec(`INSERT INTO tasks(task_id,task_type,status,request_json,created_by,created_at) VALUES(?,?,?,?,?,?)`,
 		"restore-"+backupID+"-"+time.Now().UTC().Format("150405"), "backup.restore", "SUCCEEDED", "{}", nullIfEmpty(createdBy), time.Now().UTC().Format(time.RFC3339))
+}
+
+func (s *Service) allowedRestorePrefixes() []string {
+	home, _ := os.UserHomeDir()
+	return []string{
+		filepath.Clean(s.OpenclawHome),
+		filepath.Clean(s.ManagerHome),
+		filepath.Clean(filepath.Join(home, ".config/systemd/user")),
+	}
+}
+
+func isAllowedRestoreTarget(target string, prefixes []string) bool {
+	clean := filepath.Clean(target)
+	for _, p := range prefixes {
+		if p == "" {
+			continue
+		}
+		if clean == p || strings.HasPrefix(clean, p+string(os.PathSeparator)) {
+			return true
+		}
+	}
+	return false
 }

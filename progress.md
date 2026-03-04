@@ -289,6 +289,22 @@ src/frontend/src/router.ts
 src/tests/e2e/e10_flows.spec.ts,
 src/tests/e2e/playwright.config.ts
 
+- 完成 缓冲 Bug修复与性能优化（收尾）
+-- 功能总结
+1) 优化任务取消路径解析：新增 taskIDFromCancelPath，非法路径返回 400，避免误解析。
+2) 备份删除接口增强：DELETE /backups/{id} 在目标不存在时返回 404（之前会误报成功）。
+3) 还原安全加固：还原解压仅允许写入受控目录前缀（openclaw_home / manager_home / user systemd 目录），避免越界写入。
+4) 补充回归测试：新增取消路径异常、删除不存在备份、还原目标路径白名单判定测试。
+5) 对 Sprint 视图状态进行最终一致性同步（所有已实现项均标记 Done）。
+-- 涉及文件
+src/internal/task/handler.go,
+src/internal/task/handler_test.go,
+src/internal/backup/api_handler.go,
+src/internal/backup/api_handler_test.go,
+src/internal/backup/restore.go,
+src/internal/backup/restore_test.go,
+doc/todo-list.md
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

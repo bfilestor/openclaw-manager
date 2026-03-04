@@ -110,8 +110,13 @@ func (h *APIHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
 
 func (h *APIHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
 	id := lastPart(r.URL.Path)
-	_, err := h.DB.Exec(`DELETE FROM backups WHERE backup_id=?`, id)
+	res, err := h.DB.Exec(`DELETE FROM backups WHERE backup_id=?`, id)
 	if err != nil { middleware.WriteAppError(w, err); return }
+	aff, _ := res.RowsAffected()
+	if aff == 0 {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "backup not found", StatusCode: http.StatusNotFound})
+		return
+	}
 	_ = removeIfExists(filepath.Join(h.Service.BackupHome, id+".tar.gz"))
 	_ = removeIfExists(filepath.Join(h.Service.BackupHome, id+".manifest.json"))
 	w.WriteHeader(http.StatusOK)

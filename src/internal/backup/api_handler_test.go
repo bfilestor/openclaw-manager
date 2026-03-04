@@ -23,4 +23,8 @@ func TestBackupAPIFlow(t *testing.T) {
 	if w2.Code != http.StatusOK || !strings.Contains(w2.Body.String(), "backups") {
 		t.Fatalf("list failed code=%d body=%s", w2.Code, w2.Body.String())
 	}
+
+	w3 := httptest.NewRecorder()
+	h.DeleteBackup(w3, httptest.NewRequest(http.MethodDelete, "/api/v1/backups/not-exists", nil))
+	if w3.Code != http.StatusNotFound { t.Fatalf("delete missing expect 404 got %d", w3.Code) }
 }
