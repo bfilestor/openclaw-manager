@@ -111,3 +111,29 @@ Issue-E2-S1-I12，完成注册接口处理器 `POST /api/v1/auth/register`：支
 src/internal/auth/handler.go,
 src/internal/auth/handler_test.go,
 doc/todo-list.md
+
+- 完成 Issue-E2-S2-I13
+-- 功能总结
+Issue-E2-S2-I13，完成 JWT 服务：实现 HS256 AccessToken 签发与验证，Claims 包含 `sub/role/jti/exp/iat`，支持过期校验、签名校验、黑名单回调校验，并提供 RefreshToken 生成入口。
+-- 涉及文件
+src/internal/auth/jwt.go,
+src/internal/auth/jwt_test.go,
+src/go.mod,
+src/go.sum,
+doc/todo-list.md
+
+- 完成 Issue-E2-S2-I14
+-- 功能总结
+Issue-E2-S2-I14，完成 RefreshToken 与黑名单仓储：支持 SHA-256 token 哈希、保存/查询/撤销/按用户全撤销/过期清理；新增黑名单写入、查询、过期清理能力。
+-- 涉及文件
+src/internal/auth/token_repo.go,
+src/internal/auth/token_repo_test.go,
+doc/todo-list.md
+
+- 完成 Issue-E2-S2-I15
+-- 功能总结
+Issue-E2-S2-I15，完成登录处理器：实现用户名密码校验、禁用账号拦截、签发 AccessToken+RefreshToken、RefreshToken 落库、HttpOnly+Secure+SameSite=Strict Cookie 下发、更新 last_login_at，且响应体不返回 refresh_token 明文。
+-- 涉及文件
+src/internal/auth/handler.go,
+src/internal/auth/login_test.go,
+doc/todo-list.md

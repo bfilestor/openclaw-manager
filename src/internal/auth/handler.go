@@ -16,12 +16,19 @@ import (
 var usernameRe = regexp.MustCompile(`^[a-zA-Z0-9_]{3,32}$`)
 
 type Handler struct {
-	Repo    *user.Repository
-	Pass    *PasswordService
-	Config  *config.Config
+	Repo      *user.Repository
+	Pass      *PasswordService
+	Config    *config.Config
+	JWT       *JWTService
+	TokenRepo *TokenRepository
 }
 
 type registerReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type loginReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -93,4 +100,57 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(`{"user_id":"` + u.UserID + `","username":"` + u.Username + `","role":"` + string(u.Role) + `","created_at":"` + u.CreatedAt.Format(time.RFC3339) + `"}`))
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var req loginReq
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	u, err := h.Repo.FindByUsername(req.Username)
+	if err != nil || !h.Pass.Verify(req.Password, u.PasswordHash) {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "INVALID_CREDENTIALS", Message: "invalid credentials", StatusCode: http.StatusUnauthorized})
+		return
+	}
+	if u.Status == user.StatusDisabled {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "ACCOUNT_DISABLED", Message: "account disabled", StatusCode: http.StatusForbidden})
+		return
+	}
+
+	access, _, err := h.JWT.SignAccessToken(u.UserID, string(u.Role))
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	tokenID, rawRefresh, err := h.JWT.SignRefreshToken()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	now := time.Now().UTC()
+	exp := now.Add(h.JWT.RefreshTokenTTL)
+	if err := h.TokenRepo.Save(&RefreshToken{TokenID: tokenID, UserID: u.UserID, TokenHash: HashToken(rawRefresh), ExpiresAt: exp, CreatedAt: now}); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	u.LastLoginAt = &now
+	u.UpdatedAt = &now
+	_ = h.Repo.Update(u)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    rawRefresh,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  exp,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"access_token":"` + access + `","expires_in":900,"token_type":"Bearer","user":{"user_id":"` + u.UserID + `","username":"` + u.Username + `","role":"` + string(u.Role) + `"}}`))
 }

@@ -99,9 +99,9 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E2-S2-I13 | JWT 签发与验证服务（HS256、AccessToken 15min、jti黑名单检查） | P0 | 3 | Todo | E2-S1-I10, E1-S1-I2 | Unit | - | Claims含sub/role/jti |
-| E2-S2-I14 | RefreshToken Repository 与黑名单（SHA-256哈希存储、Revoke、CleanExpired） | P0 | 2 | Todo | E1-S1-I3, E2-S2-I13 | Integration | - | RefreshToken不存明文 |
-| E2-S2-I15 | 登录 API — POST /api/v1/auth/login（bcrypt验证、签发双Token、HttpOnly Cookie） | P0 | 3 | Todo | E2-S2-I13, E2-S2-I14, E2-S1-I11 | Integration | - | 响应体不含refresh_token明文 |
+| E2-S2-I13 | JWT 签发与验证服务（HS256、AccessToken 15min、jti黑名单检查） | P0 | 3 | Done | E2-S1-I10, E1-S1-I2 | Unit | Passed | Claims含sub/role/jti |
+| E2-S2-I14 | RefreshToken Repository 与黑名单（SHA-256哈希存储、Revoke、CleanExpired） | P0 | 2 | Done | E1-S1-I3, E2-S2-I13 | Integration | Passed | RefreshToken不存明文 |
+| E2-S2-I15 | 登录 API — POST /api/v1/auth/login（bcrypt验证、签发双Token、HttpOnly Cookie） | P0 | 3 | Done | E2-S2-I13, E2-S2-I14, E2-S1-I11 | Integration | Passed | 响应体不含refresh_token明文 |
 | E2-S2-I16 | Token 刷新 API — POST /api/v1/auth/refresh（Cookie取token、验证、签发新AccessToken） | P0 | 2 | Todo | E2-S2-I14, E2-S2-I13 | Integration | - | 可选 RefreshToken 轮换 |
 | E2-S2-I17 | 注销 API — POST /api/v1/auth/logout（jti入黑名单、撤销RefreshToken、清Cookie） | P1 | 1 | Todo | E2-S2-I14, E2-S3-I18 | Integration | - | 注销后旧Token立即失效 |
 
@@ -329,9 +329,9 @@
 
 | Issue | SP | 状态 |
 |-------|----|------|
-| E2-S2-I13 JWT 服务 | 3 | Todo |
-| E2-S2-I14 RefreshToken 存储 | 2 | Todo |
-| E2-S2-I15 登录 API | 3 | Todo |
+| E2-S2-I13 JWT 服务 | 3 | Done |
+| E2-S2-I14 RefreshToken 存储 | 2 | Done |
+| E2-S2-I15 登录 API | 3 | Done |
 | E2-S2-I16 Token 刷新 | 2 | Todo |
 | E2-S2-I17 注销 API | 1 | Todo |
 | E2-S3-I18 AuthMiddleware | 2 | Todo |
