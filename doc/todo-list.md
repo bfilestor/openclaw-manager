@@ -102,15 +102,15 @@
 | E2-S2-I13 | JWT 签发与验证服务（HS256、AccessToken 15min、jti黑名单检查） | P0 | 3 | Done | E2-S1-I10, E1-S1-I2 | Unit | Passed | Claims含sub/role/jti |
 | E2-S2-I14 | RefreshToken Repository 与黑名单（SHA-256哈希存储、Revoke、CleanExpired） | P0 | 2 | Done | E1-S1-I3, E2-S2-I13 | Integration | Passed | RefreshToken不存明文 |
 | E2-S2-I15 | 登录 API — POST /api/v1/auth/login（bcrypt验证、签发双Token、HttpOnly Cookie） | P0 | 3 | Done | E2-S2-I13, E2-S2-I14, E2-S1-I11 | Integration | Passed | 响应体不含refresh_token明文 |
-| E2-S2-I16 | Token 刷新 API — POST /api/v1/auth/refresh（Cookie取token、验证、签发新AccessToken） | P0 | 2 | Todo | E2-S2-I14, E2-S2-I13 | Integration | - | 可选 RefreshToken 轮换 |
+| E2-S2-I16 | Token 刷新 API — POST /api/v1/auth/refresh（Cookie取token、验证、签发新AccessToken） | P0 | 2 | Done | E2-S2-I14, E2-S2-I13 | Integration | Passed | 已实现 Cookie 校验、撤销/过期校验、disabled 用户拦截 |
 | E2-S2-I17 | 注销 API — POST /api/v1/auth/logout（jti入黑名单、撤销RefreshToken、清Cookie） | P1 | 1 | Todo | E2-S2-I14, E2-S3-I18 | Integration | - | 注销后旧Token立即失效 |
 
 ### Story E2-S3：权限中间件
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E2-S3-I18 | AuthMiddleware — JWT 验证与用户注入（提取Bearer、黑名单查询、注入UserContext） | P0 | 2 | Todo | E2-S2-I13, E2-S2-I14 | Unit + Integration | - | 不查users表，只查黑名单 |
-| E2-S3-I19 | RequireRole 中间件（角色权重比较 Viewer=1/Operator=2/Admin=3） | P0 | 1 | Todo | E2-S3-I18 | Unit | - | 403含required_role字段 |
+| E2-S3-I18 | AuthMiddleware — JWT 验证与用户注入（提取Bearer、黑名单查询、注入UserContext） | P0 | 2 | Done | E2-S2-I13, E2-S2-I14 | Unit + Integration | Passed | 已实现 Bearer 提取、JWT 错误映射、context 注入 |
+| E2-S3-I19 | RequireRole 中间件（角色权重比较 Viewer=1/Operator=2/Admin=3） | P0 | 1 | Done | E2-S3-I18 | Unit | Passed | 已实现三级角色权重比较与 required_role 返回 |
 
 ### Story E2-S4：用户管理接口
 

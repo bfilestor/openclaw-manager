@@ -33,6 +33,12 @@ type loginReq struct {
 	Password string `json:"password"`
 }
 
+type refreshResp struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+}
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if h.Config != nil && !h.Config.Auth.PublicRegister {
 		middleware.WriteAppError(w, &middleware.AppError{Code: "REGISTRATION_DISABLED", Message: "registration disabled", StatusCode: http.StatusForbidden})
@@ -153,4 +159,46 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"access_token":"` + access + `","expires_in":900,"token_type":"Bearer","user":{"user_id":"` + u.UserID + `","username":"` + u.Username + `","role":"` + string(u.Role) + `"}}`))
+}
+
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil || cookie.Value == "" {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+
+	t, err := h.TokenRepo.FindByHash(HashToken(cookie.Value))
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "TOKEN_INVALID", Message: "token invalid", StatusCode: http.StatusUnauthorized})
+		return
+	}
+	if t.Revoked {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "TOKEN_REVOKED", Message: "token revoked", StatusCode: http.StatusUnauthorized})
+		return
+	}
+	now := time.Now().UTC()
+	if now.After(t.ExpiresAt) {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "TOKEN_EXPIRED", Message: "token expired", StatusCode: http.StatusUnauthorized})
+		return
+	}
+
+	u, err := h.Repo.FindByID(t.UserID)
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "TOKEN_INVALID", Message: "token invalid", StatusCode: http.StatusUnauthorized})
+		return
+	}
+	if u.Status == user.StatusDisabled {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "ACCOUNT_DISABLED", Message: "account disabled", StatusCode: http.StatusForbidden})
+		return
+	}
+
+	access, _, err := h.JWT.SignAccessToken(u.UserID, string(u.Role))
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"access_token":"` + access + `","expires_in":900,"token_type":"Bearer"}`))
 }
