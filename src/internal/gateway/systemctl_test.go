@@ -50,3 +50,99 @@ func TestTimeout(t *testing.T) {
 		t.Fatalf("expect timeout err, got %v", err)
 	}
 }
+
+func TestDeepStatusNVMWarningTrue(t *testing.T) {
+	ex := &fakeExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "systemctl":
+			return []byte("ActiveState=active\nSubState=running\nMainPID=123\n"), nil
+		case "openclaw":
+			return []byte("bind=127.0.0.1:18789\nlog_path=/tmp/openclaw/openclaw.log\nnode_path=/home/mixi/.nvm/versions/node/v20/bin/node\n"), nil
+		default:
+			return nil, errors.New("unexpected command")
+		}
+	}}
+
+	s := NewSystemctlService(ex)
+	st, err := s.DeepStatus("openclaw-gateway.service")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if st == nil || st.Service == nil {
+		t.Fatalf("expect service status, got %+v", st)
+	}
+	if !st.NVMWarning {
+		t.Fatalf("expect nvm warning true, got false")
+	}
+}
+
+func TestDeepStatusNVMWarningFalse(t *testing.T) {
+	ex := &fakeExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "systemctl":
+			return []byte("ActiveState=active\nSubState=running\n"), nil
+		case "openclaw":
+			return []byte("node_path=/usr/bin/node\n"), nil
+		default:
+			return nil, errors.New("unexpected command")
+		}
+	}}
+
+	s := NewSystemctlService(ex)
+	st, err := s.DeepStatus("openclaw-gateway.service")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if st.NVMWarning {
+		t.Fatalf("expect nvm warning false, got true")
+	}
+}
+
+func TestDeepStatusOpenclawTimeoutKeepsSystemctlResult(t *testing.T) {
+	ex := &fakeExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "systemctl":
+			return []byte("ActiveState=active\nSubState=running\nMainPID=999\n"), nil
+		case "openclaw":
+			<-ctx.Done()
+			return nil, ctx.Err()
+		default:
+			return nil, errors.New("unexpected command")
+		}
+	}}
+
+	s := NewSystemctlService(ex)
+	s.timeout = 10 * time.Millisecond
+	st, err := s.DeepStatus("openclaw-gateway.service")
+	if !errors.Is(err, ErrCommandTimeout) {
+		t.Fatalf("expect timeout err, got %v", err)
+	}
+	if st == nil || st.Service == nil {
+		t.Fatalf("expect partial systemctl result, got %+v", st)
+	}
+	if st.Service.ActiveState != "active" || st.Service.MainPID != "999" {
+		t.Fatalf("unexpected systemctl result: %+v", st.Service)
+	}
+}
+
+func TestDeepStatusParseBindAddress(t *testing.T) {
+	ex := &fakeExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "systemctl":
+			return []byte("ActiveState=active\nSubState=running\n"), nil
+		case "openclaw":
+			return []byte("bind=127.0.0.1:18789\n"), nil
+		default:
+			return nil, errors.New("unexpected command")
+		}
+	}}
+
+	s := NewSystemctlService(ex)
+	st, err := s.DeepStatus("openclaw-gateway.service")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if st.BindAddr != "127.0.0.1" || st.Port != 18789 {
+		t.Fatalf("unexpected bind parse result: bind=%s port=%d", st.BindAddr, st.Port)
+	}
+}

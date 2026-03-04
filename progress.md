@@ -45,3 +45,16 @@ src/internal/gateway/systemctl_test.go
 cd src && go test ./...
 -- 结果
 全部通过。
+
+- 完成 Issue-E3-S1-I22
+-- 功能总结
+实现 Gateway 深度状态查询：并发执行 systemctl 状态查询与 `openclaw gateway status --deep`，解析绑定地址/端口、日志路径、Node 路径，并基于 Node 路径检测 `NVMWarning`；当 openclaw 命令超时时返回超时错误且保留 systemctl 部分结果。
+-- 涉及文件
+src/internal/gateway/systemctl.go,
+src/internal/gateway/systemctl_test.go
+
+- 验证结果
+-- 执行命令
+cd src && "C:\Program Files\Go\bin\go.exe" test ./internal/gateway/...
+-- 结果
+通过。
