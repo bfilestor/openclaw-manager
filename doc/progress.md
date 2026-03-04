@@ -57,3 +57,30 @@ Issue-E1-S2-I6，完成路径白名单安全模块：实现 `PathValidator.Valid
 src/internal/storage/pathvalidator.go,
 src/internal/storage/pathvalidator_test.go,
 doc/todo-list.md
+
+- 完成 Issue-E1-S3-I7
+-- 功能总结
+Issue-E1-S3-I7，完成测试基础设施增强：引入 `testify` 断言库、新增 `NewTestDB(t)` 测试数据库工厂，并扩展 Makefile 测试目标（`test-unit` / `test-integration` / `test-coverage`）。
+-- 涉及文件
+src/internal/storage/test_helper.go,
+src/internal/storage/test_helper_test.go,
+src/Makefile,
+src/go.mod,
+src/go.sum,
+doc/todo-list.md
+
+- 完成 Issue-E1-S3-I8
+-- 功能总结
+Issue-E1-S3-I8，完成压缩包安全解压工具 `SafeExtract`：支持 zip/tar.gz，具备 zip-slip 路径穿越拦截、绝对路径拦截、单文件与总解压大小限制。
+-- 涉及文件
+src/internal/storage/extract.go,
+src/internal/storage/extract_test.go,
+doc/todo-list.md
+
+- 完成 Issue-E1-S3-I9
+-- 功能总结
+Issue-E1-S3-I9，完成原子写入工具 `AtomicWriteFile`：使用同目录临时文件写入后 `os.Rename` 原子替换，并在失败场景清理临时文件；补充并发写测试确保不会出现半写入内容。
+-- 涉及文件
+src/internal/storage/atomic.go,
+src/internal/storage/atomic_test.go,
+doc/todo-list.md

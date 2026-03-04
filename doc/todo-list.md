@@ -77,9 +77,9 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E1-S3-I7 | 单元测试框架与覆盖率配置（testify、NewTestDB、Makefile targets） | P0 | 1 | Todo | E1-S1-I1 | Unit | - | 覆盖率目标 ≥80% |
-| E1-S3-I8 | Zip-slip 防护工具函数（SafeExtract、zip/tar.gz、大小限制） | P0 | 2 | Todo | E1-S2-I6 | Unit | - | 安全关键，覆盖率要求100% |
-| E1-S3-I9 | 原子文件写入工具函数（tmpfile + os.Rename、失败清理） | P0 | 1 | Todo | E1-S2-I6 | Unit | - | 防止配置文件半写损坏 |
+| E1-S3-I7 | 单元测试框架与覆盖率配置（testify、NewTestDB、Makefile targets） | P0 | 1 | Done | E1-S1-I1 | Unit | Passed | 覆盖率目标 ≥80% |
+| E1-S3-I8 | Zip-slip 防护工具函数（SafeExtract、zip/tar.gz、大小限制） | P0 | 2 | Done | E1-S2-I6 | Unit | Passed | 安全关键，覆盖率要求100% |
+| E1-S3-I9 | 原子文件写入工具函数（tmpfile + os.Rename、失败清理） | P0 | 1 | Done | E1-S2-I6 | Unit | Passed | 防止配置文件半写损坏 |
 
 ---
 
@@ -313,9 +313,9 @@
 | E1-S2-I4 HTTP 服务器 | 2 | Done |
 | E1-S2-I5 统一错误响应 | 2 | Done |
 | E1-S2-I6 路径白名单 | 3 | Done |
-| E1-S3-I7 测试框架 | 1 | Todo |
-| E1-S3-I8 zip-slip 防护 | 2 | Todo |
-| E1-S3-I9 原子写入 | 1 | Todo |
+| E1-S3-I7 测试框架 | 1 | Done |
+| E1-S3-I8 zip-slip 防护 | 2 | Done |
+| E1-S3-I9 原子写入 | 1 | Done |
 | E2-S1-I10 User Repository | 2 | Todo |
 | E2-S1-I11 密码哈希服务 | 1 | Todo |
 | E2-S1-I12 注册 API | 3 | Todo |
