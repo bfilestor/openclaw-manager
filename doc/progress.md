@@ -84,3 +84,30 @@ Issue-E1-S3-I9，完成原子写入工具 `AtomicWriteFile`：使用同目录临
 src/internal/storage/atomic.go,
 src/internal/storage/atomic_test.go,
 doc/todo-list.md
+
+- 完成 Issue-E2-S1-I10
+-- 功能总结
+Issue-E2-S1-I10，完成用户数据模型与 Repository：实现 users 表的 Create/FindByID/FindByUsername/Update/Delete/List/Count/ExistsAdmin，并补充唯一约束、分页、NotFound 等测试覆盖。
+-- 涉及文件
+src/internal/user/model.go,
+src/internal/user/repo.go,
+src/internal/user/repo_test.go,
+doc/todo-list.md
+
+- 完成 Issue-E2-S1-I11
+-- 功能总结
+Issue-E2-S1-I11，完成密码服务：基于 bcrypt(cost=12) 实现 Hash/Verify/ValidateStrength，支持空密码、长度不足、纯数字/纯字母弱口令拦截。
+-- 涉及文件
+src/internal/auth/password.go,
+src/internal/auth/password_test.go,
+src/go.mod,
+src/go.sum,
+doc/todo-list.md
+
+- 完成 Issue-E2-S1-I12
+-- 功能总结
+Issue-E2-S1-I12，完成注册接口处理器 `POST /api/v1/auth/register`：支持用户名格式校验、密码强度校验、public_registration 开关、首位用户自动 Admin、后续用户默认 Viewer、重复用户名冲突处理。
+-- 涉及文件
+src/internal/auth/handler.go,
+src/internal/auth/handler_test.go,
+doc/todo-list.md

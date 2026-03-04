@@ -91,9 +91,9 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E2-S1-I10 | 用户数据模型与 Repository（User结构体、CRUD、Count、ExistsAdmin） | P0 | 2 | Todo | E1-S1-I3 | Unit + Integration | - | 首位用户Auto-Admin逻辑基础 |
-| E2-S1-I11 | 密码哈希服务（bcrypt cost=12、Hash、Verify、ValidateStrength） | P0 | 1 | Todo | E1-S1-I1 | Unit | - | 不允许纯数字或纯字母密码 |
-| E2-S1-I12 | 用户注册 API — POST /api/v1/auth/register（首位→Admin，后续→Viewer） | P0 | 3 | Todo | E2-S1-I10, E2-S1-I11, E1-S2-I5 | Unit + Integration | - | public_registration 开关 |
+| E2-S1-I10 | 用户数据模型与 Repository（User结构体、CRUD、Count、ExistsAdmin） | P0 | 2 | Done | E1-S1-I3 | Unit + Integration | Passed | 首位用户Auto-Admin逻辑基础 |
+| E2-S1-I11 | 密码哈希服务（bcrypt cost=12、Hash、Verify、ValidateStrength） | P0 | 1 | Done | E1-S1-I1 | Unit | Passed | 不允许纯数字或纯字母密码 |
+| E2-S1-I12 | 用户注册 API — POST /api/v1/auth/register（首位→Admin，后续→Viewer） | P0 | 3 | Done | E2-S1-I10, E2-S1-I11, E1-S2-I5 | Unit + Integration | Passed | public_registration 开关 |
 
 ### Story E2-S2：JWT 认证与 Token 管理
 
@@ -316,9 +316,9 @@
 | E1-S3-I7 测试框架 | 1 | Done |
 | E1-S3-I8 zip-slip 防护 | 2 | Done |
 | E1-S3-I9 原子写入 | 1 | Done |
-| E2-S1-I10 User Repository | 2 | Todo |
-| E2-S1-I11 密码哈希服务 | 1 | Todo |
-| E2-S1-I12 注册 API | 3 | Todo |
+| E2-S1-I10 User Repository | 2 | Done |
+| E2-S1-I11 密码哈希服务 | 1 | Done |
+| E2-S1-I12 注册 API | 3 | Done |
 | E9-S1-I45 Vue 项目初始化 | 3 | Todo |
 | E9-S2-I48 登录注册页 | 3 | Todo |
 | **合计** | **30 SP** | |
