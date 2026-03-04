@@ -332,15 +332,15 @@
 | E2-S2-I13 JWT 服务 | 3 | Done |
 | E2-S2-I14 RefreshToken 存储 | 2 | Done |
 | E2-S2-I15 登录 API | 3 | Done |
-| E2-S2-I16 Token 刷新 | 2 | Todo |
-| E2-S2-I17 注销 API | 1 | Todo |
-| E2-S3-I18 AuthMiddleware | 2 | Todo |
-| E2-S3-I19 RequireRole | 1 | Todo |
-| E2-S4-I20 用户管理 API | 3 | Todo |
-| E8-S1-I41 Task Repository | 2 | Todo |
+| E2-S2-I16 Token 刷新 | 2 | Done |
+| E2-S2-I17 注销 API | 1 | Done |
+| E2-S3-I18 AuthMiddleware | 2 | Done |
+| E2-S3-I19 RequireRole | 1 | Done |
+| E2-S4-I20 用户管理 API | 3 | Done |
+| E8-S1-I41 Task Repository | 2 | Done |
 | E8-S1-I42 任务执行引擎 | 5 | Done |
 | E8-S2-I43 SSE 日志流 | 3 | Done |
-| E8-S3-I44 任务查询 API | 2 | Todo |
+| E8-S3-I44 任务查询 API | 2 | Done |
 | E9-S1-I46 认证 Store | 3 | Done |
 | E9-S1-I47 权限指令 | 2 | Done |
 | **合计** | **34 SP** | |
@@ -351,13 +351,13 @@
 
 | Issue | SP | 状态 |
 |-------|----|------|
-| E3-S1-I21 SystemctlService | 3 | Todo |
+| E3-S1-I21 SystemctlService | 3 | Done |
 | E3-S1-I22 深度状态查询 | 2 | Done |
 | E3-S1-I23 Gateway API | 3 | Done |
-| E3-S2-I24 日志读取 API | 2 | Todo |
+| E3-S2-I24 日志读取 API | 2 | Done |
 | E3-S3-I25 Doctor API | 2 | Done |
-| E4-S1-I26 Revision Repository | 2 | Todo |
-| E4-S1-I27 openclaw.json API | 3 | Todo |
+| E4-S1-I26 Revision Repository | 2 | Done |
+| E4-S1-I27 openclaw.json API | 3 | Done |
 | E4-S2-I28 Identity API | 2 | Done |
 | E9-S3-I49 Dashboard 页 | 3 | Done |
 | E9-S3-I50 用户管理页 | 3 | Done |
@@ -370,13 +370,13 @@
 
 | Issue | SP | 状态 |
 |-------|----|------|
-| E5-S1-I29 Agent Repository | 2 | Todo |
-| E5-S1-I30 Agent 列表 API | 2 | Todo |
+| E5-S1-I29 Agent Repository | 2 | Done |
+| E5-S1-I30 Agent 列表 API | 2 | Done |
 | E5-S1-I31 Agent 新建 API | 3 | Done |
 | E5-S1-I32 Agent 删除 API | 2 | Done |
 | E5-S2-I33 Binding API | 4 | Done |
-| E6-S1-I34 Skills 列表 API | 2 | Todo |
-| E6-S1-I35 Skills 删除 API | 2 | Todo |
+| E6-S1-I34 Skills 列表 API | 2 | Done |
+| E6-S1-I35 Skills 删除 API | 2 | Done |
 | E6-S2-I36 Skills 安装 API | 4 | Done |
 | **合计** | **21 SP** | |
 
