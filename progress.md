@@ -146,6 +146,41 @@ src/internal/agent/binding_handler_test.go
 src/internal/task/sse_handler.go,
 src/internal/task/sse_handler_test.go
 
+- 完成 Issue-E5-S1-I31
+-- 功能总结
+实现 Agent 新建 API：POST /agents，校验 agent_id 合法性，调用 openclaw agents create，返回任务化响应。
+-- 涉及文件
+src/internal/agent/manage_handler.go,
+src/internal/agent/manage_handler_test.go
+
+- 完成 Issue-E5-S1-I32
+-- 功能总结
+实现 Agent 删除 API：DELETE /agents/{id}，先执行 unbind-all，再执行 delete，返回任务化响应。
+-- 涉及文件
+src/internal/agent/manage_handler.go,
+src/internal/agent/manage_handler_test.go
+
+- 完成 Issue-E6-S2-I36
+-- 功能总结
+实现 Skills 上传安装 API：支持 multipart 上传（100MB 限制），并使用 SafeExtract 解压安装到目标技能目录。
+-- 涉及文件
+src/internal/skills/install_handler.go,
+src/internal/skills/install_handler_test.go
+
+- 完成 Issue-E7-S1-I37
+-- 功能总结
+实现备份核心服务：按 scope 归档 tar.gz、计算 SHA-256、生成 manifest.json，并写入 backups 表。
+-- 涉及文件
+src/internal/backup/service.go,
+src/internal/backup/service_test.go
+
+- 完成 Issue-E7-S1-I38
+-- 功能总结
+实现备份 API：POST 创建、GET 列表、GET 详情、GET 下载、DELETE 删除。
+-- 涉及文件
+src/internal/backup/api_handler.go,
+src/internal/backup/api_handler_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

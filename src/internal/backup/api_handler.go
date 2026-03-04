@@ -1,0 +1,111 @@
+package backup
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"openclaw-manager/internal/middleware"
+)
+
+type APIHandler struct {
+	Service *Service
+	DB      *sql.DB
+}
+
+type createReq struct {
+	Label string   `json:"label"`
+	Scope []string `json:"scope"`
+}
+
+func (h *APIHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
+	var req createReq
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if len(req.Scope) == 0 {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"scope": "required"}))
+		return
+	}
+	id, err := h.Service.Create(req.Scope, req.Label, "")
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte(`{"task_id":"` + id + `","status":"PENDING"}`))
+}
+
+func (h *APIHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.DB.Query(`SELECT backup_id,label,size_bytes,sha256,created_at FROM backups ORDER BY created_at DESC`)
+	if err != nil { middleware.WriteAppError(w, err); return }
+	defer rows.Close()
+	list := make([]map[string]any, 0)
+	for rows.Next() {
+		var id, label, sha, created string
+		var size int64
+		if err := rows.Scan(&id, &label, &size, &sha, &created); err != nil { middleware.WriteAppError(w, err); return }
+		list = append(list, map[string]any{"backup_id": id, "label": label, "size_bytes": size, "sha256": sha, "created_at": created})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"backups": list})
+}
+
+func (h *APIHandler) GetBackup(w http.ResponseWriter, r *http.Request) {
+	id := lastPart(r.URL.Path)
+	var manifest string
+	err := h.DB.QueryRow(`SELECT scope_json FROM backups WHERE backup_id=?`, id).Scan(&manifest)
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "backup not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(manifest))
+}
+
+func (h *APIHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
+	id := backupIDFromDownloadPath(r.URL.Path)
+	if id == "" { w.WriteHeader(http.StatusNotFound); return }
+	p := filepath.Join(h.Service.BackupHome, id+".tar.gz")
+	w.Header().Set("Content-Type", "application/gzip")
+	http.ServeFile(w, r, p)
+}
+
+func (h *APIHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
+	id := lastPart(r.URL.Path)
+	_, err := h.DB.Exec(`DELETE FROM backups WHERE backup_id=?`, id)
+	if err != nil { middleware.WriteAppError(w, err); return }
+	_ = removeIfExists(filepath.Join(h.Service.BackupHome, id+".tar.gz"))
+	_ = removeIfExists(filepath.Join(h.Service.BackupHome, id+".manifest.json"))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"deleted"}`))
+}
+
+func backupIDFromDownloadPath(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == "backups" && i+2 < len(parts) && parts[i+2] == "download" {
+			return parts[i+1]
+		}
+	}
+	return ""
+}
+
+func lastPart(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 { return "" }
+	return parts[len(parts)-1]
+}
+
+func removeIfExists(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return os.Remove(path)
+	}
+	return nil
+}

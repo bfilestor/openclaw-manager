@@ -175,8 +175,8 @@
 |-------|------|--------|----|------|------|----------|----------|------|
 | E5-S1-I29 | Agent Repository 与路径解析（CLI输出解析、GetWorkspacePath、60s缓存TTL） | P1 | 2 | Done | E1-S2-I6 | Unit + Integration | Passed | 已实现 JSON 解析、60s 缓存与 agent_id 校验 |
 | E5-S1-I30 | Agent 列表与详情 API（GET /agents、GET /agents/{id}，Viewer权限） | P1 | 2 | Done | E5-S1-I29, E2-S3-I19 | Integration | Passed | 已实现列表/详情接口，详情不存在返回 404 |
-| E5-S1-I31 | Agent 新建 API（POST /agents，Admin权限，任务化，格式校验） | P2 | 3 | Todo | E5-S1-I29, E8-S1-I42, E2-S3-I19 | Integration | - | P2，下一迭代 |
-| E5-S1-I32 | Agent 删除 API（DELETE /agents/{id}，Admin权限，先unbind再delete） | P2 | 2 | Todo | E5-S1-I29, E8-S1-I42 | Integration | - | P2，下一迭代 |
+| E5-S1-I31 | Agent 新建 API（POST /agents，Admin权限，任务化，格式校验） | P2 | 3 | Done | E5-S1-I29, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现 create 接口、agent_id 校验与冲突处理 |
+| E5-S1-I32 | Agent 删除 API（DELETE /agents/{id}，Admin权限，先unbind再delete） | P2 | 2 | Done | E5-S1-I29, E8-S1-I42 | Integration | Passed | 已实现 delete 接口，按 unbind-all 后 delete 执行 |
 
 ### Story E5-S2：Channel Binding 管理
 
@@ -201,7 +201,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E6-S2-I36 | Skills 上传安装 API（POST /skills/install，multipart，100MB限制，SafeExtract，zip/tar.gz） | P1 | 4 | Todo | E1-S3-I8, E6-S1-I34, E8-S1-I42, E2-S3-I19 | Integration | - | zip-slip攻击防护必测 |
+| E6-S2-I36 | Skills 上传安装 API（POST /skills/install，multipart，100MB限制，SafeExtract，zip/tar.gz） | P1 | 4 | Done | E1-S3-I8, E6-S1-I34, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现 multipart 上传、100MB 限制、SafeExtract 解压安装 |
 
 ---
 
@@ -213,8 +213,8 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E7-S1-I37 | 备份服务核心逻辑（tar.gz归档、SHA-256、manifest.json、5种scope枚举） | P1 | 4 | Todo | E1-S3-I9, E1-S2-I6, E1-S1-I3 | Unit + Integration | - | SHA-256校验和务必验证 |
-| E7-S1-I38 | 备份 API 接口（POST创建/GET列表/GET详情/GET下载/DELETE删除，权限分层） | P1 | 2 | Todo | E7-S1-I37, E8-S1-I42, E2-S3-I19 | Integration | - | 下载需Operator，删除需Admin |
+| E7-S1-I37 | 备份服务核心逻辑（tar.gz归档、SHA-256、manifest.json、5种scope枚举） | P1 | 4 | Done | E1-S3-I9, E1-S2-I6, E1-S1-I3 | Unit + Integration | Passed | 已实现 scope 归档、SHA256 计算、manifest 生成与入库 |
+| E7-S1-I38 | 备份 API 接口（POST创建/GET列表/GET详情/GET下载/DELETE删除，权限分层） | P1 | 2 | Done | E7-S1-I37, E8-S1-I42, E2-S3-I19 | Integration | Passed | 已实现创建/列表/详情/下载/删除接口 |
 
 ### Story E7-S2：备份还原
 
@@ -372,12 +372,12 @@
 |-------|----|------|
 | E5-S1-I29 Agent Repository | 2 | Todo |
 | E5-S1-I30 Agent 列表 API | 2 | Todo |
-| E5-S1-I31 Agent 新建 API | 3 | Todo |
-| E5-S1-I32 Agent 删除 API | 2 | Todo |
+| E5-S1-I31 Agent 新建 API | 3 | Done |
+| E5-S1-I32 Agent 删除 API | 2 | Done |
 | E5-S2-I33 Binding API | 4 | Done |
 | E6-S1-I34 Skills 列表 API | 2 | Todo |
 | E6-S1-I35 Skills 删除 API | 2 | Todo |
-| E6-S2-I36 Skills 安装 API | 4 | Todo |
+| E6-S2-I36 Skills 安装 API | 4 | Done |
 | **合计** | **21 SP** | |
 
 ### Sprint 5（第9-10周）— 备份还原 + 前端业务页
@@ -386,8 +386,8 @@
 
 | Issue | SP | 状态 |
 |-------|----|------|
-| E7-S1-I37 备份核心逻辑 | 4 | Todo |
-| E7-S1-I38 备份 API | 2 | Todo |
+| E7-S1-I37 备份核心逻辑 | 4 | Done |
+| E7-S1-I38 备份 API | 2 | Done |
 | E7-S2-I39 还原服务 | 5 | Todo |
 | E7-S2-I40 还原 API | 2 | Todo |
 | E9-S3-I52 Config/Agents/Skills/Backups 页 | 12 | Todo |
