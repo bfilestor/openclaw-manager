@@ -40,6 +40,28 @@ src/internal/auth/user_management_test.go
 src/internal/gateway/systemctl.go,
 src/internal/gateway/systemctl_test.go
 
+- 完成 Issue-E8-S1-I41
+-- 功能总结
+实现任务 Repository：Create/FindByID/UpdateStatus/UpdateResult/List；支持按 status/task_type/created_by 过滤；状态流转时自动写 started_at/finished_at。
+-- 涉及文件
+src/internal/task/model.go,
+src/internal/task/repo.go,
+src/internal/task/repo_test.go
+
+- 完成 Issue-E8-S3-I44
+-- 功能总结
+实现任务查询与取消接口：GET 任务列表、GET 任务详情、POST 取消任务。实现 Viewer 仅可查看自己任务，Admin 可查看全部，Operator/Admin 可取消且仅允许取消 PENDING 任务。
+-- 涉及文件
+src/internal/task/handler.go,
+src/internal/task/handler_test.go
+
+- 完成 Issue-E3-S2-I24
+-- 功能总结
+实现 Gateway 日志读取 API：支持 file/journald 双源，lines 参数校验与上限 1000，file 源日志路径强制白名单（/tmp/openclaw）。
+-- 涉及文件
+src/internal/gateway/logs.go,
+src/internal/gateway/logs_test.go
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...

@@ -1,0 +1,104 @@
+package task
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+
+	"openclaw-manager/internal/auth"
+	"openclaw-manager/internal/middleware"
+	"openclaw-manager/internal/user"
+)
+
+type Handler struct {
+	Repo *Repository
+}
+
+func (h *Handler) ListTasks(w http.ResponseWriter, r *http.Request) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	f := ListFilter{
+		TaskType: r.URL.Query().Get("type"),
+	}
+	if s := strings.TrimSpace(r.URL.Query().Get("status")); s != "" {
+		f.Status = Status(strings.ToUpper(s))
+	}
+	if uc.Role != user.RoleAdmin {
+		f.CreatedBy = uc.UserID
+	}
+	list, total, err := h.Repo.List(f)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"tasks": list, "total": total})
+}
+
+func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	taskID := lastPart(r.URL.Path)
+	t, err := h.Repo.FindByID(taskID)
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	if uc.Role != user.RoleAdmin && t.CreatedBy != uc.UserID {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(t)
+}
+
+func (h *Handler) CancelTask(w http.ResponseWriter, r *http.Request) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if uc.Role != user.RoleOperator && uc.Role != user.RoleAdmin {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleOperator)))
+		return
+	}
+	taskID := strings.TrimSuffix(lastPart(r.URL.Path), "cancel")
+	taskID = strings.TrimSuffix(taskID, "/")
+	if strings.Contains(r.URL.Path, "/cancel") {
+		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(parts) >= 2 {
+			taskID = parts[len(parts)-2]
+		}
+	}
+	t, err := h.Repo.FindByID(taskID)
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	if t.Status != StatusPending {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "BAD_REQUEST", Message: "only pending task can be canceled", StatusCode: http.StatusBadRequest})
+		return
+	}
+	if err := h.Repo.UpdateStatus(taskID, StatusCanceled); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"canceled"}`))
+}
+
+func lastPart(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 {
+		return ""
+	}
+	return parts[len(parts)-1]
+}

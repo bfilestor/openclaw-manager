@@ -136,7 +136,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E3-S2-I24 | 日志文件读取 API（GET /gateway/logs、file/journald双源、最后N行、白名单校验） | P1 | 2 | Todo | E1-S2-I6, E2-S3-I19 | Unit + Integration | - | lines上限1000，路径白名单 |
+| E3-S2-I24 | 日志文件读取 API（GET /gateway/logs、file/journald双源、最后N行、白名单校验） | P1 | 2 | Done | E1-S2-I6, E2-S3-I19 | Unit + Integration | Passed | 已实现 file/journald 双源、lines 限制、/tmp/openclaw 白名单校验 |
 
 ### Story E3-S3：Doctor 功能
 
@@ -233,7 +233,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E8-S1-I41 | 任务 Repository（Create/FindByID/UpdateStatus/UpdateResult/List，时间戳自动更新） | P0 | 2 | Todo | E1-S1-I3 | Integration | - | started_at/finished_at自动赋值 |
+| E8-S1-I41 | 任务 Repository（Create/FindByID/UpdateStatus/UpdateResult/List，时间戳自动更新） | P0 | 2 | Done | E1-S1-I3 | Integration | Passed | 已实现状态流转时间戳自动更新与多条件筛选 |
 | E8-S1-I42 | 任务执行引擎（Worker Pool最大3并发、Handler注册、超时context、Gateway互斥、SSE推送） | P0 | 5 | Todo | E8-S1-I41, E1-S1-I2 | Unit + Integration | - | Gateway任务全局互斥锁 |
 
 ### Story E8-S2：实时日志流
@@ -246,7 +246,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E8-S3-I44 | 任务列表与详情 API（GET /tasks列表、GET /tasks/{id}详情、POST取消，Viewer只看自己） | P1 | 2 | Todo | E8-S1-I41, E2-S3-I19 | Integration | - | Admin可看所有任务 |
+| E8-S3-I44 | 任务列表与详情 API（GET /tasks列表、GET /tasks/{id}详情、POST取消，Viewer只看自己） | P1 | 2 | Done | E8-S1-I41, E2-S3-I19 | Integration | Passed | 已实现 Viewer 仅看自己、Admin 全量、Operator/Admin 可取消 PENDING |
 
 ---
 

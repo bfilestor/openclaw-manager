@@ -26,6 +26,11 @@ func GetUserContext(ctx context.Context) (*UserContext, bool) {
 	return u, ok
 }
 
+// WithUserContext 用于在测试或内部调用时注入用户上下文。
+func WithUserContext(ctx context.Context, u *UserContext) context.Context {
+	return context.WithValue(ctx, userContextKey, u)
+}
+
 func AuthMiddleware(jwtSvc *JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
