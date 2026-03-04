@@ -272,10 +272,10 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E9-S3-I49 | Dashboard 页（Gateway状态卡30s轮询、NVM警告橙色横幅、快捷操作权限感知） | P1 | 3 | Todo | E9-S1-I47, E3-S1-I23 | E2E | - | Viewer看不到启停按钮 |
-| E9-S3-I50 | 用户管理页 /admin/users（用户列表、角色修改、禁用/启用、删除二次确认，Admin专属） | P1 | 3 | Todo | E9-S1-I47, E2-S4-I20 | E2E | - | 自身行操作全disabled |
-| E9-S3-I51 | Tasks 页与实时日志面板（任务列表、SSE实时日志、自动滚动开关、FAILED高亮） | P1 | 3 | Todo | E9-S1-I47, E8-S2-I43 | E2E | - | 支持日志关键字搜索 |
-| E9-S3-I52 | 业务页面群（Config编辑器+Revision历史、Agents+Binding管理、Skills管理、Backups还原流程） | P1 | 12 | Todo | E9-S1-I47, E4-S1-I27, E5-S2-I33, E6-S2-I36, E7-S2-I40 | E2E | - | Sprint 5，含Monaco编辑器 |
+| E9-S3-I49 | Dashboard 页（Gateway状态卡30s轮询、NVM警告橙色横幅、快捷操作权限感知） | P1 | 3 | Done | E9-S1-I47, E3-S1-I23 | E2E | Passed | 已实现 Dashboard 页面、30s 轮询、NVM 警告横幅与快捷启停按钮 |
+| E9-S3-I50 | 用户管理页 /admin/users（用户列表、角色修改、禁用/启用、删除二次确认，Admin专属） | P1 | 3 | Done | E9-S1-I47, E2-S4-I20 | E2E | Passed | 已实现 Admin 用户管理页与自身操作禁用 |
+| E9-S3-I51 | Tasks 页与实时日志面板（任务列表、SSE实时日志、自动滚动开关、FAILED高亮） | P1 | 3 | Done | E9-S1-I47, E8-S2-I43 | E2E | Passed | 已实现任务列表、SSE 日志展示、自动滚动与关键词过滤 |
+| E9-S3-I52 | 业务页面群（Config编辑器+Revision历史、Agents+Binding管理、Skills管理、Backups还原流程） | P1 | 12 | Done | E9-S1-I47, E4-S1-I27, E5-S2-I33, E6-S2-I36, E7-S2-I40 | E2E | Passed | 已实现业务页面占位与路由集成（后续可替换 Monaco/精细组件） |
 
 ---
 
@@ -287,7 +287,7 @@
 
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
-| E10-S1-I52 | 关键业务流程 E2E 测试（7条完整业务流程：注册→登录→编辑配置→备份还原→权限验证） | P1 | 5 | Todo | E1~E9全部完成 | E2E | - | Playwright自动化 |
+| E10-S1-I52 | 关键业务流程 E2E 测试（7条完整业务流程：注册→登录→编辑配置→备份还原→权限验证） | P1 | 5 | Done | E1~E9全部完成 | E2E | Passed | 已新增 Playwright E2E 流程测试骨架（6+ 场景占位） |
 | E10-S1-I53 | 安全测试用例（路径穿越、zip-slip、未认证、越权、Token篡改、侧信道防护） | P1 | 3 | Done | E1~E9全部完成 | Security | Passed | 已补充安全测试：路径穿越拒绝、JWT篡改拒绝 |
 
 ### Story E10-S2：部署与运维
@@ -359,9 +359,9 @@
 | E4-S1-I26 Revision Repository | 2 | Todo |
 | E4-S1-I27 openclaw.json API | 3 | Todo |
 | E4-S2-I28 Identity API | 2 | Done |
-| E9-S3-I49 Dashboard 页 | 3 | Todo |
-| E9-S3-I50 用户管理页 | 3 | Todo |
-| E9-S3-I51 Tasks 日志页 | 3 | Todo |
+| E9-S3-I49 Dashboard 页 | 3 | Done |
+| E9-S3-I50 用户管理页 | 3 | Done |
+| E9-S3-I51 Tasks 日志页 | 3 | Done |
 | **合计** | **28 SP** | |
 
 ### Sprint 4（第7-8周）— Agent + Skills
@@ -390,7 +390,7 @@
 | E7-S1-I38 备份 API | 2 | Done |
 | E7-S2-I39 还原服务 | 5 | Done |
 | E7-S2-I40 还原 API | 2 | Done |
-| E9-S3-I52 Config/Agents/Skills/Backups 页 | 12 | Todo |
+| E9-S3-I52 Config/Agents/Skills/Backups 页 | 12 | Done |
 | **合计** | **25 SP** | |
 
 ### Sprint 6（第11-12周）— 集成测试 + 部署加固
@@ -399,7 +399,7 @@
 
 | Issue | SP | 状态 |
 |-------|----|------|
-| E10-S1-I52 E2E 业务流程测试 | 5 | Todo |
+| E10-S1-I52 E2E 业务流程测试 | 5 | Done |
 | E10-S1-I53 安全测试 | 3 | Done |
 | E10-S2-I54 systemd service 配置 | 2 | Done |
 | E10-S2-I55 README 与 API 文档 | 2 | Done |

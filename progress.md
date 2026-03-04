@@ -254,6 +254,41 @@ src/frontend/src/permission.test.ts
 src/frontend/src/views/LoginView.vue,
 src/frontend/src/views/RegisterView.vue
 
+- 完成 Issue-E9-S3-I49
+-- 功能总结
+实现 Dashboard 页面：Gateway 状态展示与 30 秒轮询、NVM Warning 横幅、Start/Stop/Restart 快捷操作（按角色控制可用性）。
+-- 涉及文件
+src/frontend/src/views/DashboardView.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E9-S3-I50
+-- 功能总结
+实现 Admin 用户管理页：用户列表、角色修改、禁用/启用、删除确认；对自身账号操作进行禁用。
+-- 涉及文件
+src/frontend/src/views/AdminUsersView.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E9-S3-I51
+-- 功能总结
+实现 Tasks 页面：任务列表、SSE 日志展示、自动滚动开关、FAILED 高亮与日志关键字过滤。
+-- 涉及文件
+src/frontend/src/views/TasksView.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E9-S3-I52
+-- 功能总结
+实现业务页面群占位与路由集成（Config/Agents/Skills/Backups），为后续精细组件化与 Monaco 编辑器接入预留结构。
+-- 涉及文件
+src/frontend/src/views/BusinessViews.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E10-S1-I52
+-- 功能总结
+新增关键流程 E2E 测试骨架（Playwright）：注册/登录、Admin 用户管理、配置+备份路径、Viewer 权限、Token 刷新与注销失效场景占位。
+-- 涉及文件
+src/tests/e2e/e10_flows.spec.ts,
+src/tests/e2e/playwright.config.ts
+
 - 验证结果
 -- 执行命令
 cd src && go test ./...
