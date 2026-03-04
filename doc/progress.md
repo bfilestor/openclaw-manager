@@ -39,3 +39,13 @@ src/internal/server/server.go,
 src/internal/server/signal.go,
 src/internal/server/server_test.go,
 doc/todo-list.md
+
+- 完成 Issue-E1-S2-I5
+-- 功能总结
+Issue-E1-S2-I5，完成统一错误响应与请求校验基础框架：新增 `AppError` 结构、标准错误码常量、统一 JSON 错误输出函数 `WriteAppError`，并补充 `BindJSON` 作为统一请求体绑定入口（空体/未知字段/多对象统一返回 VALIDATION_ERROR）。
+-- 涉及文件
+src/internal/middleware/error.go,
+src/internal/middleware/error_test.go,
+src/internal/middleware/bind.go,
+src/internal/middleware/bind_test.go,
+doc/todo-list.md

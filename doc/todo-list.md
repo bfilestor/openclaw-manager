@@ -70,7 +70,7 @@
 | Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
 |-------|------|--------|----|------|------|----------|----------|------|
 | E1-S2-I4 | HTTP 服务器与路由注册（监听、路由分组、日志中间件、Panic Recovery、CORS、优雅关闭） | P0 | 2 | Done | E1-S1-I1 | Unit + Integration | Passed | 提供 /api/v1/health 端点 |
-| E1-S2-I5 | 统一错误响应与请求校验框架（AppError、错误码常量、validator绑定） | P0 | 2 | Todo | E1-S2-I4 | Unit | - | 500不泄露内部信息 |
+| E1-S2-I5 | 统一错误响应与请求校验框架（AppError、错误码常量、validator绑定） | P0 | 2 | Done | E1-S2-I4 | Unit | Passed | 500不泄露内部信息 |
 | E1-S2-I6 | 路径白名单安全模块（PathValidator、EvalSymlinks、JoinAndValidate） | P0 | 3 | Todo | E1-S1-I2 | Unit | - | 安全核心，覆盖率要求100% |
 
 ### Story E1-S3：CI/CD 与测试基础设施
@@ -311,7 +311,7 @@
 | E1-S1-I2 config.toml 加载 | 2 | Done |
 | E1-S1-I3 SQLite 初始化 | 3 | Done |
 | E1-S2-I4 HTTP 服务器 | 2 | Done |
-| E1-S2-I5 统一错误响应 | 2 | Todo |
+| E1-S2-I5 统一错误响应 | 2 | Done |
 | E1-S2-I6 路径白名单 | 3 | Todo |
 | E1-S3-I7 测试框架 | 1 | Todo |
 | E1-S3-I8 zip-slip 防护 | 2 | Todo |
