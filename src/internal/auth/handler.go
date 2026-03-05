@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -146,12 +147,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	u.UpdatedAt = &now
 	_ = h.Repo.Update(u)
 
+	secureCookie := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    rawRefresh,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   secureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Expires:  exp,
 	})
@@ -224,12 +227,14 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	secureCookie := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   secureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
