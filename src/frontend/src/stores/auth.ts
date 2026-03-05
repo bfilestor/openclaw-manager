@@ -104,9 +104,19 @@ axios.interceptors.request.use((cfg) => {
 
 axios.interceptors.response.use((r) => r, async (err) => {
   const s = useAuthStore()
-  if (err?.response?.status === 401 && s.isAuthenticated) {
-    await s.ensureRefreshed()
-    return axios(err.config)
+  const status = err?.response?.status
+  const url = String(err?.config?.url ?? '')
+  const isRefreshCall = url.includes('/api/v1/auth/refresh')
+  const hasRetried = !!(err?.config as any)?._retry
+
+  if (status === 401 && s.isAuthenticated && !isRefreshCall && !hasRetried) {
+    try {
+      await s.ensureRefreshed()
+      ;(err.config as any)._retry = true
+      return axios(err.config)
+    } catch {
+      return Promise.reject(err)
+    }
   }
   return Promise.reject(err)
 })

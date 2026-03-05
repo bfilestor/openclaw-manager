@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -52,7 +53,7 @@ func New(addr string, staticDir string, registerFns ...func(*http.ServeMux)) *Se
 	})
 
 	if staticDir != "" {
-		mux.Handle("/", http.FileServer(http.Dir(staticDir)))
+		mux.HandleFunc("/", spaFileHandler(staticDir))
 	}
 
 	h := recoverMiddleware(corsMiddleware(requestLogMiddleware(mux)))
@@ -135,6 +136,32 @@ func recoverMiddleware(next http.Handler) http.Handler {
 		}()
 		next.ServeHTTP(w, r)
 	})
+}
+
+func spaFileHandler(staticDir string) func(http.ResponseWriter, *http.Request) {
+	fs := http.FileServer(http.Dir(staticDir))
+	indexPath := filepath.Join(staticDir, "index.html")
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		clean := filepath.Clean(r.URL.Path)
+		if clean == "/" {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		target := filepath.Join(staticDir, strings.TrimPrefix(clean, "/"))
+		if st, err := os.Stat(target); err == nil && !st.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		http.ServeFile(w, r, indexPath)
+	}
 }
 
 // RunWithSignals 生产场景可直接调用，监听 SIGINT/SIGTERM。
