@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"openclaw-manager/internal/auth"
 )
 
 // Server 封装 HTTP 服务，便于后续注入路由与中间件。
@@ -25,7 +23,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 // New 创建带基础中间件的 HTTP 服务。
-func New(addr string, staticDir string, authHandler ...*auth.Handler) *Server {
+func New(addr string, staticDir string, registerFns ...func(*http.ServeMux)) *Server {
 	mux := http.NewServeMux()
 
 	// 健康检查接口（E1-S2-I4 要求）
@@ -36,12 +34,10 @@ func New(addr string, staticDir string, authHandler ...*auth.Handler) *Server {
 		})
 	})
 
-	if len(authHandler) > 0 && authHandler[0] != nil {
-		h := authHandler[0]
-		mux.HandleFunc("POST /api/v1/auth/register", h.Register)
-		mux.HandleFunc("POST /api/v1/auth/login", h.Login)
-		mux.HandleFunc("POST /api/v1/auth/refresh", h.Refresh)
-		mux.HandleFunc("POST /api/v1/auth/logout", h.Logout)
+	for _, fn := range registerFns {
+		if fn != nil {
+			fn(mux)
+		}
 	}
 
 	// API 兜底 404（JSON）

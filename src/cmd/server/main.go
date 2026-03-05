@@ -1,15 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
+	"openclaw-manager/internal/agent"
 	"openclaw-manager/internal/auth"
+	"openclaw-manager/internal/backup"
 	appcfg "openclaw-manager/internal/config"
+	"openclaw-manager/internal/gateway"
 	"openclaw-manager/internal/server"
+	"openclaw-manager/internal/skills"
 	"openclaw-manager/internal/storage"
+	"openclaw-manager/internal/task"
 	"openclaw-manager/internal/user"
 )
 
@@ -57,12 +64,123 @@ func main() {
 	}
 
 	dist := resolveStaticDir(*staticDir)
-	s := server.New(cfg.Server.Listen, dist, authHandler)
+	s := server.New(cfg.Server.Listen, dist, registerAllRoutes(cfg, db.SQL, authHandler, jwtSvc))
 	fmt.Printf("manager server starting, listen=%s, static_dir=%s, db=%s\n", cfg.Server.Listen, dist, dbPath)
 
 	if err := server.RunWithSignals(s); err != nil {
 		fmt.Fprintf(os.Stderr, "server run error: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Handler, jwtSvc *auth.JWTService) func(*http.ServeMux) {
+	return func(mux *http.ServeMux) {
+		authMW := auth.AuthMiddleware(jwtSvc)
+		wrap := func(hf http.HandlerFunc, mws ...func(http.Handler) http.Handler) http.HandlerFunc {
+			h := http.Handler(http.HandlerFunc(hf))
+			for i := len(mws) - 1; i >= 0; i-- {
+				h = mws[i](h)
+			}
+			return h.ServeHTTP
+		}
+
+		// 基础依赖
+		home, _ := os.UserHomeDir()
+		validator, _ := storage.NewPathValidator([]string{
+			cfg.Paths.OpenClawHome,
+			cfg.Paths.ManagerHome,
+			filepath.Join(home, ".config", "systemd", "user"),
+			"/tmp/openclaw",
+		})
+		execer := gateway.OSExecutor{}
+		revRepo := appcfg.NewRevisionRepository(sqlDB)
+		agentRepo := agent.NewRepository(execer, validator)
+		taskRepo := task.NewRepository(sqlDB)
+
+		// 各功能 handler
+		gatewaySvc := gateway.NewSystemctlService(execer)
+		gatewayAPI := &gateway.APIHandler{Service: gatewaySvc, ServiceName: "openclaw-gateway.service"}
+		gatewayDoctor := gateway.NewDoctorHandler(execer)
+		gatewayLogs := gateway.NewLogsHandler(execer)
+
+		agentAPI := &agent.Handler{Repo: agentRepo}
+		agentManage := &agent.ManageHandler{Exec: execer}
+		bindingAPI := agent.NewBindingHandler(execer)
+
+		skillList := &skills.Handler{AgentRepo: agentRepo, GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills")}
+		skillInstall := &skills.InstallHandler{GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills")}
+		skillDelete := &skills.DeleteHandler{AgentRepo: agentRepo, GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills"), Validator: validator}
+
+		backupSvc := &backup.Service{
+			DB:           sqlDB,
+			BackupHome:   filepath.Join(cfg.Paths.ManagerHome, "backups"),
+			OpenclawHome: cfg.Paths.OpenClawHome,
+			ManagerHome:  cfg.Paths.ManagerHome,
+		}
+		backupAPI := &backup.APIHandler{Service: backupSvc, DB: sqlDB}
+
+		taskAPI := &task.Handler{Repo: taskRepo}
+		taskSSE := &task.SSEHandler{Repo: taskRepo}
+
+		openclawJSON := &appcfg.OpenClawJSONHandler{
+			FilePath:  filepath.Join(cfg.Paths.OpenClawHome, "openclaw.json"),
+			Validator: validator,
+			Revisions: revRepo,
+		}
+		identityAPI := &appcfg.IdentityHandler{AgentRepo: agentRepo, Revisions: revRepo, Validator: validator}
+
+		// 公开接口
+		mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
+		mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
+		mux.HandleFunc("POST /api/v1/auth/refresh", authHandler.Refresh)
+
+		// 需要认证的接口
+		mux.HandleFunc("POST /api/v1/auth/logout", wrap(authHandler.Logout, authMW))
+		mux.HandleFunc("GET /api/v1/users/me", wrap(authHandler.Me, authMW))
+		mux.HandleFunc("PUT /api/v1/users/me/password", wrap(authHandler.ChangeMyPassword, authMW))
+		mux.HandleFunc("GET /api/v1/users", wrap(authHandler.ListUsers, authMW))
+		mux.HandleFunc("PUT /api/v1/users/{id}/role", wrap(authHandler.UpdateUserRole, authMW))
+		mux.HandleFunc("POST /api/v1/users/{id}/disable", wrap(authHandler.DisableUser, authMW))
+		mux.HandleFunc("DELETE /api/v1/users/{id}", wrap(authHandler.DeleteUser, authMW))
+
+		mux.HandleFunc("GET /api/v1/tasks", wrap(taskAPI.ListTasks, authMW))
+		mux.HandleFunc("GET /api/v1/tasks/{id}", wrap(taskAPI.GetTask, authMW))
+		mux.HandleFunc("POST /api/v1/tasks/{id}/cancel", wrap(taskAPI.CancelTask, authMW))
+		mux.HandleFunc("GET /api/v1/tasks/{id}/events", wrap(taskSSE.TaskEvents, authMW))
+
+		mux.HandleFunc("GET /api/v1/gateway/status", wrap(gatewayAPI.Status, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/start", wrap(gatewayAPI.Start, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/stop", wrap(gatewayAPI.Stop, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/restart", wrap(gatewayAPI.Restart, authMW))
+		mux.HandleFunc("GET /api/v1/gateway/logs", wrap(gatewayLogs.GetLogs, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/doctor", wrap(gatewayDoctor.Run, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/doctor/repair", wrap(gatewayDoctor.Repair, authMW))
+
+		mux.HandleFunc("GET /api/v1/agents", wrap(agentAPI.ListAgents, authMW))
+		mux.HandleFunc("GET /api/v1/agents/{id}", wrap(agentAPI.GetAgent, authMW))
+		mux.HandleFunc("POST /api/v1/agents", wrap(agentManage.CreateAgent, authMW))
+		mux.HandleFunc("DELETE /api/v1/agents/{id}", wrap(agentManage.DeleteAgent, authMW))
+		mux.HandleFunc("GET /api/v1/bindings", wrap(bindingAPI.ListBindings, authMW))
+		mux.HandleFunc("POST /api/v1/bindings/apply", wrap(bindingAPI.ApplyBindings, authMW))
+		mux.HandleFunc("GET /api/v1/agents/{id}/identity", wrap(identityAPI.GetIdentity, authMW))
+		mux.HandleFunc("PUT /api/v1/agents/{id}/identity", wrap(identityAPI.PutIdentity, authMW))
+		mux.HandleFunc("GET /api/v1/agents/{id}/identity/revisions", wrap(identityAPI.ListIdentityRevisions, authMW))
+
+		mux.HandleFunc("GET /api/v1/skills", wrap(skillList.ListSkills, authMW))
+		mux.HandleFunc("POST /api/v1/skills/install", wrap(skillInstall.InstallSkill, authMW))
+		mux.HandleFunc("DELETE /api/v1/skills/{name}", wrap(skillDelete.DeleteSkill, authMW))
+
+		mux.HandleFunc("GET /api/v1/config/openclaw", wrap(openclawJSON.GetOpenClawJSON, authMW))
+		mux.HandleFunc("PUT /api/v1/config/openclaw", wrap(openclawJSON.PutOpenClawJSON, authMW))
+		mux.HandleFunc("GET /api/v1/config/openclaw/revisions", wrap(openclawJSON.ListRevisions, authMW))
+		mux.HandleFunc("POST /api/v1/config/openclaw/revisions/{id}/restore", wrap(openclawJSON.RestoreRevision, authMW))
+
+		mux.HandleFunc("POST /api/v1/backups", wrap(backupAPI.CreateBackup, authMW))
+		mux.HandleFunc("GET /api/v1/backups", wrap(backupAPI.ListBackups, authMW))
+		mux.HandleFunc("GET /api/v1/backups/{id}", wrap(backupAPI.GetBackup, authMW))
+		mux.HandleFunc("GET /api/v1/backups/{id}/download", wrap(backupAPI.DownloadBackup, authMW))
+		mux.HandleFunc("POST /api/v1/backups/{id}/restore", wrap(backupAPI.RestoreBackup, authMW))
+		mux.HandleFunc("DELETE /api/v1/backups/{id}", wrap(backupAPI.DeleteBackup, authMW))
 	}
 }
 
