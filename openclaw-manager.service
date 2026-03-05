@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=%h/.openclaw/projects/manager/src/openclaw-manager --config %h/.openclaw-manager/config.toml
+ExecStart=%h/.openclaw/projects/manager/src/bin/managerd --config %h/.openclaw-manager/config.toml --static-dir %h/.openclaw/projects/manager/src/frontend/dist
 Restart=on-failure
 RestartSec=5
 Environment=OPENCLAW_JWT_SECRET=

@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	appcfg "openclaw-manager/internal/config"
+	"openclaw-manager/internal/server"
 )
 
 func main() {
 	configPath := flag.String("config", defaultConfigPath(), "path to config.toml")
+	staticDir := flag.String("static-dir", "", "path to frontend dist directory")
 	flag.Parse()
 
 	if err := validateConfigPath(*configPath); err != nil {
@@ -16,7 +20,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("manager server bootstrap ok, config=%s\n", *configPath)
+	cfg, err := appcfg.Load(*configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "load config error: %v\n", err)
+		os.Exit(1)
+	}
+
+	dist := resolveStaticDir(*staticDir)
+	s := server.New(cfg.Server.Listen, dist)
+	fmt.Printf("manager server starting, listen=%s, static_dir=%s\n", cfg.Server.Listen, dist)
+
+	if err := server.RunWithSignals(s); err != nil {
+		fmt.Fprintf(os.Stderr, "server run error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func defaultConfigPath() string {
@@ -35,4 +52,15 @@ func validateConfigPath(path string) error {
 		return err
 	}
 	return nil
+}
+
+func resolveStaticDir(fromFlag string) string {
+	if fromFlag != "" {
+		return fromFlag
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(cwd, "frontend", "dist")
 }
