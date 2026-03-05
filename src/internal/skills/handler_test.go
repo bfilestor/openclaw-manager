@@ -67,3 +67,28 @@ func TestScanSkillsManyDedup(t *testing.T) {
 		t.Fatalf("expected deduped 2 skills, got %d: %+v", len(items), items)
 	}
 }
+
+func TestGlobalSkillBasesWorkspaceGlob(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	w1 := filepath.Join(home, ".openclaw", "workspace", "skills")
+	w2 := filepath.Join(home, ".openclaw", "workspace-xcoder", "skills")
+	_ = os.MkdirAll(w1, 0o755)
+	_ = os.MkdirAll(w2, 0o755)
+
+	bases := globalSkillBases("")
+	if !containsPath(bases, w1) || !containsPath(bases, w2) {
+		t.Fatalf("workspace skill paths not found in bases: %+v", bases)
+	}
+}
+
+func containsPath(list []string, want string) bool {
+	want = filepath.Clean(want)
+	for _, p := range list {
+		if filepath.Clean(p) == want {
+			return true
+		}
+	}
+	return false
+}

@@ -116,7 +116,7 @@ func scanSkills(base, scope, agentID string) ([]SkillItem, error) {
 }
 
 func globalSkillBases(configured string) []string {
-	bases := make([]string, 0, 4)
+	bases := make([]string, 0, 12)
 	seen := map[string]struct{}{}
 	add := func(p string) {
 		p = strings.TrimSpace(p)
@@ -130,15 +130,29 @@ func globalSkillBases(configured string) []string {
 		seen[c] = struct{}{}
 		bases = append(bases, c)
 	}
+	addGlob := func(pattern string) {
+		matches, _ := filepath.Glob(pattern)
+		for _, m := range matches {
+			add(m)
+		}
+	}
 
 	add(configured)
 	if home, err := os.UserHomeDir(); err == nil {
+		// User custom skills: ~/.openclaw/workspace*/skills
+		addGlob(filepath.Join(home, ".openclaw", "workspace*", "skills"))
 		add(filepath.Join(home, ".openclaw", "skills"))
+		// Common pnpm global layouts
+		addGlob(filepath.Join(home, ".local", "share", "pnpm", "global", "*", ".pnpm", "openclaw@*", "node_modules", "openclaw", "skills"))
+		add(filepath.Join(home, ".local", "share", "pnpm", "global", "node_modules", "openclaw", "skills"))
 	}
 
 	if bin, err := exec.LookPath("openclaw"); err == nil {
 		if realBin, err2 := filepath.EvalSymlinks(bin); err2 == nil {
-			add(filepath.Join(filepath.Dir(realBin), "..", "lib", "node_modules", "openclaw", "skills"))
+			dir := filepath.Dir(realBin)
+			add(filepath.Join(dir, "node_modules", "openclaw", "skills"))
+			add(filepath.Join(dir, "..", "node_modules", "openclaw", "skills"))
+			add(filepath.Join(dir, "..", "lib", "node_modules", "openclaw", "skills"))
 		}
 	}
 	add("/usr/local/lib/node_modules/openclaw/skills")
