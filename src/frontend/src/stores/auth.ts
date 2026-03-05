@@ -84,6 +84,14 @@ export const useAuthStore = defineStore('auth', {
         this.refreshing = null
       })
       return this.refreshing
+    },
+    async bootstrapSession() {
+      if (!this.accessToken) return
+      try {
+        await this.ensureRefreshed()
+      } catch {
+        // refresh 失败时 ensureRefreshed 已清理会话，这里静默处理即可
+      }
     }
   }
 })
