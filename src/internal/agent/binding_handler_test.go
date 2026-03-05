@@ -28,7 +28,7 @@ func TestBindingListAndApply(t *testing.T) {
 
 	w1 := httptest.NewRecorder()
 	h.ListBindings(w1, httptest.NewRequest(http.MethodGet, "/", nil))
-	if w1.Code != http.StatusOK || !strings.Contains(w1.Body.String(), "bindings") {
+	if w1.Code != http.StatusOK || !strings.Contains(w1.Body.String(), "\"agents\"") || !strings.Contains(w1.Body.String(), "bindings") {
 		t.Fatalf("list failed code=%d body=%s", w1.Code, w1.Body.String())
 	}
 
@@ -52,5 +52,20 @@ func TestBindingApplyPartialFailed(t *testing.T) {
 	h.ApplyBindings(w, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)))
 	if w.Code != http.StatusAccepted || !strings.Contains(w.Body.String(), "FAILED") {
 		t.Fatalf("expect failed status code=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestBindingListNewCLIJSONShape(t *testing.T) {
+	h := NewBindingHandler(bExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		return []byte(`[{"id":"a1","bindings":2},{"id":"a2","bindings":[]}]`), nil
+	}})
+
+	w := httptest.NewRecorder()
+	h.ListBindings(w, httptest.NewRequest(http.MethodGet, "/", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("unexpected code=%d body=%s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), `"id":"a1"`) || !strings.Contains(w.Body.String(), `"count":2`) {
+		t.Fatalf("unexpected normalized response: %s", w.Body.String())
 	}
 }
