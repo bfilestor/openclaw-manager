@@ -1,0 +1,61 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =========================
+# Logs / temp
+# =========================
+*.log
+*.tmp
+tmp/
+temp/
+.cache/
+
+# =========================
+# Go
+# =========================
+# Build artifacts
+bin/
+dist/
+*.out
+*.test
+*.prof
+coverage.out
+
+# Vendored dependencies (enable if you use vendor mode)
+# vendor/
+
+# =========================
+# Node / Frontend (Vue + Vite)
+# =========================
+node_modules/
+.npm/
+.pnpm-store/
+
+# Vite / test outputs
+dist/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Env / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Project-specific
+# =========================
+# Go binary location in this repo
+src/bin/
+
+# Frontend deps/build
+src/frontend/node_modules/
+src/frontend/dist/
