@@ -1,12 +1,24 @@
 <template>
-  <div>
+  <div class="register-page">
     <h3>注册</h3>
-    <input v-model="username" placeholder="用户名" />
-    <input v-model="password" type="password" placeholder="密码" />
-    <input v-model="confirm" type="password" placeholder="确认密码" />
-    <div>密码强度：{{ strength }}</div>
-    <button :disabled="!canSubmit" @click="register">注册</button>
-    <p v-if="msg">{{ msg }}</p>
+    <el-form label-position="top" class="register-form">
+      <el-form-item label="用户名">
+        <el-input v-model="username" placeholder="用户名" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <el-input v-model="password" type="password" show-password placeholder="密码" />
+      </el-form-item>
+      <el-form-item label="确认密码">
+        <el-input v-model="confirm" type="password" show-password placeholder="确认密码" />
+      </el-form-item>
+      <el-form-item label="密码强度">
+        <el-tag :type="strength === '强' ? 'success' : strength === '中' ? 'warning' : 'danger'">{{ strength }}</el-tag>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" :disabled="!canSubmit" @click="register">注册</el-button>
+      </el-form-item>
+      <el-alert v-if="msg" :title="msg" :type="msg.includes('成功') ? 'success' : 'error'" show-icon :closable="false" />
+    </el-form>
   </div>
 </template>
 <script setup lang="ts">
@@ -42,3 +54,6 @@ async function register() {
   }
 }
 </script>
+<style scoped>
+.register-page { max-width: 420px; }
+</style>

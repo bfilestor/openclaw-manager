@@ -1,14 +1,20 @@
 <template>
-  <div>
+  <div class="dashboard-page">
     <h3>Dashboard</h3>
-    <div v-if="nvmWarning" class="banner">检测到 NVM Node 风险，建议修复</div>
-    <div class="cards">
-      <div>Gateway: {{ status.active_state || 'unknown' }}</div>
-      <div>Bind: {{ status.bind_addr || '-' }}:{{ status.port || '-' }}</div>
-    </div>
-    <button :disabled="!canOperate" @click="act('start')">启动</button>
-    <button :disabled="!canOperate" @click="act('stop')">停止</button>
-    <button :disabled="!canOperate" @click="act('restart')">重启</button>
+    <el-alert v-if="nvmWarning" title="检测到 NVM Node 风险，建议修复" type="warning" show-icon :closable="false" />
+    <el-row :gutter="12" class="cards">
+      <el-col :xs="24" :sm="12">
+        <el-card shadow="hover">Gateway: {{ status.active_state || 'unknown' }}</el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12">
+        <el-card shadow="hover">Bind: {{ status.bind_addr || '-' }}:{{ status.port || '-' }}</el-card>
+      </el-col>
+    </el-row>
+    <el-space>
+      <el-button type="success" :disabled="!canOperate" @click="act('start')">启动</el-button>
+      <el-button type="warning" :disabled="!canOperate" @click="act('stop')">停止</el-button>
+      <el-button type="primary" :disabled="!canOperate" @click="act('restart')">重启</el-button>
+    </el-space>
   </div>
 </template>
 <script setup lang="ts">
@@ -36,4 +42,7 @@ async function act(op: 'start'|'stop'|'restart') {
 onMounted(() => { refresh(); timer = setInterval(refresh, 30000) })
 onUnmounted(() => clearInterval(timer))
 </script>
-<style scoped>.banner{background:#ffe8b0;padding:8px;margin-bottom:10px}</style>
+<style scoped>
+.dashboard-page { display: grid; gap: 12px; }
+.cards { margin: 0; }
+</style>

@@ -1,20 +1,35 @@
 <template>
-  <div>
+  <div class="tasks-page">
     <h3>Tasks</h3>
-    <div style="display:flex;gap:16px">
-      <div style="min-width:320px">
-        <div v-for="t in tasks" :key="t.task_id" @click="select(t)" :style="{padding:'6px',cursor:'pointer',background:t.status==='FAILED'?'#ffe0e0':'transparent'}">
-          {{ t.task_type }} - {{ t.status }}
-        </div>
-      </div>
-      <div style="flex:1">
-        <div>
-          <label><input type="checkbox" v-model="autoScroll" />自动滚动</label>
-          <input v-model="keyword" placeholder="搜索日志" />
-        </div>
-        <pre ref="logBox" style="height:320px;overflow:auto;background:#111;color:#ddd;padding:8px">{{ filteredLog }}</pre>
-      </div>
-    </div>
+    <el-row :gutter="16">
+      <el-col :xs="24" :md="10" :lg="8">
+        <el-card shadow="never">
+          <template #header>任务列表</template>
+          <el-table :data="tasks" style="width: 100%" highlight-current-row @row-click="select">
+            <el-table-column prop="task_type" label="类型" min-width="110" />
+            <el-table-column label="状态" min-width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 'FAILED' ? 'danger' : row.status === 'SUCCEEDED' ? 'success' : 'info'">
+                  {{ row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :md="14" :lg="16">
+        <el-card shadow="never">
+          <template #header>
+            日志 {{ selected?.task_id ? `(Task: ${selected.task_id})` : '' }}
+          </template>
+          <el-space class="toolbar">
+            <el-checkbox v-model="autoScroll">自动滚动</el-checkbox>
+            <el-input v-model="keyword" placeholder="搜索日志" clearable />
+          </el-space>
+          <pre ref="logBox" class="log-box">{{ filteredLog }}</pre>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 <script setup lang="ts">
@@ -31,3 +46,15 @@ async function load(){ const {data}=await axios.get('/api/v1/tasks'); tasks.valu
 async function select(t:any){ selected.value=t; logText.value=''; const token='x'; const es=new EventSource(`/api/v1/tasks/${t.task_id}/events?token=${token}`); es.onmessage=(ev)=>{ logText.value += ev.data+'\n'; if(autoScroll.value && logBox.value){ logBox.value.scrollTop = logBox.value.scrollHeight } } }
 onMounted(load)
 </script>
+<style scoped>
+.tasks-page { display: grid; gap: 12px; }
+.toolbar { margin-bottom: 8px; }
+.log-box {
+  height: 320px;
+  overflow: auto;
+  background: #111;
+  color: #ddd;
+  padding: 8px;
+  border-radius: 6px;
+}
+</style>

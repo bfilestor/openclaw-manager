@@ -1,24 +1,33 @@
 <template>
-  <div>
+  <div class="users-page">
     <h3>用户管理</h3>
-    <table>
-      <thead><tr><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr v-for="u in users" :key="u.user_id">
-          <td>{{ u.username }}</td>
-          <td>
-            <select v-model="u.role" :disabled="u.user_id===meId" @change="changeRole(u)">
-              <option>Viewer</option><option>Operator</option><option>Admin</option>
-            </select>
-          </td>
-          <td>{{ u.status }}</td>
-          <td>
-            <button :disabled="u.user_id===meId" @click="toggleDisable(u)">{{ u.status==='disabled'?'启用':'禁用' }}</button>
-            <button :disabled="u.user_id===meId" @click="del(u)">删除</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <el-table :data="users" border style="width: 100%">
+      <el-table-column prop="username" label="用户名" min-width="140" />
+      <el-table-column label="角色" min-width="180">
+        <template #default="{ row }">
+          <el-select v-model="row.role" :disabled="row.user_id===meId" @change="changeRole(row)">
+            <el-option label="Viewer" value="Viewer" />
+            <el-option label="Operator" value="Operator" />
+            <el-option label="Admin" value="Admin" />
+          </el-select>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" min-width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.status === 'disabled' ? 'danger' : 'success'">{{ row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" min-width="180">
+        <template #default="{ row }">
+          <el-space>
+            <el-button size="small" :disabled="row.user_id===meId" @click="toggleDisable(row)">
+              {{ row.status==='disabled'?'启用':'禁用' }}
+            </el-button>
+            <el-button size="small" type="danger" :disabled="row.user_id===meId" @click="del(row)">删除</el-button>
+          </el-space>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 <script setup lang="ts">
@@ -34,3 +43,6 @@ async function toggleDisable(u:any){ await axios.post(`/api/v1/users/${u.user_id
 async function del(u:any){ if(confirm('确认删除?')){ await axios.delete(`/api/v1/users/${u.user_id}`); await load() } }
 onMounted(load)
 </script>
+<style scoped>
+.users-page { display: grid; gap: 12px; }
+</style>

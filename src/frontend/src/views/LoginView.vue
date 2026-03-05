@@ -1,11 +1,21 @@
 <template>
-  <div>
+  <div class="login-page">
     <h3>登录</h3>
-    <input v-model="username" placeholder="用户名" />
-    <input v-model="password" placeholder="密码" type="password" />
-    <button @click="login">登录</button>
-    <router-link to="/register">前往注册</router-link>
-    <p v-if="error" style="color:red">{{ error }}</p>
+    <el-form label-position="top" class="login-form">
+      <el-form-item label="用户名">
+        <el-input v-model="username" placeholder="用户名" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <el-input v-model="password" type="password" show-password placeholder="密码" />
+      </el-form-item>
+      <el-form-item>
+        <el-space>
+          <el-button type="primary" @click="login">登录</el-button>
+          <router-link to="/register">前往注册</router-link>
+        </el-space>
+      </el-form-item>
+      <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    </el-form>
   </div>
 </template>
 <script setup lang="ts">
@@ -31,3 +41,6 @@ async function login() {
   }
 }
 </script>
+<style scoped>
+.login-page { max-width: 420px; }
+</style>
