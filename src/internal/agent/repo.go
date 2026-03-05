@@ -91,24 +91,57 @@ func (r *Repository) GetWorkspacePath(ctx context.Context, agentID string) (stri
 }
 
 func parseAgentsJSON(raw []byte) ([]Agent, error) {
-	var payload struct {
-		Agents []struct {
-			ID        string `json:"id"`
-			Workspace string `json:"workspace"`
-			Bindings  []any  `json:"bindings"`
-		} `json:"agents"`
+	type rawAgent struct {
+		ID        string          `json:"id"`
+		Workspace string          `json:"workspace"`
+		Bindings  json.RawMessage `json:"bindings"`
 	}
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, err
+
+	var agents []rawAgent
+	trimmed := strings.TrimSpace(string(raw))
+	if strings.HasPrefix(trimmed, "[") {
+		if err := json.Unmarshal(raw, &agents); err != nil {
+			return nil, err
+		}
+	} else {
+		var payload struct {
+			Agents []rawAgent `json:"agents"`
+		}
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, err
+		}
+		agents = payload.Agents
 	}
-	out := make([]Agent, 0, len(payload.Agents))
-	for _, it := range payload.Agents {
+
+	out := make([]Agent, 0, len(agents))
+	for _, it := range agents {
 		if !validAgentID(it.ID) {
 			continue
 		}
-		out = append(out, Agent{AgentID: it.ID, WorkspacePath: it.Workspace, BindingsCount: len(it.Bindings)})
+		out = append(out, Agent{AgentID: it.ID, WorkspacePath: it.Workspace, BindingsCount: parseBindingsCount(it.Bindings)})
 	}
 	return out, nil
+}
+
+func parseBindingsCount(raw json.RawMessage) int {
+	if len(raw) == 0 {
+		return 0
+	}
+
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil {
+		if n < 0 {
+			return 0
+		}
+		return n
+	}
+
+	var list []any
+	if err := json.Unmarshal(raw, &list); err == nil {
+		return len(list)
+	}
+
+	return 0
 }
 
 func validAgentID(id string) bool {
