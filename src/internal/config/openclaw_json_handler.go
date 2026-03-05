@@ -13,9 +13,9 @@ import (
 )
 
 type OpenClawJSONHandler struct {
-	FilePath   string
-	Validator  *storage.PathValidator
-	Revisions  *RevisionRepository
+	FilePath  string
+	Validator *storage.PathValidator
+	Revisions *RevisionRepository
 }
 
 type writeReq struct {

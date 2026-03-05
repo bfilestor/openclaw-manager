@@ -16,7 +16,9 @@ func TestBackupAPIFlow(t *testing.T) {
 
 	w1 := httptest.NewRecorder()
 	h.CreateBackup(w1, httptest.NewRequest(http.MethodPost, "/api/v1/backups", strings.NewReader(`{"label":"l1","scope":["openclaw_json"]}`)))
-	if w1.Code != http.StatusAccepted { t.Fatalf("create expect 202 got %d body=%s", w1.Code, w1.Body.String()) }
+	if w1.Code != http.StatusAccepted || !strings.Contains(w1.Body.String(), `"task_id"`) {
+		t.Fatalf("create expect 202 with task_id got code=%d body=%s", w1.Code, w1.Body.String())
+	}
 
 	w2 := httptest.NewRecorder()
 	h.ListBackups(w2, httptest.NewRequest(http.MethodGet, "/api/v1/backups", nil))
@@ -26,5 +28,7 @@ func TestBackupAPIFlow(t *testing.T) {
 
 	w3 := httptest.NewRecorder()
 	h.DeleteBackup(w3, httptest.NewRequest(http.MethodDelete, "/api/v1/backups/not-exists", nil))
-	if w3.Code != http.StatusNotFound { t.Fatalf("delete missing expect 404 got %d", w3.Code) }
+	if w3.Code != http.StatusNotFound {
+		t.Fatalf("delete missing expect 404 got %d", w3.Code)
+	}
 }

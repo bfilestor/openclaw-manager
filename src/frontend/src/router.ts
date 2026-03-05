@@ -6,19 +6,20 @@ import RegisterView from './views/RegisterView.vue'
 import DashboardView from './views/DashboardView.vue'
 import AdminUsersView from './views/AdminUsersView.vue'
 import TasksView from './views/TasksView.vue'
-import BusinessViews from './views/BusinessViews.vue'
-
-const Simple = (name: string) => ({ template: `<div>${name}</div>` })
+import SkillsView from './views/SkillsView.vue'
+import AgentsView from './views/AgentsView.vue'
+import BackupsView from './views/BackupsView.vue'
+import ConfigView from './views/ConfigView.vue'
 
 const routes = [
   { path: '/login', component: LoginView },
   { path: '/register', component: RegisterView },
   { path: '/dashboard', component: DashboardView, meta: { auth: true } },
   { path: '/gateway', component: DashboardView, meta: { auth: true } },
-  { path: '/agents', component: BusinessViews, meta: { auth: true } },
-  { path: '/skills', component: BusinessViews, meta: { auth: true } },
-  { path: '/config', component: BusinessViews, meta: { auth: true } },
-  { path: '/backups', component: BusinessViews, meta: { auth: true } },
+  { path: '/agents', component: AgentsView, meta: { auth: true } },
+  { path: '/skills', component: SkillsView, meta: { auth: true } },
+  { path: '/config', component: ConfigView, meta: { auth: true } },
+  { path: '/backups', component: BackupsView, meta: { auth: true } },
   { path: '/tasks', component: TasksView, meta: { auth: true } },
   { path: '/admin/users', component: AdminUsersView, meta: { auth: true, admin: true } },
   { path: '/', redirect: '/dashboard' }

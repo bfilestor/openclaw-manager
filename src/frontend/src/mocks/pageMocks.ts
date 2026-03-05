@@ -93,3 +93,54 @@ export const tasksMock = {
   ],
   total: 2
 }
+
+export const skillsMock = {
+  skills: [
+    {
+      name: 'code-reviewer',
+      scope: 'global',
+      size_bytes: 18203,
+      has_meta: true
+    },
+    {
+      name: 'ops-toolkit',
+      scope: 'global',
+      size_bytes: 9420,
+      has_meta: false
+    }
+  ]
+}
+
+export const agentsMock = {
+  agents: [
+    {
+      agent_id: 'assistant-a',
+      workspace_path: '/home/openclaw/workspaces/assistant-a',
+      bindings_count: 3
+    },
+    {
+      agent_id: 'research-b',
+      workspace_path: '/home/openclaw/workspaces/research-b',
+      bindings_count: 0
+    }
+  ]
+}
+
+export const backupsMock = {
+  backups: [
+    {
+      backup_id: 'bak-20260305-001',
+      label: 'before-upgrade',
+      size_bytes: 203405,
+      sha256: 'b13d9f5ce3fb7a812de3dd4f7b2bfdd613f19b2c5aecaec9eb17ba469a2f4fbf',
+      created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+    },
+    {
+      backup_id: 'bak-20260304-001',
+      label: 'daily-snapshot',
+      size_bytes: 153289,
+      sha256: '95a2f4fbfb13d9f5ce3fb7a812de3dd4f7b2bfdd613f19b2c5aecaec9eb17ba4',
+      created_at: new Date(Date.now() - 26 * 3600 * 1000).toISOString()
+    }
+  ]
+}
