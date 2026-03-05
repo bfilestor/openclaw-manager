@@ -53,7 +53,11 @@ func TestWriteInternalForGenericError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", w.Code)
 	}
-	if strings.Contains(w.Body.String(), "db down") {
-		t.Fatalf("should not leak internal error, got: %s", w.Body.String())
+	body := w.Body.String()
+	if !strings.Contains(body, "db down") {
+		t.Fatalf("should include internal detail, got: %s", body)
+	}
+	if !strings.Contains(body, "\"where\":") {
+		t.Fatalf("should include where location, got: %s", body)
 	}
 }

@@ -3,7 +3,10 @@ package middleware
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"path/filepath"
+	"runtime"
 )
 
 const (
@@ -47,9 +50,26 @@ func WriteAppError(w http.ResponseWriter, err error) {
 
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"error": "internal server error",
-		"code":  CodeInternalError,
+		"error":  "internal server error",
+		"code":   CodeInternalError,
+		"detail": errString(err),
+		"where":  callerLocation(2),
 	})
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func callerLocation(skip int) string {
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "unknown"
+	}
+	return fmt.Sprintf("%s:%d", filepath.Base(file), line)
 }
 
 func NewUnauthorized() *AppError {

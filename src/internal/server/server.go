@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -117,9 +120,16 @@ func recoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{
-					"error": "internal server error",
-					"code":  "INTERNAL_ERROR",
+				_, file, line, ok := runtime.Caller(3)
+				where := "unknown"
+				if ok {
+					where = fmt.Sprintf("%s:%d", filepath.Base(file), line)
+				}
+				writeJSON(w, http.StatusInternalServerError, map[string]any{
+					"error":  "internal server error",
+					"code":   "INTERNAL_ERROR",
+					"detail": fmt.Sprintf("panic: %v", rec),
+					"where":  where,
 				})
 			}
 		}()
