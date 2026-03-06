@@ -11,6 +11,7 @@ import AgentsView from './views/AgentsView.vue'
 import BindingsGraphView from './views/BindingsGraphView.vue'
 import BackupsView from './views/BackupsView.vue'
 import ConfigView from './views/ConfigView.vue'
+import AgentWorkspaceMigrateView from './views/AgentWorkspaceMigrateView.vue'
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -18,6 +19,7 @@ const routes = [
   { path: '/dashboard', component: DashboardView, meta: { auth: true } },
   { path: '/gateway', component: DashboardView, meta: { auth: true } },
   { path: '/agents', component: AgentsView, meta: { auth: true } },
+  { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true } },
   { path: '/bindings', component: BindingsGraphView, meta: { auth: true } },
   { path: '/skills', component: SkillsView, meta: { auth: true } },
   { path: '/config', component: ConfigView, meta: { auth: true } },

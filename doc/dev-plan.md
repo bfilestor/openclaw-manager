@@ -2014,4 +2014,58 @@ E1-S1-I1 → E1-S1-I2 → E1-S1-I3 → E2-S1-I10 → E2-S2-I13
 | TC-E11S2I57-003 | openclaw.json 缺失/非法 | 回退主 workspace 并可成功备份 | Unit |
 | TC-E11S2I57-004 | 创建备份接口联调 | 返回 202，任务状态可追踪 | Integration |
 
-*文档结束 — 总计 117 个 Issue，覆盖 11 个 Epic，建议 7 个 Sprint（约 13 周）完成 MVP+。*
+## Epic E12 — Agent Workspace 迁移
+
+> **目标**：提供可视化 Workspace 迁移流程，支持目录内容搬迁、配置同步更新与 Gateway 自动重启。
+
+### Story E12-S1：迁移入口与页面
+
+#### Issue E12-S1-I58：Agent 列表迁移入口与迁移页
+
+- **Story Points**：3  
+- **优先级**：P1  
+- **依赖**：E11-S1-I56, E9-S3-I52  
+- **测试类型**：Integration
+
+**功能描述**：
+- 在 Agent 列表每条记录后增加“迁移”按钮
+- 点击跳转 Workspace 迁移页面
+- 页面展示旧目录地址（只读），用户填写新目录地址后提交
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E12S1I58-001 | 列表页显示迁移按钮 | 每个 Agent 行可见“迁移” | Integration |
+| TC-E12S1I58-002 | 跳转迁移页 | 路由跳转到 `/agents/{id}/workspace-migrate` | Integration |
+| TC-E12S1I58-003 | 迁移页加载旧目录 | 页面展示旧 workspace 路径 | Integration |
+
+### Story E12-S2：迁移后端执行链路
+
+#### Issue E12-S2-I59：Workspace 迁移 API（移动目录 + 更新配置 + 重启）
+
+- **Story Points**：5  
+- **优先级**：P1  
+- **依赖**：E5-S1-I29, E4-S1-I27, E3-S1-I23  
+- **测试类型**：Unit + Integration
+
+**功能描述**：
+- 新增 `POST /api/v1/agents/{id}/workspace/migrate`
+- 执行顺序：
+  1. 读取旧 workspace
+  2. 将旧目录下全部文件/目录迁移到新目录
+  3. 更新 `openclaw.json` 对应 Agent workspace 配置
+  4. 重启 `openclaw gateway`
+- 返回迁移结果（旧路径、新路径、重启状态）
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E12S2I59-001 | 成功迁移 | 200，文件已迁移，新路径生效 | Integration |
+| TC-E12S2I59-002 | 目标目录文件冲突 | 409，迁移中止 | Unit |
+| TC-E12S2I59-003 | agent 不存在 | 404 | Unit |
+| TC-E12S2I59-004 | 迁移完成后配置更新 | openclaw.json 对应 workspace 更新 | Unit |
+| TC-E12S2I59-005 | 迁移完成后网关重启 | 调用 gateway restart 成功 | Unit |
+
+*文档结束 — 总计 119 个 Issue，覆盖 12 个 Epic，建议 8 个 Sprint（约 14 周）完成 MVP+。*

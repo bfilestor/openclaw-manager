@@ -104,7 +104,11 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		gatewayLogs := gateway.NewLogsHandler(execer)
 
 		agentAPI := &agent.Handler{Repo: agentRepo}
-		agentManage := &agent.ManageHandler{Exec: execer}
+		agentManage := &agent.ManageHandler{
+			Exec:             execer,
+			Workspaces:       agentRepo,
+			OpenClawJSONPath: filepath.Join(cfg.Paths.OpenClawHome, "openclaw.json"),
+		}
 		bindingAPI := agent.NewBindingHandler(execer)
 
 		skillList := &skills.Handler{AgentRepo: agentRepo, GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills")}
@@ -164,6 +168,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("GET /api/v1/agents/{id}", wrap(agentAPI.GetAgent, authMW))
 		mux.HandleFunc("POST /api/v1/agents", wrap(agentManage.CreateAgent, authMW))
 		mux.HandleFunc("DELETE /api/v1/agents/{id}", wrap(agentManage.DeleteAgent, authMW))
+		mux.HandleFunc("POST /api/v1/agents/{id}/workspace/migrate", wrap(agentManage.MigrateWorkspace, authMW))
 		mux.HandleFunc("GET /api/v1/bindings", wrap(bindingAPI.ListBindings, authMW))
 		mux.HandleFunc("POST /api/v1/bindings/apply", wrap(bindingAPI.ApplyBindings, authMW))
 		mux.HandleFunc("GET /api/v1/agents/{id}/identity", wrap(identityAPI.GetIdentity, authMW))

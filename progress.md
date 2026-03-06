@@ -358,3 +358,22 @@ src/frontend/src/views/BackupsView.vue
 备份详情新增“缺失检测”：自动对比当前 Agent 列表中的 workspace 与该备份 manifest，若有未覆盖 workspace 则以告警 + 红色标签展示。
 -- 涉及文件
 src/frontend/src/views/BackupsView.vue
+
+- 完成 Issue-E12-S1-I58
+-- 功能总结
+新增 Agent Workspace 迁移入口：Agent 列表每行添加“迁移”按钮，点击进入迁移页面；页面先展示旧目录，再由用户填写新目录并提交。
+-- 涉及文件
+src/frontend/src/views/AgentsView.vue,
+src/frontend/src/views/AgentWorkspaceMigrateView.vue,
+src/frontend/src/router.ts
+
+- 完成 Issue-E12-S2-I59
+-- 功能总结
+新增 Workspace 迁移 API：移动旧目录全部内容到新目录，更新 openclaw.json 对应 Agent workspace 配置，并在迁移完成后重启 openclaw gateway。
+-- 涉及文件
+src/internal/agent/manage_handler.go,
+src/internal/agent/manage_migrate_test.go,
+src/cmd/server/main.go,
+doc/dev-plan.md,
+doc/todo-list.md,
+doc/openclaw_requirements_v1.1.md

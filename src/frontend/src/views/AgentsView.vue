@@ -42,6 +42,11 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="goMigrate(row)">迁移</el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <el-empty
@@ -72,6 +77,10 @@ const router = useRouter()
 
 function goBindings() {
   router.push('/bindings')
+}
+
+function goMigrate(row: AgentItem) {
+  router.push(`/agents/${encodeURIComponent(row.agent_id)}/workspace-migrate`)
 }
 
 async function loadAgents() {
