@@ -112,7 +112,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		bindingAPI := agent.NewBindingHandler(execer)
 
 		skillList := &skills.Handler{AgentRepo: agentRepo, GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills")}
-		skillInstall := &skills.InstallHandler{GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills")}
+		skillInstall := &skills.InstallHandler{GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills"), AgentRepo: agentRepo, Validator: validator}
 		skillDelete := &skills.DeleteHandler{AgentRepo: agentRepo, GlobalDir: filepath.Join(cfg.Paths.OpenClawHome, "skills"), Validator: validator}
 
 		backupSvc := &backup.Service{

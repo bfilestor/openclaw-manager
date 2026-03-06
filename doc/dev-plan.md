@@ -2068,4 +2068,53 @@ E1-S1-I1 → E1-S1-I2 → E1-S1-I3 → E2-S1-I10 → E2-S2-I13
 | TC-E12S2I59-004 | 迁移完成后配置更新 | openclaw.json 对应 workspace 更新 | Unit |
 | TC-E12S2I59-005 | 迁移完成后网关重启 | 调用 gateway restart 成功 | Unit |
 
-*文档结束 — 总计 119 个 Issue，覆盖 12 个 Epic，建议 8 个 Sprint（约 14 周）完成 MVP+。*
+## Epic E13 — Skills 安装与删除增强
+
+> **目标**：完善 Skills 管理闭环，支持全局/指定 Agent 安装与删除，并明确上传格式约束（zip/tar.gz）。
+
+### Story E13-S1：Skills 管理页面增强
+
+#### Issue E13-S1-I60：可视化安装与删除（global/agent）
+
+- **Story Points**：4  
+- **优先级**：P1  
+- **依赖**：E6-S1-I34, E6-S1-I35, E9-S3-I52  
+- **测试类型**：Integration
+
+**功能描述**：
+- Skills 页面新增安装区：选择范围（global/agent）、Agent 选择、上传文件、可选 skill_name
+- Skills 列表支持按范围查询（global 或 agent）
+- 每条 Skill 支持删除
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E13S1I60-001 | 选择 global 安装 | 安装请求成功提交 | Integration |
+| TC-E13S1I60-002 | 选择 agent 安装 | 必须选择 agent_id | Integration |
+| TC-E13S1I60-003 | 删除 Skill | 删除成功并刷新列表 | Integration |
+
+### Story E13-S2：后端安装能力增强
+
+#### Issue E13-S2-I61：Install API 支持 agent scope + 格式校验
+
+- **Story Points**：3  
+- **优先级**：P1  
+- **依赖**：E6-S2-I36, E5-S1-I29  
+- **测试类型**：Unit + Integration
+
+**功能描述**：
+- `POST /api/v1/skills/install` 支持 `scope=global|agent`
+- `scope=agent` 时必须提供 `agent_id`，安装目录为 `<workspace>/skills/{skill_name}`
+- 上传文件只支持 `.zip` 或 `.tar.gz`
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E13S2I61-001 | global zip 安装 | 202，安装成功 | Integration |
+| TC-E13S2I61-002 | agent zip 安装 | 202，安装到 agent workspace | Integration |
+| TC-E13S2I61-003 | 不支持格式 | 400，UNSUPPORTED_FORMAT | Unit |
+| TC-E13S2I61-004 | agent scope 缺少 agent_id | 400，VALIDATION_ERROR | Unit |
+
+*文档结束 — 总计 121 个 Issue，覆盖 13 个 Epic，建议 9 个 Sprint（约 15 周）完成 MVP+。*

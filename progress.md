@@ -377,3 +377,20 @@ src/cmd/server/main.go,
 doc/dev-plan.md,
 doc/todo-list.md,
 doc/openclaw_requirements_v1.1.md
+
+- 完成 Issue-E13-S1-I60
+-- 功能总结
+增强 Skills 页面：支持按 global/agent 查询，新增安装表单（scope、agent_id、skill_name、上传文件），并支持列表中直接删除技能。
+-- 涉及文件
+src/frontend/src/views/SkillsView.vue
+
+- 完成 Issue-E13-S2-I61
+-- 功能总结
+增强 Skills 安装 API：支持 `scope=agent` + `agent_id` 安装到指定 Agent Workspace；上传格式限制为 `.zip` 或 `.tar.gz`；保留全局安装与冲突检测能力。
+-- 涉及文件
+src/internal/skills/install_handler.go,
+src/internal/skills/install_handler_test.go,
+src/cmd/server/main.go,
+doc/dev-plan.md,
+doc/todo-list.md,
+doc/openclaw_requirements_v1.1.md

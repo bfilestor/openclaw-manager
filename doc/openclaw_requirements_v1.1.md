@@ -108,6 +108,11 @@ Agent 列表查看：Viewer。新建/删除 Agent：Admin。Binding 查看：Vie
 ### 3.5 Skills 管理
 Skills 列表查看：Viewer。安装/删除 Skills：Operator。
 
+#### 3.5.1 安装与删除增强（新增）
+- 安装 Skill 时可选择安装到全局（global）或指定 Agent（agent + agent_id）。
+- 上传包格式仅支持 `.zip` 或 `.tar.gz`。
+- 删除 Skill 支持全局和 Agent 粒度删除。
+
 ### 3.6 备份与还原
 查看备份列表与详情：Viewer。创建备份、下载备份：Operator。执行还原（含 dry_run）：Admin。
 
