@@ -30,16 +30,44 @@
           <el-text type="info">{{ activePath }}</el-text>
         </div>
 
-        <el-space>
-          <el-avatar size="small" class="user-avatar">{{ usernameInitial }}</el-avatar>
-          <el-text>{{ auth.user?.username || '-' }}</el-text>
-          <el-button text type="primary" @click="logout">退出登录</el-button>
-        </el-space>
+        <el-dropdown trigger="hover" @command="handleUserMenu">
+          <span class="user-trigger">
+            <el-avatar size="small" class="user-avatar">{{ usernameInitial }}</el-avatar>
+            <span class="user-name">{{ auth.user?.username || 'User' }}</span>
+            <el-tag size="small" :type="roleTagType">{{ currentRole }}</el-tag>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="change-password">修改密码</el-dropdown-item>
+              <el-dropdown-item command="logout" divided>退出系统</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </el-header>
 
       <el-main class="app-main">
         <router-view />
       </el-main>
+
+      <el-dialog v-model="showPwdDialog" title="修改密码" width="420px">
+        <el-form label-position="top">
+          <el-form-item label="旧密码">
+            <el-input v-model="passwordForm.old_password" type="password" show-password placeholder="请输入旧密码" />
+          </el-form-item>
+          <el-form-item label="新密码">
+            <el-input v-model="passwordForm.new_password" type="password" show-password placeholder="请输入新密码" />
+          </el-form-item>
+          <el-form-item label="确认新密码">
+            <el-input v-model="confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-space>
+            <el-button @click="showPwdDialog = false">取消</el-button>
+            <el-button type="primary" :loading="submittingPwd" @click="submitPasswordChange">确认修改</el-button>
+          </el-space>
+        </template>
+      </el-dialog>
     </el-container>
   </el-container>
 
@@ -47,7 +75,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
@@ -96,6 +126,10 @@ const usernameInitial = computed(() => {
 })
 
 const currentRole = computed(() => auth.user?.role || 'Viewer')
+const showPwdDialog = ref(false)
+const submittingPwd = ref(false)
+const passwordForm = ref({ old_password: '', new_password: '' })
+const confirmPassword = ref('')
 
 const roleTagType = computed<'info' | 'success' | 'warning'>(() => {
   if (currentRole.value === 'Admin') return 'warning'
@@ -103,9 +137,54 @@ const roleTagType = computed<'info' | 'success' | 'warning'>(() => {
   return 'info'
 })
 
-function logout() {
-  auth.clear()
-  router.push('/login')
+function resetPasswordForm() {
+  passwordForm.value.old_password = ''
+  passwordForm.value.new_password = ''
+  confirmPassword.value = ''
+}
+
+async function logout() {
+  try {
+    await axios.post('/api/v1/auth/logout')
+  } catch {
+    // 无论后端是否成功，前端都应清理本地会话并回到登录页
+  } finally {
+    auth.clear()
+    router.push('/login')
+  }
+}
+
+async function handleUserMenu(command: string) {
+  if (command === 'change-password') {
+    showPwdDialog.value = true
+    return
+  }
+  if (command === 'logout') {
+    await logout()
+  }
+}
+
+async function submitPasswordChange() {
+  if (!passwordForm.value.old_password || !passwordForm.value.new_password) {
+    ElMessage.error('请完整填写密码信息')
+    return
+  }
+  if (passwordForm.value.new_password !== confirmPassword.value) {
+    ElMessage.error('两次输入的新密码不一致')
+    return
+  }
+  submittingPwd.value = true
+  try {
+    await axios.put('/api/v1/users/me/password', passwordForm.value)
+    ElMessage.success('密码修改成功，请重新登录')
+    showPwdDialog.value = false
+    resetPasswordForm()
+    await logout()
+  } catch {
+    ElMessage.error('密码修改失败，请检查旧密码是否正确')
+  } finally {
+    submittingPwd.value = false
+  }
 }
 </script>
 
@@ -189,6 +268,19 @@ function logout() {
 .user-avatar {
   background: linear-gradient(135deg, #2a7fff, #44b0ff);
   color: #fff;
+}
+
+.user-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.user-name {
+  color: #2e3440;
+  font-size: 14px;
 }
 
 .app-main {
