@@ -22,6 +22,8 @@ func TestListSkillsGlobalAndAgent(t *testing.T) {
 	g := "/tmp/skills-global"
 	_ = os.MkdirAll(filepath.Join(g, "s1"), 0o755)
 	_ = os.WriteFile(filepath.Join(g, "s1", "README.md"), []byte("x"), 0o644)
+	_ = os.MkdirAll(filepath.Join(g, "s-skillmd"), 0o755)
+	_ = os.WriteFile(filepath.Join(g, "s-skillmd", "SKILL.md"), []byte("x"), 0o644)
 
 	_ = os.MkdirAll("/tmp/agent-a1/skills/s2", 0o755)
 	_ = os.WriteFile("/tmp/agent-a1/skills/s2/skill.json", []byte("{}"), 0o644)
@@ -31,7 +33,7 @@ func TestListSkillsGlobalAndAgent(t *testing.T) {
 
 	w1 := httptest.NewRecorder()
 	h.ListSkills(w1, httptest.NewRequest(http.MethodGet, "/api/v1/skills?scope=global", nil))
-	if w1.Code != http.StatusOK || !strings.Contains(w1.Body.String(), "s1") {
+	if w1.Code != http.StatusOK || !strings.Contains(w1.Body.String(), "s1") || !strings.Contains(w1.Body.String(), "s-skillmd") {
 		t.Fatalf("bad global resp code=%d body=%s", w1.Code, w1.Body.String())
 	}
 
@@ -46,4 +48,47 @@ func TestListSkillsGlobalAndAgent(t *testing.T) {
 	if w3.Code != http.StatusBadRequest {
 		t.Fatalf("expect 400 got %d", w3.Code)
 	}
+}
+
+func TestScanSkillsManyDedup(t *testing.T) {
+	b1 := "/tmp/skills-b1"
+	b2 := "/tmp/skills-b2"
+	_ = os.MkdirAll(filepath.Join(b1, "dup"), 0o755)
+	_ = os.WriteFile(filepath.Join(b1, "dup", "SKILL.md"), []byte("x"), 0o644)
+	_ = os.MkdirAll(filepath.Join(b2, "dup"), 0o755)
+	_ = os.WriteFile(filepath.Join(b2, "dup", "README.md"), []byte("x"), 0o644)
+	_ = os.MkdirAll(filepath.Join(b2, "other"), 0o755)
+
+	items, err := scanSkillsMany([]string{b1, b2}, "global", "")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected deduped 2 skills, got %d: %+v", len(items), items)
+	}
+}
+
+func TestGlobalSkillBasesWorkspaceGlob(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	w1 := filepath.Join(home, ".openclaw", "workspace", "skills")
+	w2 := filepath.Join(home, ".openclaw", "workspace-xcoder", "skills")
+	_ = os.MkdirAll(w1, 0o755)
+	_ = os.MkdirAll(w2, 0o755)
+
+	bases := globalSkillBases("")
+	if !containsPath(bases, w1) || !containsPath(bases, w2) {
+		t.Fatalf("workspace skill paths not found in bases: %+v", bases)
+	}
+}
+
+func containsPath(list []string, want string) bool {
+	want = filepath.Clean(want)
+	for _, p := range list {
+		if filepath.Clean(p) == want {
+			return true
+		}
+	}
+	return false
 }

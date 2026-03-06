@@ -51,3 +51,19 @@ func TestRepoTTLCacheAndInvalidID(t *testing.T) {
 		t.Fatalf("expect invalid id err got %v", err)
 	}
 }
+
+func TestRepoListNewCLIJSONShape(t *testing.T) {
+	v, _ := storage.NewPathValidator([]string{"/tmp"})
+	ex := &fakeExec{out: []byte(`[{"id":"a1","workspace":"/tmp/w1","bindings":3},{"id":"a2","workspace":"/tmp/w2","bindings":0}]`)}
+	r := NewRepository(ex, v)
+	list, err := r.List(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if len(list) != 2 {
+		t.Fatalf("expected 2 agents got %d", len(list))
+	}
+	if list[0].BindingsCount != 3 || list[1].BindingsCount != 0 {
+		t.Fatalf("unexpected bindings count: %+v", list)
+	}
+}

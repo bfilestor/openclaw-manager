@@ -146,3 +146,38 @@ func TestDeepStatusParseBindAddress(t *testing.T) {
 		t.Fatalf("unexpected bind parse result: bind=%s port=%d", st.BindAddr, st.Port)
 	}
 }
+
+func TestDeepStatusParseHumanReadableOutput(t *testing.T) {
+	ex := &fakeExec{fn: func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "systemctl":
+			return []byte("ActiveState=active\nSubState=running\n"), nil
+		case "openclaw":
+			return []byte("File logs: /tmp/openclaw/openclaw.log\nCommand: /home/mixi/.nvm/versions/node/v24.14.0/bin/node /x\nGateway: bind=loopback (127.0.0.1), port=18789 (service args)\nListening: 127.0.0.1:18789\n"), nil
+		default:
+			return nil, errors.New("unexpected command")
+		}
+	}}
+
+	s := NewSystemctlService(ex)
+	st, err := s.DeepStatus("openclaw-gateway.service")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if st.BindAddr != "127.0.0.1" || st.Port != 18789 {
+		t.Fatalf("unexpected bind parse result: bind=%s port=%d", st.BindAddr, st.Port)
+	}
+	if st.LogPath != "/tmp/openclaw/openclaw.log" {
+		t.Fatalf("unexpected log path: %s", st.LogPath)
+	}
+	if st.NodePath == "" || !st.NVMWarning {
+		t.Fatalf("unexpected node parse: node=%s nvm=%v", st.NodePath, st.NVMWarning)
+	}
+}
+
+func TestParseBindAddressPlaceholder(t *testing.T) {
+	addr, port := parseBindAddress("-:-")
+	if addr != "" || port != 0 {
+		t.Fatalf("expected empty placeholder parse, got %q:%d", addr, port)
+	}
+}

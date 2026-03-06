@@ -197,6 +197,46 @@ func parseOpenclawDeepOutput(out string) *GatewayDeepStatus {
 			continue
 		}
 
+		// Newer human-readable output format.
+		if strings.HasPrefix(line, "Gateway:") {
+			if addr, port := parseGatewaySummary(line); addr != "" || port > 0 {
+				if addr != "" {
+					result.BindAddr = addr
+				}
+				if port > 0 {
+					result.Port = port
+				}
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "Listening:") {
+			value := strings.TrimSpace(strings.TrimPrefix(line, "Listening:"))
+			if addr, port := parseBindAddress(value); addr != "" || port > 0 {
+				if addr != "" {
+					result.BindAddr = addr
+				}
+				if port > 0 {
+					result.Port = port
+				}
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "File logs:") {
+			result.LogPath = strings.TrimSpace(strings.TrimPrefix(line, "File logs:"))
+			continue
+		}
+		if strings.HasPrefix(line, "Command:") {
+			cmd := strings.TrimSpace(strings.TrimPrefix(line, "Command:"))
+			if cmd != "" {
+				fields := strings.Fields(cmd)
+				if len(fields) > 0 {
+					result.NodePath = fields[0]
+					result.NVMWarning = strings.Contains(strings.ToLower(result.NodePath), ".nvm")
+				}
+			}
+			continue
+		}
+
 		key, value, ok := parseLineKeyValue(line)
 		if !ok {
 			continue
@@ -242,8 +282,11 @@ func parseBindAddress(value string) (string, int) {
 	if clean == "" {
 		return "", 0
 	}
-	if idx := strings.IndexAny(clean, " \t"); idx > 0 {
+	if idx := strings.IndexAny(clean, " \t,"); idx > 0 {
 		clean = clean[:idx]
+	}
+	if clean == "-" || clean == "-:-" || strings.EqualFold(clean, "n/a") || strings.EqualFold(clean, "unknown") {
+		return "", 0
 	}
 
 	host, portStr, err := net.SplitHostPort(clean)
@@ -265,6 +308,43 @@ func parseBindAddress(value string) (string, int) {
 	}
 
 	return clean, 0
+}
+
+func parseGatewaySummary(line string) (string, int) {
+	// Example: "Gateway: bind=loopback (127.0.0.1), port=18789 (service args)"
+	addr := ""
+	port := 0
+	if m := regexp.MustCompile(`\(([^)]+)\)`).FindStringSubmatch(line); len(m) == 2 {
+		addr = strings.TrimSpace(m[1])
+	}
+	if m := regexp.MustCompile(`\bport\s*=\s*(\d+)`).FindStringSubmatch(strings.ToLower(line)); len(m) == 2 {
+		if p, err := strconv.Atoi(m[1]); err == nil {
+			port = p
+		}
+	}
+	if addr == "" {
+		if m := regexp.MustCompile(`\bbind\s*=\s*([^,\s]+)`).FindStringSubmatch(strings.ToLower(line)); len(m) == 2 {
+			addr = strings.TrimSpace(m[1])
+		}
+	}
+	if a, p := parseBindAddress(fmt.Sprintf("%s:%d", addr, port)); a != "" || p > 0 {
+		if a != "" {
+			addr = a
+		}
+		if p > 0 {
+			port = p
+		}
+	}
+	if addr == "loopback" {
+		addr = "127.0.0.1"
+	}
+	if addr == "all" || addr == "0.0.0.0" {
+		addr = "0.0.0.0"
+	}
+	if addr == "-" || addr == "" {
+		addr = ""
+	}
+	return addr, port
 }
 
 var serviceNameRe = regexp.MustCompile(`^[a-zA-Z0-9_.@-]+$`)

@@ -38,9 +38,95 @@ func (h *BindingHandler) ListBindings(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
+
+	agents, err := parseBindingAgentsJSON(out)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(out)
+	_ = json.NewEncoder(w).Encode(map[string]any{"agents": agents})
+}
+
+func parseBindingAgentsJSON(raw []byte) ([]map[string]any, error) {
+	trimmed := strings.TrimSpace(string(raw))
+
+	if strings.HasPrefix(trimmed, "[") {
+		var list []struct {
+			ID       string          `json:"id"`
+			Bindings json.RawMessage `json:"bindings"`
+		}
+		if err := json.Unmarshal(raw, &list); err != nil {
+			return nil, err
+		}
+		out := make([]map[string]any, 0, len(list))
+		for _, it := range list {
+			if !validAgentID(it.ID) {
+				continue
+			}
+			out = append(out, map[string]any{"id": it.ID, "bindings": normalizeBindings(it.Bindings)})
+		}
+		return out, nil
+	}
+
+	var payload struct {
+		Agents []map[string]any `json:"agents"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, err
+	}
+	out := make([]map[string]any, 0, len(payload.Agents))
+	for _, it := range payload.Agents {
+		id, _ := it["id"].(string)
+		if !validAgentID(id) {
+			continue
+		}
+		if b, ok := it["bindings"]; ok {
+			it["bindings"] = normalizeBindingsAny(b)
+		} else {
+			it["bindings"] = []any{}
+		}
+		out = append(out, it)
+	}
+	return out, nil
+}
+
+func normalizeBindings(raw json.RawMessage) any {
+	if len(raw) == 0 {
+		return []any{}
+	}
+
+	var list []any
+	if err := json.Unmarshal(raw, &list); err == nil {
+		return list
+	}
+
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil {
+		if n <= 0 {
+			return []any{}
+		}
+		return map[string]any{"count": n}
+	}
+
+	return []any{}
+}
+
+func normalizeBindingsAny(v any) any {
+	switch t := v.(type) {
+	case []any:
+		return t
+	case float64:
+		n := int(t)
+		if n <= 0 {
+			return []any{}
+		}
+		return map[string]any{"count": n}
+	default:
+		return []any{}
+	}
 }
 
 func (h *BindingHandler) ApplyBindings(w http.ResponseWriter, r *http.Request) {
