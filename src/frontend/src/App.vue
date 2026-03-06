@@ -25,11 +25,6 @@
 
     <el-container class="main-shell">
       <el-header class="app-header">
-        <div class="header-title">
-          <div class="title-main">{{ currentNavLabel }}</div>
-          <el-text type="info">{{ activePath }}</el-text>
-        </div>
-
         <el-dropdown trigger="hover" @command="handleUserMenu">
           <span class="user-trigger">
             <el-avatar size="small" class="user-avatar">{{ usernameInitial }}</el-avatar>
