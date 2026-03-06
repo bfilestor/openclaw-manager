@@ -10,6 +10,44 @@ let mockOpenclawConfig = JSON.stringify({
     bind_addr: '127.0.0.1',
     port: 18790
   },
+  bots: {
+    telegram: {
+      ops_bot: {
+        token: '***'
+      },
+      alert_bot: {
+        token: '***'
+      }
+    },
+    slack: {
+      eng_bot: {
+        token: '***'
+      }
+    }
+  },
+  agents: [
+    {
+      id: 'assistant-a',
+      bindings: [
+        { channel: 'telegram', account: 'ops_bot', peer: '@ops' },
+        { channel: 'slack', account: 'eng_bot', peer: '#incident' }
+      ]
+    },
+    {
+      id: 'research-b',
+      bindings: [
+        { channel: 'telegram', account: 'alert_bot', peer: '@research' }
+      ]
+    }
+  ],
+  bindings: [
+    {
+      agent: 'assistant-a',
+      channel: 'telegram',
+      account: 'ops_bot',
+      peer: '@release'
+    }
+  ],
   manager: {
     log_level: 'info'
   }

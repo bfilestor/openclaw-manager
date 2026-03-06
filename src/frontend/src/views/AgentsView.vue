@@ -18,7 +18,12 @@
         <el-card shadow="never">Agent 数量: {{ agents.length }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="12">
-        <el-card shadow="never">Bindings 总数: {{ totalBindings }}</el-card>
+        <el-card shadow="never" class="clickable-card" @click="goBindings">
+          <div class="binding-card-content">
+            <span>Bindings 总数: {{ totalBindings }}</span>
+            <el-text type="primary">点击查看拓扑</el-text>
+          </div>
+        </el-card>
       </el-col>
     </el-row>
 
@@ -51,6 +56,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 
 type AgentItem = {
   agent_id: string
@@ -62,6 +68,11 @@ const loading = ref(false)
 const errorMessage = ref('')
 const agents = ref<AgentItem[]>([])
 const totalBindings = computed(() => agents.value.reduce((sum, it) => sum + (it.bindings_count || 0), 0))
+const router = useRouter()
+
+function goBindings() {
+  router.push('/bindings')
+}
 
 async function loadAgents() {
   loading.value = true
@@ -96,5 +107,17 @@ onMounted(loadAgents)
 }
 .stats-row {
   margin: 0;
+}
+.clickable-card {
+  cursor: pointer;
+}
+.clickable-card:hover {
+  border-color: var(--el-color-primary-light-5);
+}
+.binding-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 </style>

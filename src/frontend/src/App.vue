@@ -4,6 +4,7 @@
       <router-link to="/dashboard">Dashboard</router-link>
       <router-link to="/gateway">Gateway</router-link>
       <router-link to="/agents">Agents</router-link>
+      <router-link to="/bindings">Bindings</router-link>
       <router-link to="/skills">Skills</router-link>
       <router-link to="/config">Config</router-link>
       <router-link to="/backups">Backups</router-link>
