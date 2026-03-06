@@ -210,6 +210,16 @@ export function setupMockApi() {
         ].slice(0, 50)
         return jsonResponse(config, { message: 'restored' }) as any
       }
+      const configDeleteMatch = url.match(/^\/api\/v1\/config\/openclaw\/revisions\/([^/]+)$/)
+      if (configDeleteMatch && method === 'delete') {
+        const revID = configDeleteMatch[1]
+        const before = mockConfigRevisions.length
+        mockConfigRevisions = mockConfigRevisions.filter((x) => x.revision_id !== revID)
+        if (mockConfigRevisions.length === before) {
+          return jsonResponse(config, { message: 'revision not found' }, 404) as any
+        }
+        return jsonResponse(config, { message: 'deleted' }) as any
+      }
 
       // backups
       if (url === '/api/v1/backups' && method === 'get') {

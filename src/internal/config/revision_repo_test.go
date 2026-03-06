@@ -27,4 +27,22 @@ func TestRevisionRepoSaveListFindAndTrim(t *testing.T) {
 	if err != nil || one.SHA256 == "" {
 		t.Fatalf("find by id failed err=%v rev=%+v", err, one)
 	}
+
+	deleted, err := r.Delete("openclaw_json", "", one.RevisionID)
+	if err != nil {
+		t.Fatalf("delete failed: %v", err)
+	}
+	if !deleted {
+		t.Fatalf("expect deleted=true for %s", one.RevisionID)
+	}
+	if _, err := r.FindByID(one.RevisionID); err == nil {
+		t.Fatalf("expect not found after delete: %s", one.RevisionID)
+	}
+	deleted, err = r.Delete("openclaw_json", "", one.RevisionID)
+	if err != nil {
+		t.Fatalf("delete missing failed: %v", err)
+	}
+	if deleted {
+		t.Fatalf("expect deleted=false for missing id %s", one.RevisionID)
+	}
 }

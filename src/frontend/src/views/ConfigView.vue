@@ -55,7 +55,7 @@
                 <code>{{ shortSHA(row.sha256) }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" width="180">
               <template #default="{ row }">
                 <el-space>
                   <el-button type="info" link @click="previewRevision(row)">查看</el-button>
@@ -67,6 +67,15 @@
                     @click="restoreRevision(row)"
                   >
                     回滚
+                  </el-button>
+                  <el-button
+                    type="danger"
+                    link
+                    :disabled="!canEdit"
+                    :loading="deletingID === row.revision_id"
+                    @click="deleteRevision(row)"
+                  >
+                    删除
                   </el-button>
                 </el-space>
               </template>
@@ -109,6 +118,7 @@ const loading = ref(false)
 const loadingRevisions = ref(false)
 const saving = ref(false)
 const restoringID = ref('')
+const deletingID = ref('')
 const errorMessage = ref('')
 
 const content = ref('')
@@ -243,6 +253,28 @@ async function restoreRevision(rev: Revision) {
     ElMessage.error(parseError(err, '回滚失败'))
   } finally {
     restoringID.value = ''
+  }
+}
+
+async function deleteRevision(rev: Revision) {
+  if (!canEdit.value) {
+    ElMessage.warning('当前角色无编辑权限')
+    return
+  }
+  try {
+    await ElMessageBox.confirm('确认删除该历史版本？删除后不可恢复。', '删除确认', { type: 'warning' })
+  } catch {
+    return
+  }
+  deletingID.value = rev.revision_id
+  try {
+    await axios.delete(`/api/v1/config/openclaw/revisions/${rev.revision_id}`)
+    ElMessage.success('删除成功')
+    await loadRevisions()
+  } catch (err) {
+    ElMessage.error(parseError(err, '删除失败'))
+  } finally {
+    deletingID.value = ''
   }
 }
 

@@ -174,6 +174,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("PUT /api/v1/config/openclaw", wrap(openclawJSON.PutOpenClawJSON, authMW))
 		mux.HandleFunc("GET /api/v1/config/openclaw/revisions", wrap(openclawJSON.ListRevisions, authMW))
 		mux.HandleFunc("POST /api/v1/config/openclaw/revisions/{id}/restore", wrap(openclawJSON.RestoreRevision, authMW))
+		mux.HandleFunc("DELETE /api/v1/config/openclaw/revisions/{id}", wrap(openclawJSON.DeleteRevision, authMW))
 
 		mux.HandleFunc("POST /api/v1/backups", wrap(backupAPI.CreateBackup, authMW))
 		mux.HandleFunc("GET /api/v1/backups", wrap(backupAPI.ListBackups, authMW))

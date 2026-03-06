@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -49,5 +50,31 @@ func TestOpenClawJSONCRUDAndRevisions(t *testing.T) {
 	h.ListRevisions(w4, httptest.NewRequest(http.MethodGet, "/", nil))
 	if w4.Code != http.StatusOK || !strings.Contains(w4.Body.String(), "revision_id") {
 		t.Fatalf("list revision failed code=%d body=%s", w4.Code, w4.Body.String())
+	}
+
+	list, err := rev.List("openclaw_json", "", 10)
+	if err != nil || len(list) == 0 {
+		t.Fatalf("expect revisions, err=%v len=%d", err, len(list))
+	}
+	revID := list[0].RevisionID
+
+	restoreReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/config/openclaw/revisions/%s/restore", revID), nil)
+	w5 := httptest.NewRecorder()
+	h.RestoreRevision(w5, restoreReq)
+	if w5.Code != http.StatusOK || !strings.Contains(w5.Body.String(), "restored") {
+		t.Fatalf("restore failed code=%d body=%s", w5.Code, w5.Body.String())
+	}
+
+	deleteReq := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/config/openclaw/revisions/%s", revID), nil)
+	w6 := httptest.NewRecorder()
+	h.DeleteRevision(w6, deleteReq)
+	if w6.Code != http.StatusOK || !strings.Contains(w6.Body.String(), "deleted") {
+		t.Fatalf("delete failed code=%d body=%s", w6.Code, w6.Body.String())
+	}
+
+	w7 := httptest.NewRecorder()
+	h.DeleteRevision(w7, deleteReq)
+	if w7.Code != http.StatusNotFound {
+		t.Fatalf("delete missing should 404, got code=%d body=%s", w7.Code, w7.Body.String())
 	}
 }

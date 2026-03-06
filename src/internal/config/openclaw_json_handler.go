@@ -104,12 +104,11 @@ func (h *OpenClawJSONHandler) RestoreRevision(w http.ResponseWriter, r *http.Req
 		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_IMPLEMENTED", Message: "revisions disabled", StatusCode: http.StatusNotImplemented})
 		return
 	}
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 2 {
+	revID := revisionIDFromURL(r.URL.Path)
+	if revID == "" {
 		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"rev_id": "required"}))
 		return
 	}
-	revID := parts[len(parts)-2]
 	rev, err := h.Revisions.FindByID(revID)
 	if err != nil {
 		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "revision not found", StatusCode: http.StatusNotFound})
@@ -125,10 +124,43 @@ func (h *OpenClawJSONHandler) RestoreRevision(w http.ResponseWriter, r *http.Req
 	_, _ = w.Write([]byte(`{"message":"restored"}`))
 }
 
+func (h *OpenClawJSONHandler) DeleteRevision(w http.ResponseWriter, r *http.Request) {
+	if h.Revisions == nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_IMPLEMENTED", Message: "revisions disabled", StatusCode: http.StatusNotImplemented})
+		return
+	}
+	revID := revisionIDFromURL(r.URL.Path)
+	if revID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"rev_id": "required"}))
+		return
+	}
+	ok, err := h.Revisions.Delete("openclaw_json", "", revID)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if !ok {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "revision not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"deleted"}`))
+}
+
 func (h *OpenClawJSONHandler) checkPath() error {
 	if h.Validator == nil {
 		return nil
 	}
 	_, err := h.Validator.Validate(h.FilePath)
 	return err
+}
+
+func revisionIDFromURL(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == "revisions" {
+			return parts[i+1]
+		}
+	}
+	return ""
 }

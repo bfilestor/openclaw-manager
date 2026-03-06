@@ -93,6 +93,18 @@ func (r *RevisionRepository) FindByID(id string) (*Revision, error) {
 	return &rev, nil
 }
 
+func (r *RevisionRepository) Delete(targetType, targetID, id string) (bool, error) {
+	res, err := r.db.Exec(`DELETE FROM revisions WHERE revision_id=? AND target_type=? AND ifnull(target_id,'')=ifnull(?, '')`, id, targetType, targetID)
+	if err != nil {
+		return false, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected > 0, nil
+}
+
 func sha(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
