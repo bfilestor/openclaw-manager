@@ -3,6 +3,8 @@ package agent
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -27,6 +29,7 @@ func TestRepoListAndWorkspace(t *testing.T) {
 	v, _ := storage.NewPathValidator([]string{"/tmp", "/home/mixi/.openclaw"})
 	ex := &fakeExec{out: []byte(`{"agents":[{"id":"a1","workspace":"/tmp/w1","bindings":[1,2]},{"id":"a2","workspace":"/tmp/w2","bindings":[]}]}`)}
 	r := NewRepository(ex, v)
+	r.openclawJSONPath = filepath.Join(t.TempDir(), "openclaw.json")
 	list, err := r.List(context.Background())
 	if err != nil || len(list) != 2 || list[0].BindingsCount != 2 {
 		t.Fatalf("bad list err=%v list=%+v", err, list)
@@ -41,6 +44,7 @@ func TestRepoTTLCacheAndInvalidID(t *testing.T) {
 	v, _ := storage.NewPathValidator([]string{"/tmp"})
 	ex := &fakeExec{out: []byte(`{"agents":[{"id":"a1","workspace":"/tmp/w1","bindings":[]}]}`)}
 	r := NewRepository(ex, v)
+	r.openclawJSONPath = filepath.Join(t.TempDir(), "openclaw.json")
 	r.ttl = time.Hour
 	_, _ = r.List(context.Background())
 	_, _ = r.List(context.Background())
@@ -56,6 +60,7 @@ func TestRepoListNewCLIJSONShape(t *testing.T) {
 	v, _ := storage.NewPathValidator([]string{"/tmp"})
 	ex := &fakeExec{out: []byte(`[{"id":"a1","workspace":"/tmp/w1","bindings":3},{"id":"a2","workspace":"/tmp/w2","bindings":0}]`)}
 	r := NewRepository(ex, v)
+	r.openclawJSONPath = filepath.Join(t.TempDir(), "openclaw.json")
 	list, err := r.List(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
@@ -65,5 +70,38 @@ func TestRepoListNewCLIJSONShape(t *testing.T) {
 	}
 	if list[0].BindingsCount != 3 || list[1].BindingsCount != 0 {
 		t.Fatalf("unexpected bindings count: %+v", list)
+	}
+}
+
+func TestRepoListFillWorkspaceFromOpenClawJSON(t *testing.T) {
+	v, _ := storage.NewPathValidator([]string{"/tmp", "/home/test/.openclaw"})
+	ex := &fakeExec{out: []byte(`{"agents":[{"id":"main","workspace":"","bindings":[]},{"id":"xcoder","workspace":"","bindings":[]}]}`)}
+	r := NewRepository(ex, v)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "openclaw.json")
+	cfg := `{
+		"agents": {
+			"defaults": {"workspace": "/home/test/.openclaw/workspace"},
+			"list": [
+				{"id": "main"},
+				{"id": "xcoder"}
+			]
+		}
+	}`
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	r.openclawJSONPath = cfgPath
+
+	list, err := r.List(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if got, want := list[0].WorkspacePath, "/home/test/.openclaw/workspace"; got != want {
+		t.Fatalf("main workspace mismatch got=%s want=%s", got, want)
+	}
+	if got, want := list[1].WorkspacePath, "/home/test/.openclaw/workspace-xcoder"; got != want {
+		t.Fatalf("xcoder workspace mismatch got=%s want=%s", got, want)
 	}
 }

@@ -47,7 +47,8 @@
 | E8 任务系统 | 4 | 0 | 0 | 4 |
 | E9 前端框架 | 7 | 0 | 0 | 7 |
 | E10 集成测试与部署 | 4 | 0 | 0 | 4 |
-| **合计** | **55** | **0** | **0** | **55** |
+| E11 多 Agent Workspace 能力增强 | 2 | 0 | 0 | 2 |
+| **合计** | **57** | **0** | **0** | **57** |
 
 > 注：规划文档中部分 Issue（如前端各业务页面）在 Sprint 5 中以合并 Issue 形式出现，本清单按实际可追踪粒度拆分为 55 条。
 
@@ -425,4 +426,20 @@ I1(2d) → I2(1d) → I3(1.5d) → 并行[I10+I18+I41] → I42 → 业务API
 
 ---
 
-*清单总计 55 条 Issue，分布于 6 个 Sprint（约12周）。每完成一条请更新对应状态与测试结果。*
+## Epic 11：多 Agent Workspace 能力增强
+
+> **Sprint 7** | 目标：补齐多 Agent 场景下的 Workspace 可视化与备份覆盖能力。
+
+### Story E11-S1：Agent 列表 Workspace 展示补强
+
+| Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
+|-------|------|--------|----|------|------|----------|----------|------|
+| E11-S1-I56 | Agent 列表页 Workspace 位置展示与后端兜底解析（openclaw.json） | P1 | 2 | Done | E5-S1-I29, E9-S3-I52 | Unit + Integration | Passed | 已支持 CLI 空 workspace 时从 openclaw.json 兜底 |
+
+### Story E11-S2：多 Agent Workspace 备份增强
+
+| Issue | 描述 | 优先级 | SP | 状态 | 依赖 | 测试类型 | 测试结果 | 备注 |
+|-------|------|--------|----|------|------|----------|----------|------|
+| E11-S2-I57 | `workspaces` scope 按 openclaw.json 解析全部 Agent workspace 并归档 | P1 | 3 | Done | E7-S1-I37, E4-S1-I27 | Unit + Integration | Passed | 已支持 defaults + list 混合配置、缺省 workspace 推导 |
+
+*清单总计 57 条 Issue，分布于 7 个 Sprint（约13周）。每完成一条请更新对应状态与测试结果。*

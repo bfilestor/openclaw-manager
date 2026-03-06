@@ -22,7 +22,54 @@ func TestBackupCreate(t *testing.T) {
 
 	s := &Service{DB: db.SQL, BackupHome: bk, OpenclawHome: home, ManagerHome: mgr}
 	id, err := s.Create([]string{"openclaw_json", "global_skills"}, "test", "u1")
-	if err != nil { t.Fatal(err) }
-	if _, err := os.Stat(filepath.Join(bk, id+".tar.gz")); err != nil { t.Fatalf("archive missing: %v", err) }
-	if _, err := os.Stat(filepath.Join(bk, id+".manifest.json")); err != nil { t.Fatalf("manifest missing: %v", err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(bk, id+".tar.gz")); err != nil {
+		t.Fatalf("archive missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(bk, id+".manifest.json")); err != nil {
+		t.Fatalf("manifest missing: %v", err)
+	}
+}
+
+func TestResolveScopeIncludesMultiAgentWorkspaces(t *testing.T) {
+	db := storage.NewTestDB(t)
+	home := t.TempDir()
+	mgr := t.TempDir()
+
+	cfg := `{
+		"agents": {
+			"defaults": {
+				"workspace": "` + home + `/workspace"
+			},
+			"list": [
+				{"id":"main"},
+				{"id":"xcoder"},
+				{"id":"pm","workspace":"` + home + `/workspace-pm"}
+			]
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(home, "openclaw.json"), []byte(cfg), 0o644); err != nil {
+		t.Fatalf("write openclaw.json: %v", err)
+	}
+
+	s := &Service{DB: db.SQL, OpenclawHome: home, ManagerHome: mgr}
+	paths := s.resolveScope([]string{"workspaces"})
+
+	want := map[string]bool{
+		filepath.Join(home, "workspace"):        false,
+		filepath.Join(home, "workspace-xcoder"): false,
+		filepath.Join(home, "workspace-pm"):     false,
+	}
+	for _, p := range paths {
+		if _, ok := want[p]; ok {
+			want[p] = true
+		}
+	}
+	for p, ok := range want {
+		if !ok {
+			t.Fatalf("missing workspace path in scope: %s, got=%v", p, paths)
+		}
+	}
 }

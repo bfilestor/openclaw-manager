@@ -323,3 +323,26 @@ src/internal/gateway/systemctl_test.go
 cd src && "C:\Program Files\Go\bin\go.exe" test ./internal/gateway/...
 -- 结果
 通过。
+
+- 完成 Issue-E11-S1-I56
+-- 功能总结
+增强 Agent Workspace 展示链路：前端 Agent 列表将列名明确为“Workspace 位置”；后端在 CLI 返回 workspace 为空时，自动从 openclaw.json 兜底解析（支持 main 默认 workspace 与 workspace-<agentId> 推导）。
+-- 涉及文件
+src/internal/agent/repo.go,
+src/internal/agent/repo_test.go,
+src/frontend/src/views/AgentsView.vue
+
+- 完成 Issue-E11-S2-I57
+-- 功能总结
+增强 `workspaces` 备份范围：备份服务按 openclaw.json 解析多 Agent workspace（defaults + list 显式配置 + 缺省推导），并去重后统一归档；解析失败时回退主 workspace，保持兼容。
+-- 涉及文件
+src/internal/backup/service.go,
+src/internal/backup/service_test.go,
+doc/dev-plan.md,
+doc/todo-list.md
+
+- 验证结果
+-- 执行命令
+cd src && go test ./internal/agent/... ./internal/backup/...
+-- 结果
+通过。

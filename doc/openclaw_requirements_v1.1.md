@@ -102,6 +102,12 @@ Skills 列表查看：Viewer。安装/删除 Skills：Operator。
 ### 3.6 备份与还原
 查看备份列表与详情：Viewer。创建备份、下载备份：Operator。执行还原（含 dry_run）：Admin。
 
+#### 3.6.1 多 Agent Workspace 备份规则（新增）
+- 当备份 scope 包含 `workspaces` 时，系统必须从 `~/.openclaw/openclaw.json` 的 `agents.defaults.workspace` 与 `agents.list[*].workspace` 解析全量工作区。
+- 对于 `agents.list` 中未显式声明 workspace 的非 `main` Agent，按 `workspace-<agentId>` 规则推导路径；`main` 使用默认 workspace。
+- 路径去重后执行归档，Manifest 中 `paths` 必须包含实际纳入归档的 workspace 路径集合。
+- 若 `openclaw.json` 缺失或解析失败，兼容回退到主 workspace（`~/.openclaw/workspace`）。
+
 ## 4. 统一任务系统
 ### 4.1 任务类型枚举
 | **task_type**   | **触发来源**                | **最低所需角色** | **超时** |

@@ -30,7 +30,7 @@
     <el-card shadow="never">
       <el-table v-loading="loading" :data="agents" row-key="agent_id" style="width: 100%">
         <el-table-column prop="agent_id" label="Agent ID" min-width="180" />
-        <el-table-column label="Workspace" min-width="420">
+        <el-table-column label="Workspace 位置" min-width="420">
           <template #default="{ row }">
             <el-text truncated>{{ row.workspace_path }}</el-text>
           </template>

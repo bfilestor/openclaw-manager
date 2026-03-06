@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -28,9 +29,10 @@ type Agent struct {
 }
 
 type Repository struct {
-	exec      Executor
-	validator *storage.PathValidator
-	ttl       time.Duration
+	exec             Executor
+	validator        *storage.PathValidator
+	openclawJSONPath string
+	ttl              time.Duration
 
 	mu       sync.Mutex
 	cachedAt time.Time
@@ -38,7 +40,13 @@ type Repository struct {
 }
 
 func NewRepository(exec Executor, validator *storage.PathValidator) *Repository {
-	return &Repository{exec: exec, validator: validator, ttl: 60 * time.Second}
+	home, _ := os.UserHomeDir()
+	return &Repository{
+		exec:             exec,
+		validator:        validator,
+		openclawJSONPath: filepath.Join(home, ".openclaw", "openclaw.json"),
+		ttl:              60 * time.Second,
+	}
 }
 
 func (r *Repository) List(ctx context.Context) ([]Agent, error) {
@@ -59,6 +67,7 @@ func (r *Repository) List(ctx context.Context) ([]Agent, error) {
 	if err != nil {
 		return nil, err
 	}
+	agents = r.fillWorkspacePathFromConfig(agents)
 
 	r.mu.Lock()
 	r.cachedAt = time.Now()
@@ -155,4 +164,76 @@ func validAgentID(id string) bool {
 		}
 	}
 	return true
+}
+
+func (r *Repository) fillWorkspacePathFromConfig(list []Agent) []Agent {
+	workspaceMap := r.loadWorkspaceMapFromOpenClawJSON()
+	if len(workspaceMap) == 0 {
+		return list
+	}
+	for i := range list {
+		if strings.TrimSpace(list[i].WorkspacePath) != "" {
+			continue
+		}
+		if ws, ok := workspaceMap[list[i].AgentID]; ok {
+			list[i].WorkspacePath = ws
+		}
+	}
+	return list
+}
+
+func (r *Repository) loadWorkspaceMapFromOpenClawJSON() map[string]string {
+	type rawAgent struct {
+		ID        string `json:"id"`
+		Workspace string `json:"workspace"`
+	}
+	type openclawConfig struct {
+		Agents struct {
+			Defaults struct {
+				Workspace string `json:"workspace"`
+			} `json:"defaults"`
+			List []rawAgent `json:"list"`
+		} `json:"agents"`
+	}
+
+	path := strings.TrimSpace(r.openclawJSONPath)
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var cfg openclawConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil
+	}
+
+	defaultWorkspace := strings.TrimSpace(cfg.Agents.Defaults.Workspace)
+	workspaceMap := map[string]string{}
+	if defaultWorkspace != "" {
+		workspaceMap["main"] = defaultWorkspace
+	}
+	baseDir := filepath.Dir(defaultWorkspace)
+	if baseDir == "." {
+		baseDir = filepath.Dir(path)
+	}
+	for _, it := range cfg.Agents.List {
+		agentID := strings.TrimSpace(it.ID)
+		if !validAgentID(agentID) {
+			continue
+		}
+		workspace := strings.TrimSpace(it.Workspace)
+		if workspace == "" {
+			if agentID == "main" {
+				workspace = defaultWorkspace
+			} else if defaultWorkspace != "" {
+				workspace = filepath.Join(baseDir, "workspace-"+agentID)
+			}
+		}
+		if workspace != "" {
+			workspaceMap[agentID] = workspace
+		}
+	}
+	return workspaceMap
 }

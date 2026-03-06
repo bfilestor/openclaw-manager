@@ -1961,4 +1961,57 @@ E1-S1-I1 → E1-S1-I2 → E1-S1-I3 → E2-S1-I10 → E2-S2-I13
 
 ---
 
-*文档结束 — 总计 115 个 Issue，覆盖 10 个 Epic，建议 6 个 Sprint（约 12 周）完成 MVP。*
+## Epic E11 — 多 Agent Workspace 可视化与备份增强
+
+> **目标**：补齐多 Agent 场景下的 Workspace 可视化与备份能力，确保 `workspaces` scope 能覆盖主 Agent 与非主 Agent 工作区。
+
+### Story E11-S1：Agent Workspace 可视化补强
+
+#### Issue E11-S1-I56：Agent 列表 Workspace 位置展示与兜底
+
+- **Story Points**：2  
+- **优先级**：P1  
+- **依赖**：E5-S1-I29, E9-S3-I52  
+- **测试类型**：Unit + Integration
+
+**功能描述**：
+- Agent 列表页明确展示 `workspace_path` 列
+- 当 `openclaw agents list --bindings` 未返回 workspace 时，后端从 `openclaw.json` 兜底解析
+- 兜底规则：
+  - `main` 使用 `agents.defaults.workspace`（缺失时回退 `~/.openclaw/workspace`）
+  - 其他 Agent 缺省按 `workspace-<agentId>` 推导
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E11S1I56-001 | CLI workspace 为空时兜底 | 列表返回每个 agent 的 workspace_path | Unit |
+| TC-E11S1I56-002 | main 缺省 workspace 解析 | 返回 defaults.workspace | Unit |
+| TC-E11S1I56-003 | 非 main 缺省 workspace 解析 | 返回 workspace-<agentId> | Unit |
+| TC-E11S1I56-004 | 前端列表展示 workspace 列 | 页面可见 workspace 位置文本 | Integration |
+
+### Story E11-S2：多 Agent Workspace 备份
+
+#### Issue E11-S2-I57：`workspaces` scope 按 openclaw.json 扩展多目录归档
+
+- **Story Points**：3  
+- **优先级**：P1  
+- **依赖**：E7-S1-I37, E4-S1-I27  
+- **测试类型**：Unit + Integration
+
+**功能描述**：
+- `backup.create` 在 `scope=["workspaces"]` 时，从 `openclaw.json` 解析全部 Agent workspace
+- 支持显式配置与缺省推导混合场景
+- 去重后归档，保持 Manifest 中 `paths` 与实际归档范围一致
+- 读取 `openclaw.json` 失败时回退旧行为（仅主 workspace）
+
+**测试用例**：
+
+| 用例编号 | 描述 | 预期输出 | 测试类型 |
+|----------|------|----------|----------|
+| TC-E11S2I57-001 | 多 Agent workspace 解析 | Manifest paths 包含全部工作区 | Unit |
+| TC-E11S2I57-002 | 显式 workspace + 缺省推导混合 | 路径完整且无重复 | Unit |
+| TC-E11S2I57-003 | openclaw.json 缺失/非法 | 回退主 workspace 并可成功备份 | Unit |
+| TC-E11S2I57-004 | 创建备份接口联调 | 返回 202，任务状态可追踪 | Integration |
+
+*文档结束 — 总计 117 个 Issue，覆盖 11 个 Epic，建议 7 个 Sprint（约 13 周）完成 MVP+。*
