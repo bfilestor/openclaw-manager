@@ -98,6 +98,12 @@ func (r *Repository) ExistsAdmin() (bool, error) {
 	return c > 0, err
 }
 
+func (r *Repository) CountByRole(role Role) (int, error) {
+	var c int
+	err := r.db.QueryRow(`SELECT COUNT(1) FROM users WHERE role=?`, string(role)).Scan(&c)
+	return c, err
+}
+
 func (r *Repository) findOne(q string, arg any) (*User, error) {
 	row := r.db.QueryRow(q, arg)
 	u, err := scanUser(row)
@@ -114,9 +120,9 @@ type scanner interface{ Scan(dest ...any) error }
 
 func scanUser(s scanner) (*User, error) {
 	var (
-		u                         User
-		role, status, createdAt   string
-		lastLoginAt, updatedAt    sql.NullString
+		u                       User
+		role, status, createdAt string
+		lastLoginAt, updatedAt  sql.NullString
 	)
 	if err := s.Scan(&u.UserID, &u.Username, &u.PasswordHash, &role, &status, &createdAt, &lastLoginAt, &updatedAt); err != nil {
 		return nil, err

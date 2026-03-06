@@ -54,6 +54,10 @@ func TestRepositoryCRUDAndQueries(t *testing.T) {
 	if err != nil || !exists {
 		t.Fatalf("exists admin mismatch err=%v exists=%v", err, exists)
 	}
+	adminCount, err := r.CountByRole(RoleAdmin)
+	if err != nil || adminCount != 1 {
+		t.Fatalf("count by role mismatch err=%v count=%d", err, adminCount)
+	}
 
 	list, total, err := r.List(1, 2)
 	if err != nil {

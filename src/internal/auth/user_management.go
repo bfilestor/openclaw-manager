@@ -2,10 +2,13 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"openclaw-manager/internal/middleware"
 	"openclaw-manager/internal/user"
@@ -22,6 +25,17 @@ type changeRoleReq struct {
 
 type disableReq struct {
 	Disabled bool `json:"disabled"`
+}
+
+type createUserReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+
+type setUserPasswordReq struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +132,76 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"users": respUsers, "total": total})
 }
 
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if roleWeight(uc.Role) < roleWeight(user.RoleAdmin) {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+
+	var req createUserReq
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if !usernameRe.MatchString(req.Username) {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"username": "must be 3-32 letters/numbers/_"}))
+		return
+	}
+	if len(req.Password) > 128 {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "PASSWORD_TOO_LONG", Message: "password too long", StatusCode: http.StatusBadRequest})
+		return
+	}
+	if err := h.Pass.ValidateStrength(req.Password); err != nil {
+		code := "PASSWORD_WEAK"
+		if errors.Is(err, ErrPasswordTooShort) {
+			code = "PASSWORD_TOO_SHORT"
+		}
+		middleware.WriteAppError(w, &middleware.AppError{Code: code, Message: err.Error(), StatusCode: http.StatusBadRequest})
+		return
+	}
+	if _, err := h.Repo.FindByUsername(req.Username); err == nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "USERNAME_EXISTS", Message: "username exists", StatusCode: http.StatusConflict})
+		return
+	} else if !errors.Is(err, user.ErrNotFound) {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	role := user.RoleViewer
+	if strings.TrimSpace(req.Role) != "" {
+		role = user.Role(req.Role)
+		if role != user.RoleViewer && role != user.RoleOperator && role != user.RoleAdmin {
+			middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"role": "invalid role"}))
+			return
+		}
+	}
+
+	hash, err := h.Pass.Hash(req.Password)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	now := time.Now().UTC()
+	u := &user.User{
+		UserID:       uuid.NewString(),
+		Username:     req.Username,
+		PasswordHash: hash,
+		Role:         role,
+		Status:       user.StatusActive,
+		CreatedAt:    now,
+	}
+	if err := h.Repo.Create(u); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	writeUserJSON(w, http.StatusCreated, u)
+}
+
 func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	uc, ok := GetUserContext(r.Context())
 	if !ok {
@@ -186,9 +270,16 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if target.Role == user.RoleAdmin && adminCount(h) <= 1 {
-		middleware.WriteAppError(w, &middleware.AppError{Code: "LAST_ADMIN_PROTECTED", Message: "at least one admin required", StatusCode: http.StatusBadRequest})
-		return
+	if target.Role == user.RoleAdmin {
+		adminRoles, cntErr := h.Repo.CountByRole(user.RoleAdmin)
+		if cntErr != nil {
+			middleware.WriteAppError(w, cntErr)
+			return
+		}
+		if adminRoles <= 1 {
+			middleware.WriteAppError(w, &middleware.AppError{Code: "LAST_ADMIN_PROTECTED", Message: "at least two admins required before deleting admin", StatusCode: http.StatusBadRequest})
+			return
+		}
 	}
 	if err := h.Repo.Delete(targetID); err != nil {
 		middleware.WriteAppError(w, err)
@@ -196,6 +287,72 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"message":"deleted"}`))
+}
+
+func (h *Handler) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	targetID := extractUserID(r.URL.Path, "password")
+	if targetID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"user_id": "required"}))
+		return
+	}
+	var req setUserPasswordReq
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	isAdmin := roleWeight(uc.Role) >= roleWeight(user.RoleAdmin)
+	if !isAdmin && targetID != uc.UserID {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+
+	target, err := h.Repo.FindByID(targetID)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	if !isAdmin {
+		if !h.Pass.Verify(req.OldPassword, target.PasswordHash) {
+			middleware.WriteAppError(w, &middleware.AppError{Code: "INVALID_PASSWORD", Message: "invalid password", StatusCode: http.StatusBadRequest})
+			return
+		}
+	}
+
+	if len(req.NewPassword) > 128 {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "PASSWORD_TOO_LONG", Message: "password too long", StatusCode: http.StatusBadRequest})
+		return
+	}
+	if err := h.Pass.ValidateStrength(req.NewPassword); err != nil {
+		code := "PASSWORD_WEAK"
+		if errors.Is(err, ErrPasswordTooShort) {
+			code = "PASSWORD_TOO_SHORT"
+		}
+		middleware.WriteAppError(w, &middleware.AppError{Code: code, Message: err.Error(), StatusCode: http.StatusBadRequest})
+		return
+	}
+
+	hash, err := h.Pass.Hash(req.NewPassword)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	now := time.Now().UTC()
+	target.PasswordHash = hash
+	target.UpdatedAt = &now
+	if err := h.Repo.Update(target); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"password updated"}`))
 }
 
 func (h *Handler) DisableUser(w http.ResponseWriter, r *http.Request) {

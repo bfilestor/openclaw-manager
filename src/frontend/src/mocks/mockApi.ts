@@ -5,6 +5,7 @@ const mockToken = 'mock.jwt.token'
 const mockUser = { user_id: 'u-admin-001', username: 'admin', role: 'Admin' as const }
 let mockBackups = [...backupsMock.backups]
 let mockTasks = [...tasksMock.tasks]
+let mockUsers = [...usersMock.users]
 let mockOpenclawConfig = JSON.stringify({
   gateway: {
     bind_addr: '127.0.0.1',
@@ -123,6 +124,12 @@ function parseRequestData(data: any): any {
   return data
 }
 
+function roleWeight(role: string): number {
+  if (role === 'Admin') return 3
+  if (role === 'Operator') return 2
+  return 1
+}
+
 function toMockSHA(content: string): string {
   const base = String(content || '')
   const n = base.length
@@ -195,8 +202,80 @@ export function setupMockApi() {
       }
 
       // users
-      if (url.startsWith('/api/v1/users') && method === 'get') {
-        return jsonResponse(config, usersMock) as any
+      if (url === '/api/v1/users' && method === 'get') {
+        return jsonResponse(config, { users: mockUsers, total: mockUsers.length }) as any
+      }
+      if (url === '/api/v1/users/me' && method === 'get') {
+        const me = mockUsers.find((u) => u.user_id === mockUser.user_id) || mockUser
+        return jsonResponse(config, me) as any
+      }
+      if (url === '/api/v1/users' && method === 'post') {
+        const body = parseRequestData(config.data)
+        const username = String(body?.username || '').trim()
+        const password = String(body?.password || '')
+        const role = String(body?.role || 'Viewer')
+        if (!username || !password) {
+          return jsonResponse(config, { message: 'username/password required' }, 400) as any
+        }
+        if (mockUsers.some((u) => u.username === username)) {
+          return jsonResponse(config, { message: 'username exists', code: 'USERNAME_EXISTS' }, 409) as any
+        }
+        const item = {
+          user_id: `u-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          username,
+          role: (role === 'Admin' || role === 'Operator' || role === 'Viewer') ? role : 'Viewer',
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+        mockUsers = [...mockUsers, item]
+        return jsonResponse(config, item, 201) as any
+      }
+      const userRoleMatch = url.match(/^\/api\/v1\/users\/([^/]+)\/role$/)
+      if (userRoleMatch && method === 'put') {
+        const userID = userRoleMatch[1]
+        const body = parseRequestData(config.data)
+        const role = String(body?.role || '')
+        if (!['Viewer', 'Operator', 'Admin'].includes(role)) {
+          return jsonResponse(config, { message: 'invalid role' }, 400) as any
+        }
+        mockUsers = mockUsers.map((u) => u.user_id === userID ? { ...u, role } : u)
+        const hit = mockUsers.find((u) => u.user_id === userID)
+        if (!hit) return jsonResponse(config, { message: 'user not found' }, 404) as any
+        return jsonResponse(config, hit) as any
+      }
+      const userDisableMatch = url.match(/^\/api\/v1\/users\/([^/]+)\/disable$/)
+      if (userDisableMatch && method === 'post') {
+        const userID = userDisableMatch[1]
+        const body = parseRequestData(config.data)
+        const disabled = !!body?.disabled
+        mockUsers = mockUsers.map((u) => u.user_id === userID ? { ...u, status: disabled ? 'disabled' : 'active' } : u)
+        const hit = mockUsers.find((u) => u.user_id === userID)
+        if (!hit) return jsonResponse(config, { message: 'user not found' }, 404) as any
+        return jsonResponse(config, hit) as any
+      }
+      const userPwdMatch = url.match(/^\/api\/v1\/users\/([^/]+)\/password$/)
+      if (userPwdMatch && method === 'put') {
+        const userID = userPwdMatch[1]
+        if (userID === 'me') {
+          return jsonResponse(config, { message: 'password updated' }) as any
+        }
+        const hit = mockUsers.find((u) => u.user_id === userID)
+        if (!hit) return jsonResponse(config, { message: 'user not found' }, 404) as any
+        return jsonResponse(config, { message: 'password updated' }) as any
+      }
+      const userDeleteMatch = url.match(/^\/api\/v1\/users\/([^/]+)$/)
+      if (userDeleteMatch && method === 'delete') {
+        const userID = userDeleteMatch[1]
+        const hit = mockUsers.find((u) => u.user_id === userID)
+        if (!hit) return jsonResponse(config, { message: 'user not found' }, 404) as any
+        if (roleWeight(String(hit.role)) >= roleWeight('Admin')) {
+          const admins = mockUsers.filter((u) => u.role === 'Admin').length
+          if (admins <= 1) {
+            return jsonResponse(config, { message: 'at least two admins required before deleting admin', code: 'LAST_ADMIN_PROTECTED' }, 400) as any
+          }
+        }
+        mockUsers = mockUsers.filter((u) => u.user_id !== userID)
+        return jsonResponse(config, { message: 'deleted' }) as any
       }
 
       // tasks

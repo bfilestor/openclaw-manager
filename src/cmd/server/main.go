@@ -139,7 +139,9 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("GET /api/v1/users/me", wrap(authHandler.Me, authMW))
 		mux.HandleFunc("PUT /api/v1/users/me/password", wrap(authHandler.ChangeMyPassword, authMW))
 		mux.HandleFunc("GET /api/v1/users", wrap(authHandler.ListUsers, authMW))
+		mux.HandleFunc("POST /api/v1/users", wrap(authHandler.CreateUser, authMW))
 		mux.HandleFunc("PUT /api/v1/users/{id}/role", wrap(authHandler.UpdateUserRole, authMW))
+		mux.HandleFunc("PUT /api/v1/users/{id}/password", wrap(authHandler.UpdateUserPassword, authMW))
 		mux.HandleFunc("POST /api/v1/users/{id}/disable", wrap(authHandler.DisableUser, authMW))
 		mux.HandleFunc("DELETE /api/v1/users/{id}", wrap(authHandler.DeleteUser, authMW))
 
