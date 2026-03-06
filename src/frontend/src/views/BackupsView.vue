@@ -128,8 +128,19 @@
       width="760px"
       :title="`备份详情 - ${manifestBackupID || '-'}`"
     >
+      <el-card shadow="never" v-loading="manifestLoading" class="manifest-summary-card">
+        <template #header>本次纳入的 Workspace（{{ workspacePaths.length }}）</template>
+        <el-empty v-if="workspacePaths.length === 0" description="该备份未包含 workspace 目录" />
+        <el-scrollbar v-else height="120px">
+          <div class="workspace-list">
+            <el-tag v-for="p in workspacePaths" :key="p" type="success" effect="plain">{{ p }}</el-tag>
+          </div>
+        </el-scrollbar>
+      </el-card>
+
       <el-card shadow="never" v-loading="manifestLoading">
-        <el-scrollbar height="360px">
+        <template #header>Manifest 原文</template>
+        <el-scrollbar height="240px">
           <pre class="manifest-box">{{ manifestContent }}</pre>
         </el-scrollbar>
       </el-card>
@@ -191,6 +202,7 @@ const restoreRestartGateway = ref(true)
 const manifestDialogVisible = ref(false)
 const manifestBackupID = ref('')
 const manifestContent = ref('{}')
+const workspacePaths = ref<string[]>([])
 
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
@@ -221,6 +233,15 @@ function asPrettyJSON(v: any): string {
     }
   }
   return JSON.stringify(v ?? {}, null, 2)
+}
+
+function extractWorkspacePaths(manifest: any): string[] {
+  const scopes = Array.isArray(manifest?.scope) ? manifest.scope.map((x: any) => String(x)) : []
+  if (!scopes.includes('workspaces')) return []
+  const paths = Array.isArray(manifest?.paths) ? manifest.paths : []
+  return paths
+    .map((x: any) => String(x || '').trim())
+    .filter((p: string) => p.includes('/workspace'))
 }
 
 async function loadBackups() {
@@ -312,10 +333,12 @@ async function confirmRestore() {
 
 async function viewBackupDetail(backupID: string) {
   manifestLoading.value = true
+  workspacePaths.value = []
   try {
     const { data } = await axios.get(`/api/v1/backups/${backupID}`)
     manifestBackupID.value = backupID
     manifestContent.value = asPrettyJSON(data)
+    workspacePaths.value = extractWorkspacePaths(data)
     manifestDialogVisible.value = true
   } catch (err) {
     ElMessage.error(parseError(err, '读取备份详情失败'))
@@ -395,6 +418,14 @@ onMounted(loadBackups)
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
   line-height: 1.6;
+}
+.manifest-summary-card {
+  margin-bottom: 12px;
+}
+.workspace-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .manifest-box {
   margin: 0;

@@ -346,3 +346,9 @@ doc/todo-list.md
 cd src && go test ./internal/agent/... ./internal/backup/...
 -- 结果
 通过。
+
+- 增强项：备份详情 Workspace 高亮
+-- 功能总结
+在备份详情弹窗新增“本次纳入的 Workspace”摘要区块，从 manifest 的 `scope/paths` 中提取 workspace 路径并高亮展示，便于人工核验多 Agent 备份覆盖情况。
+-- 涉及文件
+src/frontend/src/views/BackupsView.vue
