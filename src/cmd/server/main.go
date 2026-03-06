@@ -146,7 +146,9 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("DELETE /api/v1/users/{id}", wrap(authHandler.DeleteUser, authMW))
 
 		mux.HandleFunc("GET /api/v1/tasks", wrap(taskAPI.ListTasks, authMW))
+		mux.HandleFunc("DELETE /api/v1/tasks", wrap(taskAPI.ClearTasks, authMW))
 		mux.HandleFunc("GET /api/v1/tasks/{id}", wrap(taskAPI.GetTask, authMW))
+		mux.HandleFunc("DELETE /api/v1/tasks/{id}", wrap(taskAPI.DeleteTask, authMW))
 		mux.HandleFunc("POST /api/v1/tasks/{id}/cancel", wrap(taskAPI.CancelTask, authMW))
 		mux.HandleFunc("GET /api/v1/tasks/{id}/events", wrap(taskSSE.TaskEvents, authMW))
 

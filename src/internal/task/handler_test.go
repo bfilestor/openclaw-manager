@@ -20,10 +20,18 @@ func setupTaskHandler(t *testing.T) (*Handler, *Repository, string, string) {
 	u1 := "u1"
 	u2 := "u2"
 	now := time.Now().UTC().Format(time.RFC3339)
-	if _, err := db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, u1, "u1", "x", "Viewer", "active", now); err != nil { t.Fatal(err) }
-	if _, err := db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, u2, "u2", "x", "Viewer", "active", now); err != nil { t.Fatal(err) }
-	if err := r.Create(&Task{TaskID: uuid.NewString(), TaskType: "a", Status: StatusPending, CreatedBy: u1, CreatedAt: time.Now().UTC()}); err != nil { t.Fatal(err) }
-	if err := r.Create(&Task{TaskID: uuid.NewString(), TaskType: "b", Status: StatusRunning, CreatedBy: u2, CreatedAt: time.Now().UTC().Add(time.Second)}); err != nil { t.Fatal(err) }
+	if _, err := db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, u1, "u1", "x", "Viewer", "active", now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, u2, "u2", "x", "Viewer", "active", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Create(&Task{TaskID: uuid.NewString(), TaskType: "a", Status: StatusPending, CreatedBy: u1, CreatedAt: time.Now().UTC()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Create(&Task{TaskID: uuid.NewString(), TaskType: "b", Status: StatusRunning, CreatedBy: u2, CreatedAt: time.Now().UTC().Add(time.Second)}); err != nil {
+		t.Fatal(err)
+	}
 	return &Handler{Repo: r}, r, u1, u2
 }
 
@@ -80,5 +88,71 @@ func TestGetTaskAndCancel(t *testing.T) {
 	tk, _ := r.FindByID(taskID)
 	if tk.Status != StatusCanceled {
 		t.Fatalf("expect canceled got %s", tk.Status)
+	}
+}
+
+func TestDeleteTaskAndClearTasks(t *testing.T) {
+	h, r, u1, u2 := setupTaskHandler(t)
+
+	listU1, _, _ := r.List(ListFilter{CreatedBy: u1})
+	listU2, _, _ := r.List(ListFilter{CreatedBy: u2})
+	if len(listU1) == 0 || len(listU2) == 0 {
+		t.Fatalf("test data not ready")
+	}
+	u1TaskID := listU1[0].TaskID
+	u2TaskID := listU2[0].TaskID
+
+	// viewer cannot delete others task
+	w1 := httptest.NewRecorder()
+	h.DeleteTask(w1, withUC(httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/"+u2TaskID, nil), u1, user.RoleViewer))
+	if w1.Code != http.StatusNotFound {
+		t.Fatalf("delete other expect 404 got %d body=%s", w1.Code, w1.Body.String())
+	}
+
+	// viewer can delete own task
+	w2 := httptest.NewRecorder()
+	h.DeleteTask(w2, withUC(httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/"+u1TaskID, nil), u1, user.RoleViewer))
+	if w2.Code != http.StatusOK {
+		t.Fatalf("delete own expect 200 got %d body=%s", w2.Code, w2.Body.String())
+	}
+
+	// admin clear all
+	w3 := httptest.NewRecorder()
+	h.ClearTasks(w3, withUC(httptest.NewRequest(http.MethodDelete, "/api/v1/tasks", nil), "admin", user.RoleAdmin))
+	if w3.Code != http.StatusOK {
+		t.Fatalf("admin clear expect 200 got %d body=%s", w3.Code, w3.Body.String())
+	}
+	listAll, total, err := r.List(ListFilter{Limit: 1000})
+	if err != nil {
+		t.Fatalf("list after clear failed: %v", err)
+	}
+	if total != 0 || len(listAll) != 0 {
+		t.Fatalf("expect no tasks after clear, total=%d len=%d", total, len(listAll))
+	}
+}
+
+func TestClearTasksViewerOnlyOwn(t *testing.T) {
+	h, r, u1, _ := setupTaskHandler(t)
+
+	w1 := httptest.NewRecorder()
+	h.ClearTasks(w1, withUC(httptest.NewRequest(http.MethodDelete, "/api/v1/tasks", nil), u1, user.RoleViewer))
+	if w1.Code != http.StatusOK {
+		t.Fatalf("viewer clear expect 200 got %d body=%s", w1.Code, w1.Body.String())
+	}
+
+	listU1, totalU1, err := r.List(ListFilter{CreatedBy: u1, Limit: 1000})
+	if err != nil {
+		t.Fatalf("list u1 after clear failed: %v", err)
+	}
+	if totalU1 != 0 || len(listU1) != 0 {
+		t.Fatalf("viewer own tasks should be cleared, total=%d len=%d", totalU1, len(listU1))
+	}
+
+	listAll, totalAll, err := r.List(ListFilter{Limit: 1000})
+	if err != nil {
+		t.Fatalf("list all after viewer clear failed: %v", err)
+	}
+	if totalAll != 1 || len(listAll) != 1 {
+		t.Fatalf("other users tasks should remain, total=%d len=%d", totalAll, len(listAll))
 	}
 }

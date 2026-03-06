@@ -282,11 +282,22 @@ export function setupMockApi() {
       if (url === '/api/v1/tasks' && method === 'get') {
         return jsonResponse(config, { tasks: mockTasks, total: mockTasks.length }) as any
       }
+      if (url === '/api/v1/tasks' && method === 'delete') {
+        const deleted = mockTasks.length
+        mockTasks = []
+        return jsonResponse(config, { message: 'cleared', deleted }) as any
+      }
       const taskByIDMatch = url.match(/^\/api\/v1\/tasks\/([^/]+)$/)
       if (taskByIDMatch && method === 'get') {
         const item = mockTasks.find((t) => t.task_id === taskByIDMatch[1])
         if (!item) return jsonResponse(config, { error: 'task not found' }, 404) as any
         return jsonResponse(config, item) as any
+      }
+      if (taskByIDMatch && method === 'delete') {
+        const before = mockTasks.length
+        mockTasks = mockTasks.filter((t) => t.task_id !== taskByIDMatch[1])
+        if (mockTasks.length === before) return jsonResponse(config, { error: 'task not found' }, 404) as any
+        return jsonResponse(config, { message: 'deleted' }) as any
       }
 
       // skills

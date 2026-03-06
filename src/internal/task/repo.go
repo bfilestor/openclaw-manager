@@ -123,14 +123,44 @@ func (r *Repository) List(f ListFilter) ([]*Task, int, error) {
 	return out, total, rows.Err()
 }
 
+func (r *Repository) Delete(taskID string) error {
+	res, err := r.db.Exec(`DELETE FROM tasks WHERE task_id=?`, taskID)
+	if err != nil {
+		return err
+	}
+	aff, _ := res.RowsAffected()
+	if aff == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *Repository) ClearAll() (int64, error) {
+	res, err := r.db.Exec(`DELETE FROM tasks`)
+	if err != nil {
+		return 0, err
+	}
+	aff, _ := res.RowsAffected()
+	return aff, nil
+}
+
+func (r *Repository) ClearByCreatedBy(userID string) (int64, error) {
+	res, err := r.db.Exec(`DELETE FROM tasks WHERE created_by=?`, userID)
+	if err != nil {
+		return 0, err
+	}
+	aff, _ := res.RowsAffected()
+	return aff, nil
+}
+
 type scanner interface{ Scan(dest ...any) error }
 
 func scanTask(s scanner) (*Task, error) {
 	var (
-		t Task
-		status, createdAt              string
-		exitCode                       sql.NullInt64
-		startedAt, finishedAt          sql.NullString
+		t                     Task
+		status, createdAt     string
+		exitCode              sql.NullInt64
+		startedAt, finishedAt sql.NullString
 	)
 	if err := s.Scan(&t.TaskID, &t.TaskType, &status, &t.RequestJSON, &exitCode, &t.StdoutTail, &t.StderrTail, &t.LogPath, &t.CreatedBy, &createdAt, &startedAt, &finishedAt); err != nil {
 		return nil, err

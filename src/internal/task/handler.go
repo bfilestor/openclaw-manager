@@ -92,6 +92,62 @@ func (h *Handler) CancelTask(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"message":"canceled"}`))
 }
 
+func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	taskID := lastPart(r.URL.Path)
+	if strings.TrimSpace(taskID) == "" || taskID == "tasks" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"task_id": "required"}))
+		return
+	}
+	t, err := h.Repo.FindByID(taskID)
+	if err != nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	if uc.Role != user.RoleAdmin && t.CreatedBy != uc.UserID {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+		return
+	}
+	if err := h.Repo.Delete(taskID); err != nil {
+		if err == ErrNotFound {
+			middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "task not found", StatusCode: http.StatusNotFound})
+			return
+		}
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"deleted"}`))
+}
+
+func (h *Handler) ClearTasks(w http.ResponseWriter, r *http.Request) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	var (
+		deleted int64
+		err     error
+	)
+	if uc.Role == user.RoleAdmin {
+		deleted, err = h.Repo.ClearAll()
+	} else {
+		deleted, err = h.Repo.ClearByCreatedBy(uc.UserID)
+	}
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"message": "cleared", "deleted": deleted})
+}
+
 func lastPart(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) == 0 {

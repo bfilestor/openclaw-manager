@@ -71,3 +71,47 @@ func TestTaskRepositoryListFilter(t *testing.T) {
 		t.Fatalf("expect 2, total=%d len=%d", total, len(list))
 	}
 }
+
+func TestTaskRepositoryDeleteAndClear(t *testing.T) {
+	db := storage.NewTestDB(t)
+	r := NewRepository(db.SQL)
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, _ = db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, "u1", "u1", "x", "Viewer", "active", now)
+	_, _ = db.SQL.Exec(`INSERT INTO users(user_id,username,password_hash,role,status,created_at) VALUES(?,?,?,?,?,?)`, "u2", "u2", "x", "Viewer", "active", now)
+
+	t1 := &Task{TaskID: uuid.NewString(), TaskType: "a", Status: StatusPending, CreatedBy: "u1", CreatedAt: time.Now().UTC()}
+	t2 := &Task{TaskID: uuid.NewString(), TaskType: "b", Status: StatusPending, CreatedBy: "u1", CreatedAt: time.Now().UTC().Add(time.Second)}
+	t3 := &Task{TaskID: uuid.NewString(), TaskType: "c", Status: StatusPending, CreatedBy: "u2", CreatedAt: time.Now().UTC().Add(2 * time.Second)}
+	if err := r.Create(t1); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Create(t2); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Create(t3); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := r.Delete(t1.TaskID); err != nil {
+		t.Fatalf("delete failed: %v", err)
+	}
+	if err := r.Delete(t1.TaskID); err != ErrNotFound {
+		t.Fatalf("delete not found expect ErrNotFound got %v", err)
+	}
+
+	deletedByUser, err := r.ClearByCreatedBy("u1")
+	if err != nil {
+		t.Fatalf("clear by created_by failed: %v", err)
+	}
+	if deletedByUser != 1 {
+		t.Fatalf("clear by created_by expect 1 got %d", deletedByUser)
+	}
+
+	deletedAll, err := r.ClearAll()
+	if err != nil {
+		t.Fatalf("clear all failed: %v", err)
+	}
+	if deletedAll != 1 {
+		t.Fatalf("clear all expect 1 got %d", deletedAll)
+	}
+}

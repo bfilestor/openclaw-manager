@@ -1,6 +1,12 @@
 <template>
   <div class="tasks-page">
-    <h3>Tasks</h3>
+    <div class="topbar">
+      <h3>Tasks</h3>
+      <el-space>
+        <el-button :loading="loading" @click="load">刷新</el-button>
+        <el-button type="danger" :loading="clearing" :disabled="tasks.length===0" @click="clearTasks">清空任务列表</el-button>
+      </el-space>
+    </div>
     <el-row :gutter="16">
       <el-col :xs="24" :md="10" :lg="8">
         <el-card shadow="never">
@@ -20,6 +26,18 @@
                 <el-tag :type="row.status === 'FAILED' ? 'danger' : row.status === 'SUCCEEDED' ? 'success' : 'info'">
                   {{ row.status }}
                 </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" min-width="90" fixed="right">
+              <template #default="{ row }">
+                <el-button
+                  type="danger"
+                  link
+                  :loading="deletingTaskID===row.task_id"
+                  @click.stop="deleteTask(row)"
+                >
+                  删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -44,7 +62,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
@@ -53,6 +71,9 @@ const auth = useAuthStore()
 
 const tasks = ref<any[]>([])
 const selected = ref<any>(null)
+const loading = ref(false)
+const clearing = ref(false)
+const deletingTaskID = ref('')
 const logText = ref('')
 const autoScroll = ref(true)
 const keyword = ref('')
@@ -80,9 +101,14 @@ function closeStream() {
 }
 
 async function load() {
-  const { data } = await axios.get('/api/v1/tasks')
-  tasks.value = Array.isArray(data?.tasks) ? data.tasks : []
-  await focusTaskFromQuery()
+  loading.value = true
+  try {
+    const { data } = await axios.get('/api/v1/tasks')
+    tasks.value = Array.isArray(data?.tasks) ? data.tasks : []
+    await focusTaskFromQuery()
+  } finally {
+    loading.value = false
+  }
 }
 
 async function focusTaskFromQuery() {
@@ -136,6 +162,58 @@ watch(() => route.query.task_id, () => {
   void focusTaskFromQuery()
 })
 
+function parseError(err: any, fallback: string): string {
+  const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
+  return typeof msg === 'string' && msg ? msg : fallback
+}
+
+async function deleteTask(t: any) {
+  try {
+    await ElMessageBox.confirm(`确认删除任务 ${t.task_id}？`, '删除确认', { type: 'warning' })
+  } catch {
+    return
+  }
+  deletingTaskID.value = String(t.task_id || '')
+  try {
+    await axios.delete(`/api/v1/tasks/${encodeURIComponent(t.task_id)}`)
+    ElMessage.success('任务已删除')
+    if (selected.value?.task_id === t.task_id) {
+      selected.value = null
+      logText.value = ''
+      closeStream()
+      router.replace({ path: '/tasks', query: {} })
+    }
+    await load()
+  } catch (err) {
+    ElMessage.error(parseError(err, '删除任务失败'))
+  } finally {
+    deletingTaskID.value = ''
+  }
+}
+
+async function clearTasks() {
+  try {
+    await ElMessageBox.confirm('确认清空当前可见的任务记录？此操作不可恢复。', '清空确认', { type: 'warning' })
+  } catch {
+    return
+  }
+  clearing.value = true
+  try {
+    const { data } = await axios.delete('/api/v1/tasks')
+    const n = Number(data?.deleted || 0)
+    ElMessage.success(`已清空 ${n} 条任务`)
+    selected.value = null
+    logText.value = ''
+    closeStream()
+    router.replace({ path: '/tasks', query: {} })
+    await load()
+  } catch (err) {
+    ElMessage.error(parseError(err, '清空任务失败'))
+  } finally {
+    clearing.value = false
+  }
+}
+
 onMounted(() => {
   load().catch(() => ElMessage.error('加载任务列表失败'))
   refreshTimer = setInterval(() => {
@@ -152,6 +230,12 @@ onUnmounted(() => {
 </script>
 <style scoped>
 .tasks-page { display: grid; gap: 12px; }
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar h3 { margin: 0; }
 .toolbar { margin-bottom: 8px; }
 .log-box {
   height: 320px;
