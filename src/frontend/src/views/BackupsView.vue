@@ -136,6 +136,20 @@
             <el-tag v-for="p in workspacePaths" :key="p" type="success" effect="plain">{{ p }}</el-tag>
           </div>
         </el-scrollbar>
+
+        <el-alert
+          v-if="missingWorkspacePaths.length > 0"
+          class="workspace-alert"
+          type="warning"
+          show-icon
+          :closable="false"
+          :title="`检测到 ${missingWorkspacePaths.length} 个当前 Agent Workspace 未出现在该备份中`"
+        />
+        <el-scrollbar v-if="missingWorkspacePaths.length > 0" height="100px">
+          <div class="workspace-list missing">
+            <el-tag v-for="p in missingWorkspacePaths" :key="p" type="danger" effect="plain">{{ p }}</el-tag>
+          </div>
+        </el-scrollbar>
       </el-card>
 
       <el-card shadow="never" v-loading="manifestLoading">
@@ -164,6 +178,10 @@ type BackupItem = {
   size_bytes: number
   sha256: string
   created_at: string
+}
+
+type AgentItem = {
+  workspace_path?: string
 }
 
 const auth = useAuthStore()
@@ -203,6 +221,7 @@ const manifestDialogVisible = ref(false)
 const manifestBackupID = ref('')
 const manifestContent = ref('{}')
 const workspacePaths = ref<string[]>([])
+const missingWorkspacePaths = ref<string[]>([])
 
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
@@ -239,9 +258,26 @@ function extractWorkspacePaths(manifest: any): string[] {
   const scopes = Array.isArray(manifest?.scope) ? manifest.scope.map((x: any) => String(x)) : []
   if (!scopes.includes('workspaces')) return []
   const paths = Array.isArray(manifest?.paths) ? manifest.paths : []
-  return paths
+  return Array.from(new Set(paths
     .map((x: any) => String(x || '').trim())
-    .filter((p: string) => p.includes('/workspace'))
+    .filter((p: string) => p.includes('/workspace'))))
+}
+
+async function detectMissingWorkspaces(includedPaths: string[]) {
+  missingWorkspacePaths.value = []
+  if (includedPaths.length === 0) return
+  try {
+    const { data } = await axios.get('/api/v1/agents')
+    const list = Array.isArray(data?.agents) ? data.agents as AgentItem[] : []
+    const expected = Array.from(new Set(list
+      .map((it) => String(it.workspace_path || '').trim())
+      .filter((p) => p.includes('/workspace'))))
+    if (expected.length === 0) return
+    const included = new Set(includedPaths)
+    missingWorkspacePaths.value = expected.filter((p) => !included.has(p))
+  } catch {
+    missingWorkspacePaths.value = []
+  }
 }
 
 async function loadBackups() {
@@ -334,11 +370,13 @@ async function confirmRestore() {
 async function viewBackupDetail(backupID: string) {
   manifestLoading.value = true
   workspacePaths.value = []
+  missingWorkspacePaths.value = []
   try {
     const { data } = await axios.get(`/api/v1/backups/${backupID}`)
     manifestBackupID.value = backupID
     manifestContent.value = asPrettyJSON(data)
     workspacePaths.value = extractWorkspacePaths(data)
+    await detectMissingWorkspaces(workspacePaths.value)
     manifestDialogVisible.value = true
   } catch (err) {
     ElMessage.error(parseError(err, '读取备份详情失败'))
@@ -426,6 +464,12 @@ onMounted(loadBackups)
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.workspace-list.missing {
+  margin-top: 8px;
+}
+.workspace-alert {
+  margin-top: 12px;
 }
 .manifest-box {
   margin: 0;

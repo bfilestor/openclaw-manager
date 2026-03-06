@@ -352,3 +352,9 @@ cd src && go test ./internal/agent/... ./internal/backup/...
 在备份详情弹窗新增“本次纳入的 Workspace”摘要区块，从 manifest 的 `scope/paths` 中提取 workspace 路径并高亮展示，便于人工核验多 Agent 备份覆盖情况。
 -- 涉及文件
 src/frontend/src/views/BackupsView.vue
+
+- 增强项：备份 Workspace 缺失检测
+-- 功能总结
+备份详情新增“缺失检测”：自动对比当前 Agent 列表中的 workspace 与该备份 manifest，若有未覆盖 workspace 则以告警 + 红色标签展示。
+-- 涉及文件
+src/frontend/src/views/BackupsView.vue
