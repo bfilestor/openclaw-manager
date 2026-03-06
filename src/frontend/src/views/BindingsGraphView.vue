@@ -8,7 +8,7 @@
       <el-space>
         <el-tag type="info">Agent: {{ graph.agents.length }}</el-tag>
         <el-tag type="info">Bot: {{ graph.bots.length }}</el-tag>
-        <el-tag type="success">连线: {{ graph.edges.length }}</el-tag>
+        <el-tag type="success">连线: {{ relationEdges.length }}</el-tag>
         <el-button :loading="loading" @click="loadGraph">刷新</el-button>
       </el-space>
     </div>
@@ -30,7 +30,7 @@
       </template>
 
       <el-empty
-        v-if="!loading && graph.edges.length === 0"
+        v-if="!loading && relationEdges.length === 0"
         description="未在 openclaw 配置中识别到可展示的 bindings 关系"
       />
 
@@ -94,8 +94,24 @@
     </el-card>
 
     <el-card shadow="never">
-      <template #header>Binding 明细</template>
-      <el-table :data="graph.edges" row-key="id" style="width: 100%">
+      <template #header>
+        <div class="detail-header">
+          <span>Binding 明细</span>
+          <el-space>
+            <el-text type="info">按 Channel 筛选</el-text>
+            <el-select v-model="channelFilter" style="width: 180px">
+              <el-option label="全部" value="ALL" />
+              <el-option
+                v-for="channel in channelOptions"
+                :key="channel"
+                :label="channel"
+                :value="channel"
+              />
+            </el-select>
+          </el-space>
+        </div>
+      </template>
+      <el-table :data="filteredEdges" row-key="id" style="width: 100%">
         <el-table-column prop="agent_id" label="Agent" min-width="180" />
         <el-table-column prop="bot_id" label="Bot" min-width="220" />
         <el-table-column prop="channel" label="Channel" min-width="120" />
@@ -147,6 +163,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 const modifiedAt = ref('')
 const graph = ref<GraphSnapshot>({ agents: [], bots: [], edges: [] })
+const channelFilter = ref('ALL')
 const router = useRouter()
 
 const canvasWidth = 1180
@@ -178,8 +195,17 @@ const botPositionMap = computed(() => {
 })
 
 const drawableEdges = computed<DrawableEdge[]>(() => {
+  const linkEdges: GraphEdge[] = []
+  const linkSeen = new Set<string>()
+  for (const edge of graph.value.edges) {
+    const key = `${edge.agent_id}|${edge.channel}|${edge.account}`
+    if (linkSeen.has(key)) continue
+    linkSeen.add(key)
+    linkEdges.push(edge)
+  }
+
   const totals = new Map<string, number>()
-  graph.value.edges.forEach((edge) => {
+  linkEdges.forEach((edge) => {
     const key = `${edge.agent_id}->${edge.bot_id}`
     totals.set(key, (totals.get(key) || 0) + 1)
   })
@@ -187,7 +213,7 @@ const drawableEdges = computed<DrawableEdge[]>(() => {
   const used = new Map<string, number>()
   const out: DrawableEdge[] = []
 
-  for (const edge of graph.value.edges) {
+  for (const edge of linkEdges) {
     const from = agentPositionMap.value.get(edge.agent_id)
     const to = botPositionMap.value.get(edge.bot_id)
     if (!from || !to) continue
@@ -218,6 +244,33 @@ const drawableEdges = computed<DrawableEdge[]>(() => {
   return out
 })
 
+const channelOptions = computed(() => {
+  const set = new Set<string>()
+  for (const edge of graph.value.edges) {
+    const channel = String(edge.channel || '').trim()
+    if (channel) set.add(channel)
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b))
+})
+
+const filteredEdges = computed(() => {
+  const selected = channelFilter.value
+  if (!selected || selected === 'ALL') return graph.value.edges
+  return graph.value.edges.filter((edge) => edge.channel === selected)
+})
+
+const relationEdges = computed(() => {
+  const seen = new Set<string>()
+  const out: GraphEdge[] = []
+  for (const edge of graph.value.edges) {
+    const key = `${edge.agent_id}|${edge.channel}|${edge.account}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(edge)
+  }
+  return out
+})
+
 function isRecord(v: unknown): v is AnyRecord {
   return !!v && typeof v === 'object' && !Array.isArray(v)
 }
@@ -232,24 +285,16 @@ function pickString(obj: AnyRecord, keys: string[]): string {
   return ''
 }
 
-function isBindingObject(v: AnyRecord): boolean {
-  const hasBotRef = Boolean(pickString(v, ['bot_id', 'bot', 'peer', 'target', 'to']))
-  const hasChannel = Boolean(pickString(v, ['channel']))
-  const hasAccount = Boolean(pickString(v, ['account']))
-  return hasBotRef || (hasChannel && hasAccount)
-}
-
-function buildBotRef(binding: AnyRecord): { id: string; channel: string; account: string; peer: string } | null {
-  const channel = pickString(binding, ['channel'])
-  const account = pickString(binding, ['account'])
-  const botID = pickString(binding, ['bot_id', 'bot'])
-  const peer = pickString(binding, ['peer', 'target', 'to'])
-
-  if (botID) return { id: botID, channel, account, peer }
-  if (channel && account) return { id: `${channel}/${account}`, channel, account, peer }
-  if (channel && peer) return { id: `${channel}/${peer}`, channel, account, peer }
-  if (peer) return { id: peer, channel, account, peer }
-  return null
+function parsePeerText(v: any): string {
+  if (v === undefined || v === null) return ''
+  if (typeof v === 'string' || typeof v === 'number') return String(v)
+  if (isRecord(v)) {
+    const kind = pickString(v, ['kind', 'type'])
+    const id = pickString(v, ['id', 'peer', 'value'])
+    if (kind && id) return `${kind}:${id}`
+    if (id) return id
+  }
+  return ''
 }
 
 function extractGraphFromConfig(config: any): GraphSnapshot {
@@ -257,6 +302,38 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
   const botMap = new Map<string, GraphNode>()
   const edges: GraphEdge[] = []
   const edgeSeen = new Set<string>()
+  const accountMetaKeys = new Set([
+    'enabled',
+    'token',
+    'proxy',
+    'timeout',
+    'retries',
+    'retry',
+    'webhook',
+    'api',
+    'api_url',
+    'base_url',
+    'secret',
+    'key',
+    'type',
+    'format',
+    'default',
+    'default_account',
+    'accounts',
+    'bots',
+    'channel',
+    'channels',
+    'bindings',
+    'rules',
+    'map',
+    'items',
+    'agent',
+    'agent_id',
+    'agentid',
+    'accountid',
+    'account_id'
+  ])
+  const wrapperKeys = ['channels', 'channel', 'bindings', 'rules', 'map', 'items']
 
   const addAgent = (id: string, label?: string) => {
     const clean = String(id || '').trim()
@@ -274,21 +351,27 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     }
   }
 
+  const addBotByChannelAccount = (channel: string, account: string) => {
+    const cleanChannel = String(channel || '').trim()
+    const cleanAccount = String(account || '').trim()
+    if (!cleanChannel || !cleanAccount) return
+    addBot(`${cleanChannel}/${cleanAccount}`, `${cleanChannel}/${cleanAccount}`)
+  }
+
   const addEdge = (payload: {
     agentID: string
-    botID: string
-    channel?: string
-    account?: string
+    channel: string
+    account: string
     peer?: string
     source: string
   }) => {
-    const agentID = payload.agentID.trim()
-    const botID = payload.botID.trim()
-    if (!agentID || !botID) return
+    const agentID = String(payload.agentID || '').trim()
+    const channel = String(payload.channel || '').trim()
+    const account = String(payload.account || '').trim()
+    if (!agentID || !channel || !account) return
+    const botID = `${channel}/${account}`
     addAgent(agentID)
-    addBot(botID)
-    const channel = String(payload.channel || '')
-    const account = String(payload.account || '')
+    addBotByChannelAccount(channel, account)
     const peer = String(payload.peer || '')
     const dedupeKey = [agentID, botID, channel, account, peer].join('|')
     if (edgeSeen.has(dedupeKey)) return
@@ -304,144 +387,257 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     })
   }
 
-  const parseBindings = (raw: any, inheritedAgentID: string, source: string) => {
-    if (raw === null || raw === undefined) return
-    if (Array.isArray(raw)) {
-      raw.forEach((item, index) => parseBindings(item, inheritedAgentID, `${source}[${index}]`))
-      return
-    }
-    if (typeof raw === 'string') {
-      if (!inheritedAgentID) return
-      addEdge({ agentID: inheritedAgentID, botID: raw, source })
-      return
-    }
-    if (typeof raw === 'number' || typeof raw === 'boolean') return
+  const parseChannelAccounts = (raw: any, source: string) => {
     if (!isRecord(raw)) return
 
-    if (isBindingObject(raw)) {
-      const agentID = pickString(raw, ['agent_id', 'agent']) || inheritedAgentID
-      const bot = buildBotRef(raw)
-      if (agentID && bot) {
-        addEdge({
-          agentID,
-          botID: bot.id,
-          channel: bot.channel,
-          account: bot.account,
-          peer: bot.peer,
-          source
+    const parseAccountContainer = (channel: string, container: any, _containerSource: string) => {
+      if (Array.isArray(container)) {
+        container.forEach((item) => {
+          if (typeof item === 'string' && item.trim()) {
+            addBotByChannelAccount(channel, item)
+            return
+          }
+          if (!isRecord(item)) return
+          const account = pickString(item, ['account', 'name', 'id', 'bot_id'])
+          if (account) addBotByChannelAccount(channel, account)
         })
+        return
       }
-      return
+      if (!isRecord(container)) return
+
+      const nestedAccounts = isRecord(container.accounts) ? container.accounts : undefined
+      const nestedBots = isRecord(container.bots) ? container.bots : undefined
+      if (nestedAccounts) {
+        for (const account of Object.keys(nestedAccounts)) {
+          addBotByChannelAccount(channel, account)
+        }
+      }
+      if (nestedBots) {
+        for (const account of Object.keys(nestedBots)) {
+          addBotByChannelAccount(channel, account)
+        }
+      }
+      if (nestedAccounts || nestedBots) return
+
+      const explicitAccount = pickString(container, ['account', 'default_account'])
+      if (explicitAccount) addBotByChannelAccount(channel, explicitAccount)
     }
 
-    for (const [key, value] of Object.entries(raw)) {
-      const nextAgentID = inheritedAgentID || String(key)
-      parseBindings(value, nextAgentID, `${source}.${key}`)
+    for (const [channel, channelConfig] of Object.entries(raw)) {
+      parseAccountContainer(channel, channelConfig, `${source}.${channel}`)
     }
   }
 
-  const parseAgents = (raw: any) => {
+  const applyBinding = (channel: string, account: string, rawAgent: any, source: string, peer = '') => {
+    const agentID = String(rawAgent ?? '').trim()
+    if (!agentID) return
+    addEdge({ agentID, channel, account, peer, source })
+  }
+
+  const parseBindingTarget = (channel: string, account: string, target: any, source: string) => {
+    if (target === null || target === undefined) return
+    if (typeof target === 'string' || typeof target === 'number') {
+      applyBinding(channel, account, target, source)
+      return
+    }
+    if (Array.isArray(target)) {
+      target.forEach((item, index) => parseBindingTarget(channel, account, item, `${source}[${index}]`))
+      return
+    }
+    if (!isRecord(target)) return
+
+    const directAgent = pickString(target, ['agent_id', 'agentId', 'agent'])
+    const directChannel = pickString(target, ['channel']) || channel
+    const directAccount = pickString(target, ['account', 'accountId', 'bot', 'bot_id']) || account
+    const peer = parsePeerText(target.peer) || pickString(target, ['target', 'to'])
+
+    if (isRecord(target.match)) {
+      const matchChannel = pickString(target.match, ['channel']) || directChannel
+      const matchAccount = pickString(target.match, ['accountId', 'account', 'bot', 'bot_id']) || directAccount
+      const matchPeer = parsePeerText(target.match.peer) || peer
+      if (directAgent && matchChannel && matchAccount) {
+        applyBinding(matchChannel, matchAccount, directAgent, source, matchPeer)
+        return
+      }
+    }
+
+    if (directAgent && directChannel && directAccount) {
+      applyBinding(directChannel, directAccount, directAgent, source, peer)
+      return
+    }
+
+    if (Array.isArray(target.agents)) {
+      target.agents.forEach((agentItem, index) => {
+        const agentID = typeof agentItem === 'string' ? agentItem : pickString(agentItem, ['id', 'agent_id', 'agentId', 'agent'])
+        applyBinding(directChannel, directAccount, agentID, `${source}.agents[${index}]`, peer)
+      })
+    }
+  }
+
+  const parseBindingsByChannel = (channel: string, raw: any, source: string) => {
+    if (raw === null || raw === undefined) return
+
+    if (Array.isArray(raw)) {
+      raw.forEach((item, index) => {
+        if (!isRecord(item)) return
+        const account = pickString(item, ['account', 'accountId', 'bot', 'bot_id'])
+        const agentID = pickString(item, ['agent_id', 'agentId', 'agent'])
+        if (account && agentID) {
+          applyBinding(channel, account, agentID, `${source}[${index}]`, parsePeerText(item.peer) || pickString(item, ['target', 'to']))
+          return
+        }
+        for (const [accountKey, target] of Object.entries(item)) {
+          parseBindingTarget(channel, accountKey, target, `${source}[${index}].${accountKey}`)
+        }
+      })
+      return
+    }
+
+    if (!isRecord(raw)) return
+
+    const singleAccount = pickString(raw, ['account', 'accountId', 'bot', 'bot_id'])
+    const singleAgent = pickString(raw, ['agent_id', 'agentId', 'agent'])
+    if (singleAccount && singleAgent) {
+      applyBinding(channel, singleAccount, singleAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']))
+      return
+    }
+
+    for (const [accountKey, target] of Object.entries(raw)) {
+      const lk = String(accountKey).toLowerCase()
+      if (accountMetaKeys.has(lk) && !isRecord(target) && !Array.isArray(target)) continue
+      parseBindingTarget(channel, accountKey, target, `${source}.${accountKey}`)
+    }
+  }
+
+  const parseBindingsRoot = (raw: any, source: string) => {
+    if (raw === null || raw === undefined) return
+
+    if (Array.isArray(raw)) {
+      raw.forEach((item, index) => {
+        if (!isRecord(item)) return
+        const match = isRecord(item.match) ? item.match : undefined
+        const channel = match ? pickString(match, ['channel']) : pickString(item, ['channel'])
+        const account = match
+          ? pickString(match, ['accountId', 'account', 'bot', 'bot_id'])
+          : pickString(item, ['accountId', 'account', 'bot', 'bot_id'])
+        const agentID = pickString(item, ['agent_id', 'agentId', 'agent'])
+        if (channel && account && agentID) {
+          const peer = match ? parsePeerText(match.peer) : parsePeerText(item.peer)
+          applyBinding(channel, account, agentID, `${source}[${index}]`, peer || pickString(item, ['target', 'to']))
+          return
+        }
+        for (const [channelKey, value] of Object.entries(item)) {
+          parseBindingsByChannel(channelKey, value, `${source}[${index}].${channelKey}`)
+        }
+      })
+      return
+    }
+
+    if (!isRecord(raw)) return
+
+    const directChannel = pickString(raw, ['channel'])
+    const directAccount = pickString(raw, ['account', 'accountId', 'bot', 'bot_id'])
+    const directAgent = pickString(raw, ['agent_id', 'agentId', 'agent'])
+    if (directChannel && directAccount && directAgent) {
+      applyBinding(directChannel, directAccount, directAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']))
+      return
+    }
+
+    for (const wrapper of wrapperKeys) {
+      const wrapped = raw[wrapper]
+      if (isRecord(wrapped)) {
+        for (const [channelKey, channelBindings] of Object.entries(wrapped)) {
+          parseBindingsByChannel(channelKey, channelBindings, `${source}.${wrapper}.${channelKey}`)
+        }
+      } else if (Array.isArray(wrapped)) {
+        parseBindingsRoot(wrapped, `${source}.${wrapper}`)
+      }
+    }
+
+    for (const [channelKey, value] of Object.entries(raw)) {
+      if (wrapperKeys.includes(channelKey)) continue
+      if (['channel', 'account', 'accountId', 'agent', 'agent_id', 'agentId', 'peer', 'target', 'to', 'match'].includes(channelKey)) continue
+      parseBindingsByChannel(channelKey, value, `${source}.${channelKey}`)
+    }
+  }
+
+  const parseAgents = (raw: any, source: string) => {
     if (raw === null || raw === undefined) return
     if (Array.isArray(raw)) {
-      raw.forEach((item) => {
+      raw.forEach((item, index) => {
         if (!isRecord(item)) return
         const agentID = pickString(item, ['id', 'agent_id', 'agent', 'name'])
         if (!agentID) return
         addAgent(agentID)
-        parseBindings(item.bindings, agentID, `agents.${agentID}.bindings`)
+        const bindings = item.bindings
+        if (!Array.isArray(bindings)) return
+        bindings.forEach((binding, bIndex) => {
+          if (!isRecord(binding)) return
+          const channel = pickString(binding, ['channel'])
+          const account = pickString(binding, ['account', 'bot', 'bot_id'])
+          if (!channel || !account) return
+          addEdge({
+            agentID,
+            channel,
+            account,
+            peer: pickString(binding, ['peer', 'target', 'to']),
+            source: `${source}[${index}].bindings[${bIndex}]`
+          })
+        })
       })
       return
     }
     if (!isRecord(raw)) return
+
+    if (Array.isArray(raw.list)) {
+      parseAgents(raw.list, `${source}.list`)
+      return
+    }
+
+    if (Array.isArray(raw.items)) {
+      parseAgents(raw.items, `${source}.items`)
+      return
+    }
+
     for (const [key, value] of Object.entries(raw)) {
       if (!isRecord(value)) {
-        addAgent(String(key))
         continue
       }
+
+      if (key === 'defaults' || key === 'default') continue
+
       const agentID = pickString(value, ['id', 'agent_id', 'agent', 'name']) || String(key)
       addAgent(agentID)
-      parseBindings(value.bindings, agentID, `agents.${agentID}.bindings`)
-    }
-  }
-
-  const parseBots = (raw: any) => {
-    if (raw === null || raw === undefined) return
-    if (Array.isArray(raw)) {
-      raw.forEach((item) => {
-        if (typeof item === 'string') {
-          addBot(item)
-          return
-        }
-        if (!isRecord(item)) return
-        const channel = pickString(item, ['channel'])
-        const account = pickString(item, ['account'])
-        const explicitID = pickString(item, ['id', 'bot_id', 'name'])
-        if (channel && account) {
-          addBot(`${channel}/${account}`)
-          return
-        }
-        if (explicitID) {
-          addBot(explicitID)
-        }
+      const bindings = value.bindings
+      if (!Array.isArray(bindings)) continue
+      bindings.forEach((binding, bIndex) => {
+        if (!isRecord(binding)) return
+        const channel = pickString(binding, ['channel'])
+        const account = pickString(binding, ['account', 'bot', 'bot_id'])
+        if (!channel || !account) return
+        addEdge({
+          agentID,
+          channel,
+          account,
+          peer: pickString(binding, ['peer', 'target', 'to']),
+          source: `${source}.${agentID}.bindings[${bIndex}]`
+        })
       })
-      return
-    }
-    if (!isRecord(raw)) return
-
-    for (const [key, value] of Object.entries(raw)) {
-      if (!isRecord(value)) {
-        addBot(String(key))
-        continue
-      }
-
-      const explicitID = pickString(value, ['id', 'bot_id', 'name'])
-      const channel = pickString(value, ['channel'])
-      const account = pickString(value, ['account'])
-      if (channel && account) {
-        addBot(`${channel}/${account}`)
-        continue
-      }
-      if (explicitID) {
-        addBot(explicitID)
-        continue
-      }
-
-      // 扁平结构: bots.<bot_id> = { channel: "...", token: "..." }
-      if (channel) {
-        addBot(`${channel}/${key}`)
-        continue
-      }
-
-      // 嵌套结构: bots.<channel>.<account> = {...}
-      const accountKeys = Object.keys(value)
-      if (accountKeys.length === 0) {
-        addBot(String(key))
-        continue
-      }
-      for (const accountKey of accountKeys) {
-        const child = value[accountKey]
-        if (isRecord(child)) {
-          const childChannel = pickString(child, ['channel']) || key
-          const childAccount = pickString(child, ['account']) || accountKey
-          addBot(`${childChannel}/${childAccount}`)
-          continue
-        }
-        if (typeof child === 'string' && child.trim()) {
-          addBot(`${key}/${accountKey}`)
-        }
-      }
     }
   }
 
-  parseAgents(config?.agents)
-  parseBindings(config?.bindings, '', 'bindings')
-  parseBots(config?.bots)
+  parseChannelAccounts(config?.channels, 'channels')
+  parseChannelAccounts(config?.channel, 'channel')
+  parseChannelAccounts(config?.bots, 'bots')
+  parseChannelAccounts(config?.bot, 'bot')
+  parseBindingsRoot(config?.bindings, 'bindings')
+  parseAgents(config?.agents, 'agents')
 
   const agents = Array.from(agentMap.values()).sort((a, b) => a.label.localeCompare(b.label))
   const bots = Array.from(botMap.values()).sort((a, b) => a.label.localeCompare(b.label))
   edges.sort((a, b) => {
-    const left = `${a.agent_id}|${a.bot_id}|${a.channel}|${a.account}|${a.peer}`
-    const right = `${b.agent_id}|${b.bot_id}|${b.channel}|${b.account}|${b.peer}`
+    const left = `${a.channel}|${a.account}|${a.agent_id}|${a.peer}`
+    const right = `${b.channel}|${b.account}|${b.agent_id}|${b.peer}`
     return left.localeCompare(right)
   })
 
@@ -489,8 +685,12 @@ async function loadGraph() {
       throw new Error('openclaw.json 解析失败，请先修复配置 JSON 格式')
     }
     graph.value = extractGraphFromConfig(parsed)
+    if (channelFilter.value !== 'ALL' && !graph.value.edges.some((edge) => edge.channel === channelFilter.value)) {
+      channelFilter.value = 'ALL'
+    }
   } catch (err) {
     graph.value = { agents: [], bots: [], edges: [] }
+    channelFilter.value = 'ALL'
     errorMessage.value = parseError(err, '加载配置失败，无法生成绑定图谱')
   } finally {
     loading.value = false
@@ -524,6 +724,12 @@ onMounted(loadGraph)
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .graph-scroll {

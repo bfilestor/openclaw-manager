@@ -10,43 +10,73 @@ let mockOpenclawConfig = JSON.stringify({
     bind_addr: '127.0.0.1',
     port: 18790
   },
-  bots: {
+  channels: {
     telegram: {
-      ops_bot: {
+      enabled: true,
+      botToken: '***',
+      groups: {
+        '*': { requireMention: true }
+      },
+      allowFrom: ['1770883652'],
+      groupPolicy: 'open',
+      streaming: 'partial',
+      main_bot: {
         token: '***'
       },
-      alert_bot: {
+      xcoder_bot: {
         token: '***'
-      }
-    },
-    slack: {
-      eng_bot: {
+      },
+      pmanager_bot: {
         token: '***'
+      },
+      accounts: {
+        main_bot: {
+          botToken: '***'
+        },
+        xcoder_bot: {
+          botToken: '***'
+        },
+        pmanager_bot: {
+          botToken: '***'
+        }
       }
     }
   },
-  agents: [
-    {
-      id: 'assistant-a',
-      bindings: [
-        { channel: 'telegram', account: 'ops_bot', peer: '@ops' },
-        { channel: 'slack', account: 'eng_bot', peer: '#incident' }
-      ]
+  agents: {
+    defaults: {
+      workspace: '/home/openclaw/.openclaw/workspace'
     },
-    {
-      id: 'research-b',
-      bindings: [
-        { channel: 'telegram', account: 'alert_bot', peer: '@research' }
-      ]
-    }
-  ],
+    list: [
+      { id: 'main' },
+      { id: 'xcoder' },
+      { id: 'pmanger' }
+    ]
+  },
   bindings: [
     {
-      agent: 'assistant-a',
-      channel: 'telegram',
-      account: 'ops_bot',
-      peer: '@release'
-    }
+      agentId: 'main',
+      match: {
+        channel: 'telegram',
+        accountId: 'main_bot',
+        peer: { kind: 'direct', id: '1077083652' }
+      },
+    },
+    {
+      agentId: 'xcoder',
+      match: {
+        channel: 'telegram',
+        accountId: 'xcoder_bot',
+        peer: { kind: 'group', id: '-5757757833' }
+      },
+    },
+    {
+      agentId: 'pmanger',
+      match: {
+        channel: 'telegram',
+        accountId: 'pmanager_bot',
+        peer: { kind: 'channel', id: '-5757757833' }
+      }
+    },
   ],
   manager: {
     log_level: 'info'

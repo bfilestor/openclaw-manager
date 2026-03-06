@@ -1,0 +1,300 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-06T06:26:37.812Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-02T07:59:50.087Z",
+    "lastRunVersion": "2026.2.26",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "openai-codex:default": {
+        "provider": "openai-codex",
+        "mode": "oauth"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "custom-proxy": {
+        "baseUrl": "https://api.openai.com/openai",
+        "apiKey": "cccccccccccccccccccccccccccccccccccccc",
+        "api": "openai-responses",
+        "models": [
+          {
+            "id": "gpt-5.3-codex",
+            "name": "gpt-5.3-codex",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 400000,
+            "maxTokens": 128000
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "custom-proxy/gpt-5.3-codex"
+      },
+      "workspace": "/home/mxxx/.openclaw/workspace"
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true
+      },
+      {
+        "id": "xcoder",
+        "name": "xcoder",
+        "workspace": "/home/mxxx/.openclaw/workspace-xcoder",
+        "agentDir": "/home/mxxx/.openclaw/agents/xcoder/agent"
+      },
+      {
+        "id": "pmanger",
+        "name": "pmanger",
+        "workspace": "/home/mxxx/.openclaw/workspace-pmanger",
+        "model": "gpt-5.2"
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "main_bot",
+        "peer": {
+          "kind": "direct",
+          "id": "1077083652"
+        }
+      }
+    },
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "main_bot",
+        "peer": {
+          "kind": "group",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "main_bot",
+        "peer": {
+          "kind": "channel",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "xcoder",
+      "match": {
+        "channel": "telegram",
+        "accountId": "xcoder_bot",
+        "peer": {
+          "kind": "direct",
+          "id": "1077083652"
+        }
+      }
+    },
+    {
+      "agentId": "xcoder",
+      "match": {
+        "channel": "telegram",
+        "accountId": "xcoder_bot",
+        "peer": {
+          "kind": "group",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "xcoder",
+      "match": {
+        "channel": "telegram",
+        "accountId": "xcoder_bot",
+        "peer": {
+          "kind": "channel",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "pmanger",
+      "match": {
+        "channel": "telegram",
+        "accountId": "pmanager_bot",
+        "peer": {
+          "kind": "direct",
+          "id": "1077083652"
+        }
+      }
+    },
+    {
+      "agentId": "pmanger",
+      "match": {
+        "channel": "telegram",
+        "accountId": "pmanager_bot",
+        "peer": {
+          "kind": "group",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "pmanger",
+      "match": {
+        "channel": "telegram",
+        "accountId": "pmanager_bot",
+        "peer": {
+          "kind": "channel",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "default",
+        "peer": {
+          "kind": "direct",
+          "id": "1077083652"
+        }
+      }
+    },
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "default",
+        "peer": {
+          "kind": "group",
+          "id": "-5757757833"
+        }
+      }
+    },
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "default",
+        "peer": {
+          "kind": "channel",
+          "id": "-5757757833"
+        }
+      }
+    }
+  ],
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "allowlist",
+      "botToken": "cccccccccccccccccccccccccccccccccccccc",
+      "groups": {
+        "*": {
+          "requireMention": true
+        },
+        "-5231807451": {
+          "requireMention": true,
+          "groupPolicy": "open"
+        }
+      },
+      "allowFrom": [
+        "1770883652"
+      ],
+      "groupPolicy": "open",
+      "streaming": "off",
+      "accounts": {
+        "main_bot": {
+          "dmPolicy": "allowlist",
+          "botToken": "cccccccccccccccccccccccccccccccccccccc",
+          "allowFrom": [
+            "1770883652"
+          ],
+          "groupPolicy": "allowlist",
+          "streaming": "partial"
+        },
+        "xcoder_bot": {
+          "dmPolicy": "allowlist",
+          "botToken": "cccccccccccccccccccccccccccccccccccccc",
+          "allowFrom": [
+            "1770883652"
+          ],
+          "groupPolicy": "allowlist",
+          "streaming": "partial"
+        },
+        "pmanager_bot": {
+          "dmPolicy": "allowlist",
+          "botToken": "ccccccccccccccccccccccccccccccccccccccQ",
+          "allowFrom": [
+            "1770883652"
+          ],
+          "groupPolicy": "allowlist",
+          "streaming": "partial"
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "cccccccccccccccccccccccccccccccccccccc"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "calendar.add",
+        "contacts.add",
+        "reminders.add"
+      ]
+    }
+  }
+}
