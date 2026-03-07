@@ -98,6 +98,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
   { path: '/gateway', label: 'Gateway', icon: '🌐' },
   { path: '/agents', label: 'Agents', icon: '🤖' },
+  { path: '/agent-sessions', label: 'Sessions', icon: '🎬' },
   { path: '/bindings', label: 'Bindings', icon: '🔗' },
   { path: '/skills', label: 'Skills', icon: '🧩' },
   { path: '/config', label: 'Config', icon: '⚙️' },
