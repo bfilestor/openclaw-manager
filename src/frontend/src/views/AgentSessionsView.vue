@@ -119,7 +119,7 @@ async function loadSessions() {
   errorMessage.value = ''
   try {
     const params = agentFilter.value.trim() ? { agentId: agentFilter.value.trim() } : undefined
-    const { data } = await axios.get('/api/sessions', { params })
+    const { data } = await axios.get('/api/v1/agent-sessions', { params })
     sessions.value = Array.isArray(data?.sessions) ? data.sessions : []
   } catch {
     sessions.value = []

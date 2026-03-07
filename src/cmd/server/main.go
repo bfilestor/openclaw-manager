@@ -104,6 +104,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		gatewayLogs := gateway.NewLogsHandler(execer)
 
 		agentAPI := &agent.Handler{Repo: agentRepo}
+		agentSessionAPI := &agent.SessionStatusHandler{Exec: execer}
 		agentManage := &agent.ManageHandler{
 			Exec:             execer,
 			Workspaces:       agentRepo,
@@ -166,6 +167,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 
 		mux.HandleFunc("GET /api/v1/agents", wrap(agentAPI.ListAgents, authMW))
 		mux.HandleFunc("GET /api/v1/agents/{id}", wrap(agentAPI.GetAgent, authMW))
+		mux.HandleFunc("GET /api/v1/agent-sessions", wrap(agentSessionAPI.ListAgentSessions, authMW))
 		mux.HandleFunc("POST /api/v1/agents", wrap(agentManage.CreateAgent, authMW))
 		mux.HandleFunc("DELETE /api/v1/agents/{id}", wrap(agentManage.DeleteAgent, authMW))
 		mux.HandleFunc("POST /api/v1/agents/{id}/workspace/migrate", wrap(agentManage.MigrateWorkspace, authMW))
