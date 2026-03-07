@@ -13,7 +13,10 @@
             :key="item.path"
             :index="item.path"
           >
-            <span>{{ item.label }}</span>
+            <span class="nav-item-content">
+              <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span class="nav-label">{{ item.label }}</span>
+            </span>
           </el-menu-item>
         </el-menu>
       </el-scrollbar>
@@ -83,6 +86,7 @@ import { useAuthStore } from './stores/auth'
 type NavItem = {
   path: string
   label: string
+  icon: string
   adminOnly?: boolean
 }
 
@@ -91,15 +95,15 @@ const route = useRoute()
 const router = useRouter()
 
 const navItems: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/gateway', label: 'Gateway' },
-  { path: '/agents', label: 'Agents' },
-  { path: '/bindings', label: 'Bindings' },
-  { path: '/skills', label: 'Skills' },
-  { path: '/config', label: 'Config' },
-  { path: '/backups', label: 'Backups' },
-  { path: '/tasks', label: 'Tasks' },
-  { path: '/admin/users', label: 'Users', adminOnly: true },
+  { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
+  { path: '/gateway', label: 'Gateway', icon: '🌐' },
+  { path: '/agents', label: 'Agents', icon: '🤖' },
+  { path: '/bindings', label: 'Bindings', icon: '🔗' },
+  { path: '/skills', label: 'Skills', icon: '🧩' },
+  { path: '/config', label: 'Config', icon: '⚙️' },
+  { path: '/backups', label: 'Backups', icon: '💾' },
+  { path: '/tasks', label: 'Tasks', icon: '✅' },
+  { path: '/admin/users', label: 'Users', icon: '👥', adminOnly: true },
 ]
 
 const visibleNavItems = computed(() => {
@@ -234,6 +238,33 @@ async function submitPasswordChange() {
   height: 42px;
 }
 
+.nav-item-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #eef4ff, #e9fbff);
+  font-size: 14px;
+  box-shadow: inset 0 0 0 1px rgba(73, 110, 255, 0.12);
+}
+
+.nav-label {
+  color: #2f3442;
+}
+
+.nav-menu :deep(.is-active .nav-icon) {
+  background: linear-gradient(145deg, #2f80ff, #4aa8ff);
+  box-shadow: none;
+}
+
 .aside-footer {
   border-top: 1px solid #edf0f6;
   padding: 12px 16px 16px;
@@ -306,8 +337,13 @@ async function submitPasswordChange() {
     padding: 0 !important;
   }
 
-  .nav-menu :deep(.el-menu-item span) {
-    font-size: 0;
+  .nav-item-content {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .nav-label {
+    display: none;
   }
 
   .app-header {
