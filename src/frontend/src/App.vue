@@ -233,15 +233,38 @@ async function submitPasswordChange() {
 }
 
 .nav-menu :deep(.el-menu-item) {
+  position: relative;
+  overflow: hidden;
   border-radius: 10px;
   margin-bottom: 4px;
   height: 42px;
+  transition: transform 0.18s ease, background-color 0.2s ease;
+}
+
+.nav-menu :deep(.el-menu-item:hover) {
+  transform: translateX(2px);
+}
+
+.nav-menu :deep(.el-menu-item)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2f80ff 0%, #52c1ff 100%);
+  transform: scaleY(0.25);
+  opacity: 0;
+  transform-origin: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .nav-item-content {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  transition: transform 0.2s ease;
 }
 
 .nav-icon {
@@ -254,15 +277,36 @@ async function submitPasswordChange() {
   background: linear-gradient(145deg, #eef4ff, #e9fbff);
   font-size: 14px;
   box-shadow: inset 0 0 0 1px rgba(73, 110, 255, 0.12);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-label {
   color: #2f3442;
+  transition: color 0.2s ease;
+}
+
+.nav-menu :deep(.el-menu-item:hover .nav-icon) {
+  transform: scale(1.06);
+}
+
+.nav-menu :deep(.is-active)::before {
+  transform: scaleY(1);
+  opacity: 1;
+}
+
+.nav-menu :deep(.is-active .nav-item-content) {
+  transform: translateX(2px);
 }
 
 .nav-menu :deep(.is-active .nav-icon) {
   background: linear-gradient(145deg, #2f80ff, #4aa8ff);
   box-shadow: none;
+  transform: scale(1.04);
+}
+
+.nav-menu :deep(.is-active .nav-label) {
+  color: #1e4f9f;
+  font-weight: 600;
 }
 
 .aside-footer {
