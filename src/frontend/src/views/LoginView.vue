@@ -28,8 +28,8 @@ import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
-const username = ref('admin01')
-const password = ref('Pass1234')
+const username = ref('')
+const password = ref('')
 const error = ref('')
 
 async function login() {
