@@ -43,15 +43,16 @@
           <template #header>
             <div class="revision-header">
               <span>Revisions</span>
-              <el-space>
-                <el-text type="info">已选 {{ selectedRevisions.length }}</el-text>
-                <el-button size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
-                  对比所选版本
+              <el-space wrap>
+                <el-text type="info">已选 {{ selectedRevisions.length }}/2</el-text>
+                <el-button type="primary" size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
+                  版本比较
                 </el-button>
               </el-space>
             </div>
           </template>
           <el-table
+            ref="revisionTableRef"
             v-loading="loadingRevisions"
             :data="revisions"
             row-key="revision_id"
@@ -149,6 +150,7 @@ const content = ref('')
 const sizeBytes = ref(0)
 const modifiedAt = ref('')
 const revisions = ref<Revision[]>([])
+const revisionTableRef = ref<any>(null)
 
 const revisionDialogVisible = ref(false)
 const diffDialogVisible = ref(false)
@@ -282,7 +284,19 @@ function compareWithCurrent(rev: Revision) {
 }
 
 function onRevisionSelectionChange(rows: Revision[]) {
-  selectedRevisions.value = Array.isArray(rows) ? rows : []
+  const list = Array.isArray(rows) ? rows : []
+  if (list.length <= 2) {
+    selectedRevisions.value = list
+    return
+  }
+
+  ElMessage.warning('最多选择 2 个版本进行比较')
+  const keep = list.slice(-2)
+  selectedRevisions.value = keep
+  if (revisionTableRef.value) {
+    revisionTableRef.value.clearSelection()
+    keep.forEach((row) => revisionTableRef.value.toggleRowSelection(row, true))
+  }
 }
 
 function compareSelectedRevisions() {
