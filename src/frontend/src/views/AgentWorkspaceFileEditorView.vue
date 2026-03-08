@@ -40,13 +40,25 @@
       </el-col>
       <el-col :xs="24" :lg="9">
         <el-card shadow="never">
-          <template #header>Revisions</template>
+          <template #header>
+            <div class="revision-header">
+              <span>Revisions</span>
+              <el-space>
+                <el-text type="info">已选 {{ selectedRevisions.length }}</el-text>
+                <el-button size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
+                  对比所选版本
+                </el-button>
+              </el-space>
+            </div>
+          </template>
           <el-table
             v-loading="loadingRevisions"
             :data="revisions"
             row-key="revision_id"
             style="width: 100%"
+            @selection-change="onRevisionSelectionChange"
           >
+            <el-table-column type="selection" width="44" />
             <el-table-column prop="created_at" label="时间" min-width="170">
               <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
             </el-table-column>
@@ -143,6 +155,7 @@ const diffDialogVisible = ref(false)
 const currentRevisionID = ref('')
 const currentRevisionContent = ref('')
 const diffLines = ref<{ text: string; type: 'same' | 'add' | 'remove' }[]>([])
+const selectedRevisions = ref<Revision[]>([])
 
 const agentID = computed(() => String(route.params.id || '').trim())
 const filePath = computed(() => String(route.query.path || '').trim())
@@ -200,6 +213,7 @@ async function loadRevisions() {
       params: { ...fileApiParams(), limit: 50 },
     })
     revisions.value = Array.isArray(data?.revisions) ? data.revisions : []
+    selectedRevisions.value = []
   } finally {
     loadingRevisions.value = false
   }
@@ -248,10 +262,9 @@ function previewRevision(rev: Revision) {
   revisionDialogVisible.value = true
 }
 
-function compareWithCurrent(rev: Revision) {
-  currentRevisionID.value = rev.revision_id
-  const parts = calcDiffLines(rev.content || '', content.value || '')
-  diffLines.value = parts.flatMap((part) => {
+function buildDiffLines(fromText: string, toText: string) {
+  const parts = calcDiffLines(fromText || '', toText || '')
+  return parts.flatMap((part) => {
     const rows = String(part.value || '').split('\n')
     if (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
     const type: 'same' | 'add' | 'remove' = part.added ? 'add' : part.removed ? 'remove' : 'same'
@@ -260,6 +273,29 @@ function compareWithCurrent(rev: Revision) {
       text: `${type === 'add' ? '+' : type === 'remove' ? '-' : ' '} ${row}`,
     }))
   })
+}
+
+function compareWithCurrent(rev: Revision) {
+  currentRevisionID.value = `${rev.revision_id} -> CURRENT`
+  diffLines.value = buildDiffLines(rev.content || '', content.value || '')
+  diffDialogVisible.value = true
+}
+
+function onRevisionSelectionChange(rows: Revision[]) {
+  selectedRevisions.value = Array.isArray(rows) ? rows : []
+}
+
+function compareSelectedRevisions() {
+  if (selectedRevisions.value.length !== 2) {
+    ElMessage.warning('请先勾选 2 个版本再对比')
+    return
+  }
+  const [a, b] = selectedRevisions.value
+  const olderFirst = new Date(a.created_at).getTime() <= new Date(b.created_at).getTime()
+  const fromRev = olderFirst ? a : b
+  const toRev = olderFirst ? b : a
+  currentRevisionID.value = `${fromRev.revision_id} -> ${toRev.revision_id}`
+  diffLines.value = buildDiffLines(fromRev.content || '', toRev.content || '')
   diffDialogVisible.value = true
 }
 
@@ -329,6 +365,12 @@ onMounted(loadAll)
 }
 .meta-row {
   margin-bottom: 8px;
+}
+.revision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 .editor :deep(textarea) {
   font-family: Consolas, "Courier New", monospace;
