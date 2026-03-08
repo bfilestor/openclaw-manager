@@ -59,6 +59,7 @@
               <template #default="{ row }">
                 <el-space>
                   <el-button type="info" link @click="previewRevision(row)">查看</el-button>
+                  <el-button type="primary" link @click="compareWithCurrent(row)">对比当前</el-button>
                   <el-button
                     type="warning"
                     link
@@ -94,11 +95,22 @@
         <el-button @click="revisionDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="diffDialogVisible" width="920px" :title="`Diff - ${currentRevisionID || '-'}`">
+      <el-scrollbar height="460px">
+        <pre class="revision-content diff-content"><template v-for="(line, idx) in diffLines" :key="idx"><span :class="line.type">{{ line.text }}
+</span></template></pre>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="diffDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { diffLines as calcDiffLines } from 'diff'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -127,8 +139,10 @@ const modifiedAt = ref('')
 const revisions = ref<Revision[]>([])
 
 const revisionDialogVisible = ref(false)
+const diffDialogVisible = ref(false)
 const currentRevisionID = ref('')
 const currentRevisionContent = ref('')
+const diffLines = ref<{ text: string; type: 'same' | 'add' | 'remove' }[]>([])
 
 const agentID = computed(() => String(route.params.id || '').trim())
 const filePath = computed(() => String(route.query.path || '').trim())
@@ -234,6 +248,21 @@ function previewRevision(rev: Revision) {
   revisionDialogVisible.value = true
 }
 
+function compareWithCurrent(rev: Revision) {
+  currentRevisionID.value = rev.revision_id
+  const parts = calcDiffLines(rev.content || '', content.value || '')
+  diffLines.value = parts.flatMap((part) => {
+    const rows = String(part.value || '').split('\n')
+    if (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
+    const type: 'same' | 'add' | 'remove' = part.added ? 'add' : part.removed ? 'remove' : 'same'
+    return rows.map((row) => ({
+      type,
+      text: `${type === 'add' ? '+' : type === 'remove' ? '-' : ' '} ${row}`,
+    }))
+  })
+  diffDialogVisible.value = true
+}
+
 async function restoreRevision(rev: Revision) {
   if (!canEdit.value) {
     ElMessage.warning('当前角色无编辑权限')
@@ -313,5 +342,16 @@ onMounted(loadAll)
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
   line-height: 1.6;
+}
+.diff-content .add {
+  background: #ecfdf3;
+  color: #1b5e20;
+}
+.diff-content .remove {
+  background: #fff1f0;
+  color: #b42318;
+}
+.diff-content .same {
+  color: #667085;
 }
 </style>

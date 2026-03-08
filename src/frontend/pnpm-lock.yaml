@@ -11,6 +11,9 @@ importers:
       axios:
         specifier: ^1.8.0
         version: 1.13.6
+      diff:
+        specifier: ^7.0.0
+        version: 7.0.0
       element-plus:
         specifier: ^2.9.0
         version: 2.13.3(vue@3.5.29(typescript@5.9.3))
@@ -656,6 +659,10 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  diff@7.0.0:
+    resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
+    engines: {node: '>=0.3.1'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -1447,6 +1454,8 @@ snapshots:
   deep-eql@5.0.2: {}
 
   delayed-stream@1.0.0: {}
+
+  diff@7.0.0: {}
 
   dunder-proto@1.0.1:
     dependencies:
