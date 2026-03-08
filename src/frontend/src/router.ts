@@ -13,6 +13,8 @@ import BindingsGraphView from './views/BindingsGraphView.vue'
 import BackupsView from './views/BackupsView.vue'
 import ConfigView from './views/ConfigView.vue'
 import AgentWorkspaceMigrateView from './views/AgentWorkspaceMigrateView.vue'
+import AgentWorkspaceFilesView from './views/AgentWorkspaceFilesView.vue'
+import AgentWorkspaceFileEditorView from './views/AgentWorkspaceFileEditorView.vue'
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -22,6 +24,8 @@ const routes = [
   { path: '/agents', component: AgentsView, meta: { auth: true } },
   { path: '/agent-sessions', component: AgentSessionsView, meta: { auth: true } },
   { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true } },
+  { path: '/agents/:id/workspace-files', component: AgentWorkspaceFilesView, meta: { auth: true } },
+  { path: '/agents/:id/workspace-files/edit', component: AgentWorkspaceFileEditorView, meta: { auth: true } },
   { path: '/bindings', component: BindingsGraphView, meta: { auth: true } },
   { path: '/skills', component: SkillsView, meta: { auth: true } },
   { path: '/config', component: ConfigView, meta: { auth: true } },

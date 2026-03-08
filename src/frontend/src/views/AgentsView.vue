@@ -42,9 +42,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="180">
           <template #default="{ row }">
-            <el-button type="primary" link @click="goMigrate(row)">迁移</el-button>
+            <el-space>
+              <el-button type="primary" link @click="goDetails(row)">查看详情</el-button>
+              <el-button type="warning" link @click="goMigrate(row)">迁移</el-button>
+            </el-space>
           </template>
         </el-table-column>
       </el-table>
@@ -81,6 +84,10 @@ function goBindings() {
 
 function goMigrate(row: AgentItem) {
   router.push(`/agents/${encodeURIComponent(row.agent_id)}/workspace-migrate`)
+}
+
+function goDetails(row: AgentItem) {
+  router.push(`/agents/${encodeURIComponent(row.agent_id)}/workspace-files`)
 }
 
 async function loadAgents() {
