@@ -40,13 +40,25 @@
       </el-col>
       <el-col :xs="24" :lg="9">
         <el-card shadow="never">
-          <template #header>Revisions</template>
+          <template #header>
+            <div class="revision-header">
+              <span>Revisions</span>
+              <el-space>
+                <el-text type="info">已选 {{ selectedRevisions.length }}</el-text>
+                <el-button size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
+                  对比所选版本
+                </el-button>
+              </el-space>
+            </div>
+          </template>
           <el-table
             v-loading="loadingRevisions"
             :data="revisions"
             row-key="revision_id"
             style="width: 100%"
+            @selection-change="onRevisionSelectionChange"
           >
+            <el-table-column type="selection" width="44" />
             <el-table-column prop="created_at" label="时间" min-width="170">
               <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
             </el-table-column>
@@ -59,6 +71,7 @@
               <template #default="{ row }">
                 <el-space>
                   <el-button type="info" link @click="previewRevision(row)">查看</el-button>
+                  <el-button type="primary" link @click="compareWithCurrent(row)">对比当前</el-button>
                   <el-button
                     type="warning"
                     link
@@ -94,11 +107,22 @@
         <el-button @click="revisionDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="diffDialogVisible" width="920px" :title="`Diff - ${currentRevisionID || '-'}`">
+      <el-scrollbar height="460px">
+        <pre class="revision-content diff-content"><template v-for="(line, idx) in diffLines" :key="idx"><span :class="line.type">{{ line.text }}
+</span></template></pre>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="diffDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { diffLines as calcDiffLines } from 'diff'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -127,8 +151,11 @@ const modifiedAt = ref('')
 const revisions = ref<Revision[]>([])
 
 const revisionDialogVisible = ref(false)
+const diffDialogVisible = ref(false)
 const currentRevisionID = ref('')
 const currentRevisionContent = ref('')
+const diffLines = ref<{ text: string; type: 'same' | 'add' | 'remove' }[]>([])
+const selectedRevisions = ref<Revision[]>([])
 
 const canEdit = computed(() => {
   const role = auth.user?.role || 'Viewer'
@@ -177,6 +204,7 @@ async function loadRevisions() {
   try {
     const { data } = await axios.get('/api/v1/config/openclaw/revisions', { params: { limit: 50 } })
     revisions.value = Array.isArray(data?.revisions) ? data.revisions : []
+    selectedRevisions.value = []
   } finally {
     loadingRevisions.value = false
   }
@@ -232,6 +260,43 @@ function previewRevision(rev: Revision) {
   currentRevisionID.value = rev.revision_id
   currentRevisionContent.value = rev.content || ''
   revisionDialogVisible.value = true
+}
+
+function buildDiffLines(fromText: string, toText: string) {
+  const parts = calcDiffLines(fromText || '', toText || '')
+  return parts.flatMap((part) => {
+    const rows = String(part.value || '').split('\n')
+    if (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
+    const type: 'same' | 'add' | 'remove' = part.added ? 'add' : part.removed ? 'remove' : 'same'
+    return rows.map((row) => ({
+      type,
+      text: `${type === 'add' ? '+' : type === 'remove' ? '-' : ' '} ${row}`,
+    }))
+  })
+}
+
+function compareWithCurrent(rev: Revision) {
+  currentRevisionID.value = `${rev.revision_id} -> CURRENT`
+  diffLines.value = buildDiffLines(rev.content || '', content.value || '')
+  diffDialogVisible.value = true
+}
+
+function onRevisionSelectionChange(rows: Revision[]) {
+  selectedRevisions.value = Array.isArray(rows) ? rows : []
+}
+
+function compareSelectedRevisions() {
+  if (selectedRevisions.value.length !== 2) {
+    ElMessage.warning('请先勾选 2 个版本再对比')
+    return
+  }
+  const [a, b] = selectedRevisions.value
+  const olderFirst = new Date(a.created_at).getTime() <= new Date(b.created_at).getTime()
+  const fromRev = olderFirst ? a : b
+  const toRev = olderFirst ? b : a
+  currentRevisionID.value = `${fromRev.revision_id} -> ${toRev.revision_id}`
+  diffLines.value = buildDiffLines(fromRev.content || '', toRev.content || '')
+  diffDialogVisible.value = true
 }
 
 async function restoreRevision(rev: Revision) {
@@ -297,6 +362,12 @@ onMounted(loadAll)
 .meta-row {
   margin-bottom: 8px;
 }
+.revision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
 .editor :deep(textarea) {
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
@@ -309,5 +380,16 @@ onMounted(loadAll)
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
   line-height: 1.6;
+}
+.diff-content .add {
+  background: #ecfdf3;
+  color: #1b5e20;
+}
+.diff-content .remove {
+  background: #fff1f0;
+  color: #b42318;
+}
+.diff-content .same {
+  color: #667085;
 }
 </style>
