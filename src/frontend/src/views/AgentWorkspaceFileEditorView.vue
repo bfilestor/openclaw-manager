@@ -109,33 +109,7 @@
     </el-dialog>
 
     <el-dialog v-model="diffDialogVisible" width="1080px" :title="`Diff - ${currentRevisionID || '-'}`">
-      <el-space class="diff-toolbar" wrap>
-        <el-text type="info">显示模式</el-text>
-        <el-radio-group v-model="diffViewMode" size="small">
-          <el-radio-button label="unified">统一视图</el-radio-button>
-          <el-radio-button label="split">左右分栏</el-radio-button>
-        </el-radio-group>
-      </el-space>
-
-      <el-scrollbar height="460px">
-        <pre v-if="diffViewMode === 'unified'" class="revision-content diff-content"><template v-for="(line, idx) in diffLines" :key="idx"><span :class="line.type">{{ line.text }}
-</span></template></pre>
-
-        <table v-else class="split-diff-table">
-          <thead>
-            <tr>
-              <th>旧版本</th>
-              <th>新版本</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, idx) in splitDiffRows" :key="idx">
-              <td :class="['left', row.leftType]">{{ row.left }}</td>
-              <td :class="['right', row.rightType]">{{ row.right }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </el-scrollbar>
+      <DiffViewer :from-text="diffFromText" :to-text="diffToText" :height="460" />
       <template #footer>
         <el-button @click="diffDialogVisible = false">关闭</el-button>
       </template>
@@ -145,11 +119,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { diffLines as calcDiffLines } from 'diff'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { useRoute, useRouter } from 'vue-router'
+import DiffViewer from '../components/DiffViewer.vue'
 
 type Revision = {
   revision_id: string
@@ -177,9 +151,8 @@ const revisionDialogVisible = ref(false)
 const diffDialogVisible = ref(false)
 const currentRevisionID = ref('')
 const currentRevisionContent = ref('')
-const diffLines = ref<{ text: string; type: 'same' | 'add' | 'remove' }[]>([])
-const splitDiffRows = ref<{ left: string; right: string; leftType: 'same' | 'add' | 'remove'; rightType: 'same' | 'add' | 'remove' }[]>([])
-const diffViewMode = ref<'unified' | 'split'>('unified')
+const diffFromText = ref('')
+const diffToText = ref('')
 const selectedRevisions = ref<Revision[]>([])
 
 const agentID = computed(() => String(route.params.id || '').trim())
@@ -287,62 +260,10 @@ function previewRevision(rev: Revision) {
   revisionDialogVisible.value = true
 }
 
-function buildDiffLines(fromText: string, toText: string) {
-  const parts = calcDiffLines(fromText || '', toText || '')
-  return parts.flatMap((part) => {
-    const rows = String(part.value || '').split('\n')
-    if (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
-    const type: 'same' | 'add' | 'remove' = part.added ? 'add' : part.removed ? 'remove' : 'same'
-    return rows.map((row) => ({
-      type,
-      text: `${type === 'add' ? '+' : type === 'remove' ? '-' : ' '} ${row}`,
-    }))
-  })
-}
-
-function buildSplitDiffRows(fromText: string, toText: string) {
-  const parts = calcDiffLines(fromText || '', toText || '')
-  const rows: { left: string; right: string; leftType: 'same' | 'add' | 'remove'; rightType: 'same' | 'add' | 'remove' }[] = []
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]
-    if (part.removed && parts[i + 1]?.added) {
-      const removedLines = String(part.value || '').split('\n')
-      const addedLines = String(parts[i + 1].value || '').split('\n')
-      if (removedLines.length > 0 && removedLines[removedLines.length - 1] === '') removedLines.pop()
-      if (addedLines.length > 0 && addedLines[addedLines.length - 1] === '') addedLines.pop()
-      const maxLen = Math.max(removedLines.length, addedLines.length)
-      for (let j = 0; j < maxLen; j++) {
-        rows.push({
-          left: removedLines[j] ?? '',
-          right: addedLines[j] ?? '',
-          leftType: 'remove',
-          rightType: 'add',
-        })
-      }
-      i += 1
-      continue
-    }
-
-    const lines = String(part.value || '').split('\n')
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
-    if (part.added) {
-      lines.forEach((line) => rows.push({ left: '', right: line, leftType: 'same', rightType: 'add' }))
-    } else if (part.removed) {
-      lines.forEach((line) => rows.push({ left: line, right: '', leftType: 'remove', rightType: 'same' }))
-    } else {
-      lines.forEach((line) => rows.push({ left: line, right: line, leftType: 'same', rightType: 'same' }))
-    }
-  }
-
-  return rows
-}
-
 function compareWithCurrent(rev: Revision) {
   currentRevisionID.value = `${rev.revision_id} -> CURRENT`
-  diffLines.value = buildDiffLines(rev.content || '', content.value || '')
-  splitDiffRows.value = buildSplitDiffRows(rev.content || '', content.value || '')
-  diffViewMode.value = 'unified'
+  diffFromText.value = rev.content || ''
+  diffToText.value = content.value || ''
   diffDialogVisible.value = true
 }
 
@@ -360,9 +281,8 @@ function compareSelectedRevisions() {
   const fromRev = olderFirst ? a : b
   const toRev = olderFirst ? b : a
   currentRevisionID.value = `${fromRev.revision_id} -> ${toRev.revision_id}`
-  diffLines.value = buildDiffLines(fromRev.content || '', toRev.content || '')
-  splitDiffRows.value = buildSplitDiffRows(fromRev.content || '', toRev.content || '')
-  diffViewMode.value = 'unified'
+  diffFromText.value = fromRev.content || ''
+  diffToText.value = toRev.content || ''
   diffDialogVisible.value = true
 }
 
@@ -451,45 +371,5 @@ onMounted(loadAll)
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
   line-height: 1.6;
-}
-.diff-content .add {
-  background: #ecfdf3;
-  color: #1b5e20;
-}
-.diff-content .remove {
-  background: #fff1f0;
-  color: #b42318;
-}
-.diff-content .same {
-  color: #667085;
-}
-.diff-toolbar {
-  margin-bottom: 8px;
-}
-.split-diff-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 12px;
-}
-.split-diff-table th,
-.split-diff-table td {
-  border: 1px solid #eaecf0;
-  padding: 4px 8px;
-  vertical-align: top;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.split-diff-table td.add {
-  background: #ecfdf3;
-  color: #1b5e20;
-}
-.split-diff-table td.remove {
-  background: #fff1f0;
-  color: #b42318;
-}
-.split-diff-table td.same {
-  color: #667085;
 }
 </style>
