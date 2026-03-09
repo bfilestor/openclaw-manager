@@ -69,7 +69,7 @@ func (s *Service) resolveScope(scope []string) []string {
 	}
 	out := make([]string, 0)
 	if set["openclaw_json"] {
-		out = append(out, filepath.Join(s.OpenclawHome, "openclaw.json"))
+		out = append(out, s.resolveOpenclawCoreConfigPaths()...)
 	}
 	if set["global_skills"] {
 		out = append(out, filepath.Join(s.OpenclawHome, "skills"))
@@ -85,6 +85,14 @@ func (s *Service) resolveScope(scope []string) []string {
 		out = append(out, filepath.Join(s.ManagerHome, "revisions"))
 	}
 	return uniqPaths(out)
+}
+
+func (s *Service) resolveOpenclawCoreConfigPaths() []string {
+	return uniqPaths([]string{
+		filepath.Join(s.OpenclawHome, "openclaw.json"),
+		filepath.Join(s.OpenclawHome, "models.json"),
+		filepath.Join(s.OpenclawHome, "agents", "main", "agent", "models.json"),
+	})
 }
 
 func (s *Service) resolveWorkspacesFromOpenClawJSON() []string {
