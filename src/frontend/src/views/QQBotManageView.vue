@@ -47,7 +47,7 @@
         type="info"
         :closable="false"
         show-icon
-        title="首次接入提示：访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建
+        title="首次接入提示：访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建，
         或者输入 QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。
         "
       >
@@ -70,7 +70,7 @@
 
         <div class="cmd-box">
           <div class="cmd-title">第一次接入命令</div>
-          <pre>${{ firstBotCommand }}</pre>
+          <pre>{{ firstAccessCommand }}</pre>
         </div>
       </div>
     </el-card>
