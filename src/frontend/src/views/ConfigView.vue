@@ -1,16 +1,16 @@
 <template>
   <div class="config-page">
-    <div class="topbar">
-      <h3>Config Editor</h3>
-      <el-space>
-        <el-button :loading="loading" @click="loadAll">刷新</el-button>
-        <el-button @click="formatJSON">格式化</el-button>
-        <el-button @click="previewCurrentDiff">保存前预览 Diff</el-button>
-        <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveConfig">
-          保存配置
-        </el-button>
-      </el-space>
-    </div>
+    <OpenclawSaveActions
+      title="Config Editor"
+      :loading="loading"
+      :saving="saving"
+      :can-edit="canEdit"
+      :show-format="true"
+      @refresh="loadAll"
+      @format="formatJSON"
+      @preview="previewCurrentDiff"
+      @save="saveConfig"
+    />
 
     <el-alert
       v-if="errorMessage"
@@ -125,6 +125,7 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
+import OpenclawSaveActions from '../components/OpenclawSaveActions.vue'
 import {
   buildOpenclawDiff,
   getOpenclawConfig,
@@ -370,14 +371,6 @@ onMounted(loadAll)
 .config-page {
   display: grid;
   gap: 12px;
-}
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.topbar h3 {
-  margin: 0;
 }
 .meta-row {
   margin-bottom: 8px;

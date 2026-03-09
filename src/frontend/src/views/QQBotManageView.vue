@@ -1,13 +1,14 @@
 <template>
   <div class="qqbot-page">
-    <div class="topbar">
-      <h3>QQBot 管理</h3>
-      <el-space>
-        <el-button :loading="loading" @click="loadConfig">刷新</el-button>
-        <el-button @click="previewDiff">一键生成并预览 Diff</el-button>
-        <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveConfig">保存变更</el-button>
-      </el-space>
-    </div>
+    <OpenclawSaveActions
+      title="QQBot 管理"
+      :loading="loading"
+      :saving="saving"
+      :can-edit="canEdit"
+      @refresh="loadConfig"
+      @preview="previewDiff"
+      @save="saveConfig"
+    />
 
     <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
@@ -126,6 +127,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
+import OpenclawSaveActions from '../components/OpenclawSaveActions.vue'
 import { buildOpenclawDiff, getOpenclawConfig, saveOpenclawConfig } from '../services/openclawConfig'
 
 type BotRow = {
@@ -392,14 +394,6 @@ onMounted(loadConfig)
 .qqbot-page {
   display: grid;
   gap: 12px;
-}
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.topbar h3 {
-  margin: 0;
 }
 .card-title-row {
   display: flex;
