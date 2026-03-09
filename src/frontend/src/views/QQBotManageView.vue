@@ -47,12 +47,10 @@
         type="info"
         :closable="false"
         show-icon
-        title="首次接入提示："
+        title="首次接入提示：访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建
+        或者输入 QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。
+        "
       >
-        <template #description>
-          访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建<br/>
-          或者输入 QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。
-        </template>
       </el-alert>
 
       <div v-if="bots.length === 0" class="first-access">
@@ -72,10 +70,7 @@
 
         <div class="cmd-box">
           <div class="cmd-title">第一次接入命令</div>
-          <pre>openclaw plugins install @sliverp/qqbot@latest
-openclaw channels add --channel qqbot --token "[yourAppId]:[yourAppSecret]"
-openclaw gateway restart</pre>
-            <div style="margin-top: 8px; color: #666;">将上面命令中的 [yourAppId] 和 [yourAppSecret] 替换为你输入的 AppID 和 AppSecret 后执行</div>
+          <pre>${{ firstBotCommand }}</pre>
         </div>
       </div>
     </el-card>
@@ -176,6 +171,15 @@ const diffToText = ref('')
 const canEdit = computed(() => {
   const role = auth.user?.role || 'Viewer'
   return role === 'Operator' || role === 'Admin'
+})
+
+const firstAccessCommand = computed(() => {
+  const appId = firstBot.value.appId || '[yourAppId]'
+  const clientSecret = firstBot.value.clientSecret || '[yourAppSecret]'
+
+  return `openclaw plugins install @sliverp/qqbot@latest
+openclaw channels add --channel qqbot --token "${appId}:${clientSecret}"
+openclaw gateway restart`
 })
 
 function parseError(err: any, fallback: string): string {
