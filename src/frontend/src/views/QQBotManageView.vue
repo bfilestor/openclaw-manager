@@ -144,7 +144,7 @@ type AddRow = {
   name: string
   appId: string
   clientSecret: string
-}
+} 
 
 const auth = useAuthStore()
 const loading = ref(false)

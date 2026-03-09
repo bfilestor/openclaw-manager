@@ -279,6 +279,25 @@ export function setupMockApi() {
       }
 
       // tasks
+      if (url === '/api/v1/tasks/shell/execute' && method === 'post') {
+        const body = parseRequestData(config.data)
+        const command = String(body?.command || '').trim()
+        if (!/^openclaw(?:\s|$)/.test(command)) {
+          return jsonResponse(config, { code: 'VALIDATION_ERROR', message: 'must start with openclaw', fields: { command: 'must start with openclaw' } }, 400) as any
+        }
+        const startedAt = new Date().toISOString()
+        const finishedAt = new Date(Date.now() + 120).toISOString()
+        return jsonResponse(config, {
+          command,
+          output: `[mock] executing: ${command}\n[mock] done`,
+          exit_code: 0,
+          success: true,
+          duration_ms: 120,
+          started_at: startedAt,
+          finished_at: finishedAt
+        }) as any
+      }
+
       if (url === '/api/v1/tasks' && method === 'get') {
         return jsonResponse(config, { tasks: mockTasks, total: mockTasks.length }) as any
       }

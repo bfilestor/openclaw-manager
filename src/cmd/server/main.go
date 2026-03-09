@@ -126,6 +126,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 
 		taskAPI := &task.Handler{Repo: taskRepo}
 		taskSSE := &task.SSEHandler{Repo: taskRepo}
+		taskShell := task.NewShellHandler(execer)
 
 		openclawJSON := &appcfg.OpenClawJSONHandler{
 			FilePath:  filepath.Join(cfg.Paths.OpenClawHome, "openclaw.json"),
@@ -156,6 +157,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("DELETE /api/v1/tasks/{id}", wrap(taskAPI.DeleteTask, authMW))
 		mux.HandleFunc("POST /api/v1/tasks/{id}/cancel", wrap(taskAPI.CancelTask, authMW))
 		mux.HandleFunc("GET /api/v1/tasks/{id}/events", wrap(taskSSE.TaskEvents, authMW))
+		mux.HandleFunc("POST /api/v1/tasks/shell/execute", wrap(taskShell.Execute, authMW, auth.RequireRole(user.RoleOperator)))
 
 		mux.HandleFunc("GET /api/v1/gateway/status", wrap(gatewayAPI.Status, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/start", wrap(gatewayAPI.Start, authMW))

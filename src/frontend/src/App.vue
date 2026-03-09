@@ -105,6 +105,7 @@ const navItems: NavItem[] = [
   { path: '/qqbot', label: 'QQBot', icon: '🐧' },
   { path: '/backups', label: 'Backups', icon: '💾' },
   { path: '/tasks', label: 'Tasks', icon: '✅' },
+  { path: '/shell', label: 'Shell', icon: '🖥️' },
   { path: '/admin/users', label: 'Users', icon: '👥', adminOnly: true },
 ]
 
@@ -119,10 +120,6 @@ const activePath = computed(() => {
     .sort((a, b) => b.path.length - a.path.length)
     .find((item) => current === item.path || current.startsWith(`${item.path}/`))
   return matched?.path || '/dashboard'
-})
-
-const currentNavLabel = computed(() => {
-  return visibleNavItems.value.find((item) => item.path === activePath.value)?.label || 'Dashboard'
 })
 
 const usernameInitial = computed(() => {

@@ -7,6 +7,7 @@ import DashboardView from './views/DashboardView.vue'
 import GatewayView from './views/GatewayView.vue'
 import AdminUsersView from './views/AdminUsersView.vue'
 import TasksView from './views/TasksView.vue'
+import TaskShellView from './views/TaskShellView.vue'
 import SkillsView from './views/SkillsView.vue'
 import AgentsView from './views/AgentsView.vue'
 import AgentSessionsView from './views/AgentSessionsView.vue'
@@ -33,6 +34,7 @@ const routes = [
   { path: '/config', component: ConfigView, meta: { auth: true } },
   { path: '/qqbot', component: QQBotManageView, meta: { auth: true } },
   { path: '/backups', component: BackupsView, meta: { auth: true } },
+  { path: '/shell', component: TaskShellView, meta: { auth: true } },
   { path: '/tasks', component: TasksView, meta: { auth: true } },
   { path: '/admin/users', component: AdminUsersView, meta: { auth: true, admin: true } },
   { path: '/', redirect: '/dashboard' }
