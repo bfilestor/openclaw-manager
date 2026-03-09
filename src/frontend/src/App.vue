@@ -102,6 +102,7 @@ const navItems: NavItem[] = [
   { path: '/bindings', label: 'Bindings', icon: '🔗' },
   { path: '/skills', label: 'Skills', icon: '🧩' },
   { path: '/config', label: 'Config', icon: '⚙️' },
+  { path: '/qqbot', label: 'QQBot', icon: '🐧' },
   { path: '/backups', label: 'Backups', icon: '💾' },
   { path: '/tasks', label: 'Tasks', icon: '✅' },
   { path: '/admin/users', label: 'Users', icon: '👥', adminOnly: true },

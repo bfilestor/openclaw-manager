@@ -65,7 +65,20 @@ func (h *OpenClawJSONHandler) PutOpenClawJSON(w http.ResponseWriter, r *http.Req
 	}
 	createdBy := ""
 	if h.Revisions != nil {
-		if _, err := h.Revisions.Save("openclaw_json", "", req.Content, createdBy); err != nil {
+		if oldRaw, err := os.ReadFile(h.FilePath); err == nil {
+			oldContent := strings.TrimSpace(string(oldRaw))
+			if oldContent != "" {
+				if _, err := h.Revisions.Save("openclaw_json", "", string(oldRaw), createdBy); err != nil {
+					middleware.WriteAppError(w, err)
+					return
+				}
+			}
+		} else if os.IsNotExist(err) {
+			if _, err := h.Revisions.Save("openclaw_json", "", req.Content, createdBy); err != nil {
+				middleware.WriteAppError(w, err)
+				return
+			}
+		} else {
 			middleware.WriteAppError(w, err)
 			return
 		}
