@@ -32,15 +32,30 @@
         <el-table-column label="更新时间" min-width="180">
           <template #default="{ row }">{{ formatDateTime(row.modified_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="180">
           <template #default="{ row }">
-            <el-button type="primary" link @click="goEdit(row.path)">编辑</el-button>
+            <el-space>
+              <el-button type="info" link @click="viewFile(row.path)">查看</el-button>
+              <el-button type="primary" link @click="goEdit(row.path)">编辑</el-button>
+            </el-space>
           </template>
         </el-table-column>
       </el-table>
 
       <el-empty v-if="!loading && files.length === 0" description="该 Agent Workspace 下暂无 .md 文件" />
     </el-card>
+
+    <el-dialog v-model="previewVisible" width="860px" :title="`查看文件 - ${previewPath || '-'}`">
+      <el-scrollbar height="460px" v-loading="previewLoading">
+        <pre class="preview-content">{{ previewContent }}</pre>
+      </el-scrollbar>
+      <template #footer>
+        <el-space>
+          <el-button @click="previewVisible = false">关闭</el-button>
+          <el-button type="primary" @click="goEdit(previewPath)">去编辑</el-button>
+        </el-space>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -66,6 +81,10 @@ const loading = ref(false)
 const errorMessage = ref('')
 const files = ref<WorkspaceFile[]>([])
 const workspacePath = ref('')
+const previewVisible = ref(false)
+const previewLoading = ref(false)
+const previewPath = ref('')
+const previewContent = ref('')
 
 const agentID = computed(() => String(route.params.id || '').trim())
 
@@ -74,10 +93,29 @@ function goBack() {
 }
 
 function goEdit(path: string) {
+  if (!path) return
   router.push({
     path: `/agents/${encodeURIComponent(agentID.value)}/workspace-files/edit`,
     query: { path },
   })
+}
+
+async function viewFile(path: string) {
+  if (!path || !agentID.value) return
+  previewVisible.value = true
+  previewLoading.value = true
+  previewPath.value = path
+  previewContent.value = ''
+  try {
+    const { data } = await axios.get(`/api/v1/agents/${encodeURIComponent(agentID.value)}/workspace/markdown/file`, {
+      params: { path },
+    })
+    previewContent.value = typeof data?.content === 'string' ? data.content : ''
+  } catch (err) {
+    previewContent.value = parseError(err, '读取文件失败')
+  } finally {
+    previewLoading.value = false
+  }
 }
 
 function parseError(err: any, fallback: string): string {
@@ -142,5 +180,13 @@ onMounted(loadAll)
   display: flex;
   justify-content: space-between;
   gap: 8px;
+}
+.preview-content {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.65;
 }
 </style>
