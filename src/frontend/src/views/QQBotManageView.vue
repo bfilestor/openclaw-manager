@@ -4,6 +4,7 @@
       <h3>QQBot 管理</h3>
       <el-space>
         <el-button :loading="loading" @click="loadConfig">刷新</el-button>
+        <el-button @click="previewDiff">一键生成并预览 Diff</el-button>
         <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveConfig">保存变更</el-button>
       </el-space>
     </div>
@@ -110,6 +111,13 @@ openclaw gateway restart</pre>
         <el-button type="primary" :disabled="!canEdit" @click="appendRowsToConfig">加入配置草稿</el-button>
       </el-space>
     </el-card>
+
+    <el-dialog v-model="diffDialogVisible" width="1080px" title="openclaw.json 变更预览">
+      <DiffViewer :from-text="diffFromText" :to-text="diffToText" :height="460" />
+      <template #footer>
+        <el-button @click="diffDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -118,6 +126,7 @@ import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import DiffViewer from '../components/DiffViewer.vue'
 
 type BotRow = {
   key: string
@@ -140,10 +149,15 @@ const saving = ref(false)
 const errorMessage = ref('')
 
 const rawConfig = ref<any>({})
+const originalConfigText = ref('{}')
 const bots = ref<BotRow[]>([])
 
 const firstBot = ref({ appId: '', clientSecret: '' })
 const addRows = ref<AddRow[]>([{ id: crypto.randomUUID(), name: '', appId: '', clientSecret: '' }])
+
+const diffDialogVisible = ref(false)
+const diffFromText = ref('')
+const diffToText = ref('')
 
 const canEdit = computed(() => {
   const role = auth.user?.role || 'Viewer'
@@ -202,6 +216,7 @@ async function loadConfig() {
   try {
     const { data } = await axios.get('/api/v1/config/openclaw')
     const text = String(data?.content || '{}')
+    originalConfigText.value = text
     rawConfig.value = JSON.parse(text)
     bots.value = listBotsFromConfig(rawConfig.value)
   } catch (err) {
@@ -298,12 +313,7 @@ function appendRowsToConfig() {
   ElMessage.success(`已加入 ${added} 个 QQBot 到配置草稿`)
 }
 
-async function saveConfig() {
-  if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
-    return
-  }
-
+function buildNormalizedConfigText(): string {
   // 同步页面已编辑的 bot 列表到配置对象
   if (bots.value.length > 0) {
     ensureQQBotRoot(rawConfig.value)
@@ -329,9 +339,28 @@ async function saveConfig() {
     else delete qqbot.accounts
   }
 
+  return JSON.stringify(rawConfig.value, null, 2)
+}
+
+function previewDiff() {
+  try {
+    diffFromText.value = originalConfigText.value || '{}'
+    diffToText.value = buildNormalizedConfigText()
+    diffDialogVisible.value = true
+  } catch {
+    ElMessage.error('生成变更预览失败，请检查输入内容')
+  }
+}
+
+async function saveConfig() {
+  if (!canEdit.value) {
+    ElMessage.warning('当前角色无编辑权限')
+    return
+  }
+
   let normalized = ''
   try {
-    normalized = JSON.stringify(rawConfig.value, null, 2)
+    normalized = buildNormalizedConfigText()
   } catch {
     ElMessage.error('配置序列化失败，请检查输入内容')
     return

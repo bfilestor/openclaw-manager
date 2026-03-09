@@ -78,3 +78,33 @@ func TestOpenClawJSONCRUDAndRevisions(t *testing.T) {
 		t.Fatalf("delete missing should 404, got code=%d body=%s", w7.Code, w7.Body.String())
 	}
 }
+
+func TestOpenClawJSONPutSavesPreviousRevisionOnUpdate(t *testing.T) {
+	db := storage.NewTestDB(t)
+	rev := NewRevisionRepository(db.SQL)
+	d := t.TempDir()
+	p := filepath.Join(d, "openclaw.json")
+	if err := os.WriteFile(p, []byte(`{"old":1}`), 0o644); err != nil {
+		t.Fatalf("seed file failed: %v", err)
+	}
+	v, _ := storage.NewPathValidator([]string{d})
+	h := &OpenClawJSONHandler{FilePath: p, Validator: v, Revisions: rev}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(`{"content":"{\"new\":2}"}`))
+	h.PutOpenClawJSON(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expect 200 got %d body=%s", w.Code, w.Body.String())
+	}
+
+	list, err := rev.List("openclaw_json", "", 10)
+	if err != nil {
+		t.Fatalf("list revisions failed: %v", err)
+	}
+	if len(list) == 0 {
+		t.Fatalf("expect at least one revision")
+	}
+	if got := strings.TrimSpace(list[0].Content); got != `{"old":1}` {
+		t.Fatalf("expect previous content saved, got: %s", got)
+	}
+}
