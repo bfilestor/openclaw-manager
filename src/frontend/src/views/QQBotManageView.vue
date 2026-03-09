@@ -154,8 +154,14 @@ const rawConfig = ref<any>({})
 const originalConfigText = ref('{}')
 const bots = ref<BotRow[]>([])
 
+function newRowID(): string {
+  const c = (globalThis as any)?.crypto
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  return `row_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
 const firstBot = ref({ appId: '', clientSecret: '' })
-const addRows = ref<AddRow[]>([{ id: crypto.randomUUID(), name: '', appId: '', clientSecret: '' }])
+const addRows = ref<AddRow[]>([{ id: newRowID(), name: '', appId: '', clientSecret: '' }])
 
 const diffDialogVisible = ref(false)
 const diffFromText = ref('')
@@ -244,7 +250,7 @@ function removeBot(row: BotRow) {
 }
 
 function addRow() {
-  addRows.value.push({ id: crypto.randomUUID(), name: '', appId: '', clientSecret: '' })
+  addRows.value.push({ id: newRowID(), name: '', appId: '', clientSecret: '' })
 }
 
 function removeAddRow(idx: number) {
@@ -311,7 +317,7 @@ function appendRowsToConfig() {
   }
 
   bots.value = listBotsFromConfig(rawConfig.value)
-  addRows.value = [{ id: crypto.randomUUID(), name: '', appId: '', clientSecret: '' }]
+  addRows.value = [{ id: newRowID(), name: '', appId: '', clientSecret: '' }]
   ElMessage.success(`已加入 ${added} 个 QQBot 到配置草稿`)
 }
 
