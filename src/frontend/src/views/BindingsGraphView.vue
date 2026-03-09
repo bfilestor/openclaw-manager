@@ -146,8 +146,26 @@
         <el-table-column prop="account" :label="t('bindings.columns.account')" min-width="120" />
         <el-table-column prop="peer" :label="t('bindings.columns.peer')" min-width="180" />
         <el-table-column prop="source" :label="t('bindings.sourcePath')" min-width="220" />
+        <el-table-column v-if="isEditMode" :label="t('bindings.columns.actions')" width="100">
+          <template #default="{ row }">
+            <el-button type="danger" link @click="removeEdge(row.id)">{{ t('common.actions.delete') }}</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog v-model="previewVisible" :title="t('bindings.previewTitle')" width="760px">
+      <el-alert :title="t('bindings.previewTip')" type="info" show-icon :closable="false" />
+      <el-scrollbar height="320px">
+        <pre class="preview-box">{{ previewText }}</pre>
+      </el-scrollbar>
+      <template #footer>
+        <el-space>
+          <el-button @click="previewVisible = false">{{ t('common.actions.cancel') }}</el-button>
+          <el-button type="primary" :loading="saving" @click="confirmSaveBindings">{{ t('bindings.confirmSave') }}</el-button>
+        </el-space>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -197,6 +215,8 @@ const editableEdges = ref<GraphEdge[]>([])
 const isEditMode = ref(false)
 const saving = ref(false)
 const rawConfig = ref<any>(null)
+const previewVisible = ref(false)
+const previewText = ref('')
 const channelFilter = ref('ALL')
 const router = useRouter()
 const { t } = useI18n()
@@ -813,6 +833,7 @@ function startEdit() {
 
 function cancelEdit() {
   cleanupDrag()
+  previewVisible.value = false
   isEditMode.value = false
   editableEdges.value = []
 }
@@ -836,7 +857,28 @@ function buildBindingsPayload(edges: GraphEdge[]) {
   return bindings
 }
 
-async function saveBindings() {
+function removeEdge(edgeID: string) {
+  editableEdges.value = editableEdges.value.filter((edge) => edge.id !== edgeID)
+}
+
+function buildPreviewText() {
+  const oldBindings = rawConfig.value?.bindings ?? {}
+  const newBindings = buildBindingsPayload(editableEdges.value)
+  const oldText = JSON.stringify(oldBindings, null, 2)
+  const newText = JSON.stringify(newBindings, null, 2)
+  previewText.value = `--- old bindings\n${oldText}\n\n--- new bindings\n${newText}`
+}
+
+function saveBindings() {
+  if (!rawConfig.value) {
+    ElMessage.error(t('bindings.messages.noConfigLoaded'))
+    return
+  }
+  buildPreviewText()
+  previewVisible.value = true
+}
+
+async function confirmSaveBindings() {
   if (!rawConfig.value) {
     ElMessage.error(t('bindings.messages.noConfigLoaded'))
     return
@@ -848,6 +890,7 @@ async function saveBindings() {
     const formatted = JSON.stringify(next, null, 2)
     await axios.put('/api/v1/config/openclaw', { content: formatted })
     ElMessage.success(t('bindings.messages.saveSuccess'))
+    previewVisible.value = false
     isEditMode.value = false
     await loadGraph()
   } catch (err) {
@@ -1067,5 +1110,14 @@ onBeforeUnmount(() => {
   color: #fff;
   font-weight: 700;
   cursor: crosshair;
+}
+
+.preview-box {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #374151;
+  padding: 10px;
 }
 </style>

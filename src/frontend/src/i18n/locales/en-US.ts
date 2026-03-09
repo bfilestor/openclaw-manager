@@ -461,6 +461,9 @@ export default {
     editMode: 'Edit Links',
     cancelEdit: 'Cancel Edit',
     saveBindings: 'Save Bindings',
+    previewTitle: 'Preview Before Save',
+    previewTip: 'Preview binding changes below. Confirm to write openclaw.json and create a revision.',
+    confirmSave: 'Confirm Save',
     visualTitle: 'openclaw.json Visual Links',
     updatedAt: 'Updated: {time}',
     empty: 'No displayable bindings relation found in openclaw config',
@@ -477,6 +480,7 @@ export default {
       channel: 'Channel',
       account: 'Account',
       peer: 'Peer',
+      actions: 'Actions',
     },
     messages: {
       parseConfigFailed: 'Failed to parse openclaw.json, please fix JSON format first',

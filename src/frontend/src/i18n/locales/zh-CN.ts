@@ -461,6 +461,9 @@ export default {
     editMode: '编辑连线',
     cancelEdit: '取消编辑',
     saveBindings: '保存绑定',
+    previewTitle: '保存前预览',
+    previewTip: '以下为 bindings 变更预览，确认后会写入 openclaw.json 并自动生成 Revisions。',
+    confirmSave: '确认保存',
     visualTitle: 'openclaw.json 可视化连线',
     updatedAt: '更新时间: {time}',
     empty: '未在 openclaw 配置中识别到可展示的 bindings 关系',
@@ -477,6 +480,7 @@ export default {
       channel: 'Channel',
       account: 'Account',
       peer: 'Peer',
+      actions: '操作',
     },
     messages: {
       parseConfigFailed: 'openclaw.json 解析失败，请先修复配置 JSON 格式',
