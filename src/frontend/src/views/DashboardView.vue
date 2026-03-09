@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-page">
+  <div class="dashboard-page" v-loading="loading" element-loading-text="Dashboard 数据加载中...">
     <div class="hero">
       <div>
         <h2>OpenClaw Dashboard</h2>
@@ -37,7 +37,7 @@
       </el-row>
     </el-card>
 
-    <el-row :gutter="14" class="cards">
+    <el-row :gutter="14" class="cards stat-grid">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover" class="stat-card gateway">
           <div class="stat-head">
@@ -71,7 +71,7 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :sm="12" :lg="12">
+      <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover" class="stat-card agents">
           <div class="stat-head">
             <span class="stat-icon">🤖</span>
@@ -111,7 +111,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
 
+const loading = ref(false)
 const status = ref<any>({})
+const CACHE_KEY = 'openclaw_manager_dashboard_cache_v1'
 const nvmWarning = ref(false)
 const skillCount = ref(0)
 const agentCount = ref(0)
@@ -162,14 +164,53 @@ function countBotsFromConfig(cfg: any): number {
   return total
 }
 
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return
+    const cached = JSON.parse(raw)
+    status.value = cached.status || {}
+    nvmWarning.value = !!cached.nvmWarning
+    skillCount.value = Number(cached.skillCount || 0)
+    agentCount.value = Number(cached.agentCount || 0)
+    botCount.value = Number(cached.botCount || 0)
+    userCount.value = Number(cached.userCount || 0)
+    lastRefreshAt.value = String(cached.lastRefreshAt || '')
+    statusHint.value = String(cached.statusHint || statusHint.value)
+    previousGatewayState.value = String(cached.previousGatewayState || '')
+  } catch {
+    // ignore cache parse errors
+  }
+}
+
+function saveCache() {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      status: status.value,
+      nvmWarning: nvmWarning.value,
+      skillCount: skillCount.value,
+      agentCount: agentCount.value,
+      botCount: botCount.value,
+      userCount: userCount.value,
+      lastRefreshAt: lastRefreshAt.value,
+      statusHint: statusHint.value,
+      previousGatewayState: previousGatewayState.value,
+    }))
+  } catch {
+    // ignore cache write errors
+  }
+}
+
 async function refresh() {
+  const firstLoad = !lastRefreshAt.value
+  if (firstLoad) loading.value = true
   try {
     const [gatewayRes, skillsRes, agentsRes, configRes, usersRes] = await Promise.all([
       axios.get('/api/v1/gateway/status'),
       axios.get('/api/v1/skills', { params: { scope: 'global' } }),
       axios.get('/api/v1/agents'),
       axios.get('/api/v1/config/openclaw'),
-      axios.get('/api/v1/admin/users').catch(() => ({ data: { users: [] } })),
+      axios.get('/api/v1/users').catch(() => ({ data: { users: [] } })),
     ])
 
     const gd = gatewayRes.data
@@ -208,12 +249,16 @@ async function refresh() {
     userCount.value = Array.isArray(users) ? users.length : 0
 
     lastRefreshAt.value = new Date().toISOString()
+    saveCache()
   } catch {
     // 静默失败，避免打断 Dashboard 展示
+  } finally {
+    if (firstLoad) loading.value = false
   }
 }
 
 onMounted(() => {
+  loadCache()
   refresh()
   timer = setInterval(refresh, 30000)
 })
@@ -286,8 +331,19 @@ onUnmounted(() => clearInterval(timer))
   margin: 0;
 }
 
+.stat-grid {
+  row-gap: 14px;
+}
+
 .stat-card {
   border-radius: 12px;
+  min-height: 148px;
+  height: 100%;
+}
+.stat-card :deep(.el-card__body) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .stat-head {
   display: flex;
