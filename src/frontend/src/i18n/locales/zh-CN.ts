@@ -457,6 +457,10 @@ export default {
     agentCount: 'Agent: {count}',
     botCount: 'Bot: {count}',
     edgeCount: '连线: {count}',
+    editing: '编辑中',
+    editMode: '编辑连线',
+    cancelEdit: '取消编辑',
+    saveBindings: '保存绑定',
     visualTitle: 'openclaw.json 可视化连线',
     updatedAt: '更新时间: {time}',
     empty: '未在 openclaw 配置中识别到可展示的 bindings 关系',
@@ -477,6 +481,9 @@ export default {
     messages: {
       parseConfigFailed: 'openclaw.json 解析失败，请先修复配置 JSON 格式',
       loadFailed: '加载配置失败，无法生成绑定图谱',
+      noConfigLoaded: '当前没有可用配置，请先刷新',
+      saveSuccess: '绑定关系已保存（已生成配置修订）',
+      saveFailed: '保存绑定关系失败',
     },
   },
   backups: {

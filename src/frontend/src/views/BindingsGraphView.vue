@@ -9,7 +9,13 @@
         <el-tag type="info">{{ t('bindings.agentCount', { count: graph.agents.length }) }}</el-tag>
         <el-tag type="info">{{ t('bindings.botCount', { count: graph.bots.length }) }}</el-tag>
         <el-tag type="success">{{ t('bindings.edgeCount', { count: relationEdges.length }) }}</el-tag>
+        <el-tag v-if="isEditMode" type="warning">{{ t('bindings.editing') }}</el-tag>
         <el-button :loading="loading" @click="loadGraph">{{ t('common.actions.refresh') }}</el-button>
+        <el-button v-if="!isEditMode" type="primary" @click="startEdit">{{ t('bindings.editMode') }}</el-button>
+        <template v-else>
+          <el-button @click="cancelEdit">{{ t('bindings.cancelEdit') }}</el-button>
+          <el-button type="primary" :loading="saving" @click="saveBindings">{{ t('bindings.saveBindings') }}</el-button>
+        </template>
       </el-space>
     </div>
 
@@ -35,7 +41,7 @@
       />
 
       <el-scrollbar v-else class="graph-scroll">
-        <div class="graph-canvas" :style="{ height: `${canvasHeight}px` }">
+        <div ref="canvasRef" class="graph-canvas" :style="{ height: `${canvasHeight}px` }">
           <div class="column-label left">{{ t('bindings.columns.agents') }}</div>
           <div class="column-label right">{{ t('bindings.columns.bots') }}</div>
 
@@ -60,6 +66,14 @@
                 class="edge"
                 marker-end="url(#edge-arrow)"
               />
+              <circle
+                v-if="isEditMode"
+                class="edge-handle"
+                :cx="edge.endX"
+                :cy="edge.endY"
+                r="7"
+                @pointerdown.stop.prevent="startDragExisting(edge, $event)"
+              />
               <text
                 class="edge-label"
                 :x="(edge.startX + edge.endX) / 2"
@@ -68,6 +82,13 @@
                 {{ edge.channel && edge.account ? `${edge.channel}/${edge.account}` : edge.peer || t('bindings.bindingFallback') }}
               </text>
             </g>
+
+            <path
+              v-if="draftLine"
+              :d="draftLine.path"
+              class="edge edge-draft"
+              marker-end="url(#edge-arrow)"
+            />
           </svg>
 
           <div
@@ -78,12 +99,19 @@
           >
             <div class="node-title">{{ agent.label }}</div>
             <div class="node-subtitle">{{ t('bindings.columns.agent') }}</div>
+            <button
+              v-if="isEditMode"
+              class="agent-drag-btn"
+              @pointerdown.stop.prevent="startDragNew(agent.id, $event)"
+            >+
+            </button>
           </div>
 
           <div
             v-for="bot in graph.bots"
             :key="`bot-${bot.id}`"
             class="node node-bot"
+            :class="{ 'bot-active': activeBotID === bot.id }"
             :style="nodeStyle('bot', bot.id)"
           >
             <div class="node-title">{{ bot.label }}</div>
@@ -124,8 +152,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -164,9 +193,19 @@ const loading = ref(false)
 const errorMessage = ref('')
 const modifiedAt = ref('')
 const graph = ref<GraphSnapshot>({ agents: [], bots: [], edges: [] })
+const editableEdges = ref<GraphEdge[]>([])
+const isEditMode = ref(false)
+const saving = ref(false)
+const rawConfig = ref<any>(null)
 const channelFilter = ref('ALL')
 const router = useRouter()
 const { t } = useI18n()
+
+type DraftLine = { path: string }
+const draftLine = ref<DraftLine | null>(null)
+const activeBotID = ref('')
+const dragState = ref<null | { edgeID?: string; agentID: string; pointerId: number }>(null)
+const canvasRef = ref<HTMLElement | null>(null)
 
 const canvasWidth = 1180
 const nodeWidth = 250
@@ -176,6 +215,8 @@ const topPadding = 52
 const bottomPadding = 36
 const leftX = 80
 const rightX = canvasWidth - nodeWidth - 80
+
+const activeEdges = computed(() => (isEditMode.value ? editableEdges.value : graph.value.edges))
 
 const rows = computed(() => Math.max(graph.value.agents.length, graph.value.bots.length, 1))
 const canvasHeight = computed(() => topPadding + bottomPadding + nodeHeight + (rows.value - 1) * nodeGap)
@@ -199,7 +240,7 @@ const botPositionMap = computed(() => {
 const drawableEdges = computed<DrawableEdge[]>(() => {
   const linkEdges: GraphEdge[] = []
   const linkSeen = new Set<string>()
-  for (const edge of graph.value.edges) {
+  for (const edge of activeEdges.value) {
     const key = `${edge.agent_id}|${edge.channel}|${edge.account}`
     if (linkSeen.has(key)) continue
     linkSeen.add(key)
@@ -248,7 +289,7 @@ const drawableEdges = computed<DrawableEdge[]>(() => {
 
 const channelOptions = computed(() => {
   const set = new Set<string>()
-  for (const edge of graph.value.edges) {
+  for (const edge of activeEdges.value) {
     const channel = String(edge.channel || '').trim()
     if (channel) set.add(channel)
   }
@@ -257,14 +298,14 @@ const channelOptions = computed(() => {
 
 const filteredEdges = computed(() => {
   const selected = channelFilter.value
-  if (!selected || selected === 'ALL') return graph.value.edges
-  return graph.value.edges.filter((edge) => edge.channel === selected)
+  if (!selected || selected === 'ALL') return activeEdges.value
+  return activeEdges.value.filter((edge) => edge.channel === selected)
 })
 
 const relationEdges = computed(() => {
   const seen = new Set<string>()
   const out: GraphEdge[] = []
-  for (const edge of graph.value.edges) {
+  for (const edge of activeEdges.value) {
     const key = `${edge.agent_id}|${edge.channel}|${edge.account}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -657,6 +698,165 @@ function nodeStyle(kind: 'agent' | 'bot', id: string): Record<string, string> {
   }
 }
 
+function toCanvasXY(clientX: number, clientY: number) {
+  const rect = canvasRef.value?.getBoundingClientRect()
+  if (!rect) return { x: clientX, y: clientY }
+  return { x: clientX - rect.left, y: clientY - rect.top }
+}
+
+function getBotIDFromPoint(clientX: number, clientY: number): string {
+  const pt = toCanvasXY(clientX, clientY)
+  for (const bot of graph.value.bots) {
+    const hit = botPositionMap.value.get(bot.id)
+    if (!hit) continue
+    const left = hit.x
+    const top = hit.y
+    const right = left + nodeWidth
+    const bottom = top + nodeHeight
+    if (pt.x >= left && pt.x <= right && pt.y >= top && pt.y <= bottom) {
+      return bot.id
+    }
+  }
+  return ''
+}
+
+function updateDraftLine(agentID: string, pointerX: number, pointerY: number) {
+  const from = agentPositionMap.value.get(agentID)
+  if (!from) return
+  const pt = toCanvasXY(pointerX, pointerY)
+  const startX = from.x + nodeWidth
+  const startY = from.y + nodeHeight / 2
+  const endX = pt.x
+  const endY = pt.y
+  const controlDistance = (endX - startX) * 0.45
+  draftLine.value = {
+    path: `M ${startX} ${startY} C ${startX + controlDistance} ${startY}, ${endX - controlDistance} ${endY}, ${endX} ${endY}`
+  }
+}
+
+function replaceEdgeTarget(edge: GraphEdge, targetBotID: string) {
+  const [channel, account] = targetBotID.split('/')
+  if (!channel || !account) return
+  edge.bot_id = targetBotID
+  edge.channel = channel
+  edge.account = account
+}
+
+function addEdgeByAgentToBot(agentID: string, targetBotID: string) {
+  const [channel, account] = targetBotID.split('/')
+  if (!channel || !account) return
+  const exists = editableEdges.value.some((edge) => edge.agent_id === agentID && edge.channel === channel && edge.account === account)
+  if (exists) return
+  editableEdges.value.push({
+    id: `edge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    agent_id: agentID,
+    bot_id: targetBotID,
+    channel,
+    account,
+    peer: '',
+    source: 'bindings.editor'
+  })
+}
+
+function finishDrag(targetBotID: string) {
+  const state = dragState.value
+  if (!state || !targetBotID) return
+  if (state.edgeID) {
+    const edge = editableEdges.value.find((item) => item.id === state.edgeID)
+    if (edge) replaceEdgeTarget(edge, targetBotID)
+  } else {
+    addEdgeByAgentToBot(state.agentID, targetBotID)
+  }
+}
+
+function onGlobalPointerMove(ev: PointerEvent) {
+  if (!dragState.value) return
+  updateDraftLine(dragState.value.agentID, ev.clientX, ev.clientY)
+  activeBotID.value = getBotIDFromPoint(ev.clientX, ev.clientY)
+}
+
+function cleanupDrag() {
+  dragState.value = null
+  draftLine.value = null
+  activeBotID.value = ''
+  window.removeEventListener('pointermove', onGlobalPointerMove)
+  window.removeEventListener('pointerup', onGlobalPointerUp)
+}
+
+function onGlobalPointerUp(ev: PointerEvent) {
+  if (!dragState.value) return
+  const targetBotID = getBotIDFromPoint(ev.clientX, ev.clientY)
+  finishDrag(targetBotID)
+  cleanupDrag()
+}
+
+function startDragExisting(edge: GraphEdge, ev: PointerEvent) {
+  if (!isEditMode.value) return
+  dragState.value = { edgeID: edge.id, agentID: edge.agent_id, pointerId: ev.pointerId }
+  updateDraftLine(edge.agent_id, ev.clientX, ev.clientY)
+  window.addEventListener('pointermove', onGlobalPointerMove)
+  window.addEventListener('pointerup', onGlobalPointerUp)
+}
+
+function startDragNew(agentID: string, ev: PointerEvent) {
+  if (!isEditMode.value) return
+  dragState.value = { agentID, pointerId: ev.pointerId }
+  updateDraftLine(agentID, ev.clientX, ev.clientY)
+  window.addEventListener('pointermove', onGlobalPointerMove)
+  window.addEventListener('pointerup', onGlobalPointerUp)
+}
+
+function startEdit() {
+  isEditMode.value = true
+  editableEdges.value = graph.value.edges.map((edge) => ({ ...edge }))
+}
+
+function cancelEdit() {
+  cleanupDrag()
+  isEditMode.value = false
+  editableEdges.value = []
+}
+
+function buildBindingsPayload(edges: GraphEdge[]) {
+  const bindings: Record<string, Record<string, any>> = {}
+  for (const edge of edges) {
+    if (!bindings[edge.channel]) bindings[edge.channel] = {}
+    const current = bindings[edge.channel][edge.account]
+    const value = edge.peer ? { agent_id: edge.agent_id, peer: edge.peer } : edge.agent_id
+    if (!current) {
+      bindings[edge.channel][edge.account] = value
+      continue
+    }
+    if (Array.isArray(current)) {
+      current.push(value)
+      continue
+    }
+    bindings[edge.channel][edge.account] = [current, value]
+  }
+  return bindings
+}
+
+async function saveBindings() {
+  if (!rawConfig.value) {
+    ElMessage.error(t('bindings.messages.noConfigLoaded'))
+    return
+  }
+  saving.value = true
+  try {
+    const next = JSON.parse(JSON.stringify(rawConfig.value))
+    next.bindings = buildBindingsPayload(editableEdges.value)
+    const formatted = JSON.stringify(next, null, 2)
+    await axios.put('/api/v1/config/openclaw', { content: formatted })
+    ElMessage.success(t('bindings.messages.saveSuccess'))
+    isEditMode.value = false
+    await loadGraph()
+  } catch (err) {
+    ElMessage.error(parseError(err, t('bindings.messages.saveFailed')))
+  } finally {
+    saving.value = false
+  }
+}
+
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
   return typeof msg === 'string' && msg ? msg : fallback
@@ -686,11 +886,16 @@ async function loadGraph() {
     } catch {
       throw new Error(t('bindings.messages.parseConfigFailed'))
     }
+    rawConfig.value = parsed
     graph.value = extractGraphFromConfig(parsed)
+    if (isEditMode.value) {
+      editableEdges.value = graph.value.edges.map((edge) => ({ ...edge }))
+    }
     if (channelFilter.value !== 'ALL' && !graph.value.edges.some((edge) => edge.channel === channelFilter.value)) {
       channelFilter.value = 'ALL'
     }
   } catch (err) {
+    rawConfig.value = null
     graph.value = { agents: [], bots: [], edges: [] }
     channelFilter.value = 'ALL'
     errorMessage.value = parseError(err, t('bindings.messages.loadFailed'))
@@ -704,6 +909,9 @@ function goBackToAgents() {
 }
 
 onMounted(loadGraph)
+onBeforeUnmount(() => {
+  cleanupDrag()
+})
 </script>
 
 <style scoped>
@@ -756,7 +964,7 @@ onMounted(loadGraph)
   width: 100%;
   height: 100%;
   overflow: visible;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .edge {
@@ -764,6 +972,20 @@ onMounted(loadGraph)
   stroke: #2c6fd8;
   stroke-opacity: 0.58;
   stroke-width: 2.1;
+  pointer-events: none;
+}
+
+.edge-draft {
+  stroke-dasharray: 6 4;
+  stroke-opacity: 0.9;
+}
+
+.edge-handle {
+  fill: #fff;
+  stroke: #2c6fd8;
+  stroke-width: 2;
+  cursor: grab;
+  pointer-events: auto;
 }
 
 .edge-arrow {
@@ -826,5 +1048,24 @@ onMounted(loadGraph)
 
 .node-bot {
   background: linear-gradient(135deg, #fff6ec, #fffdf8);
+}
+
+.node-bot.bot-active {
+  border-color: #2c6fd8;
+  box-shadow: 0 0 0 3px rgba(44, 111, 216, 0.2);
+}
+
+.agent-drag-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #2c6fd8;
+  color: #fff;
+  font-weight: 700;
+  cursor: crosshair;
 }
 </style>

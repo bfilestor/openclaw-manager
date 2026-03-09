@@ -457,6 +457,10 @@ export default {
     agentCount: 'Agent: {count}',
     botCount: 'Bot: {count}',
     edgeCount: 'Edges: {count}',
+    editing: 'Editing',
+    editMode: 'Edit Links',
+    cancelEdit: 'Cancel Edit',
+    saveBindings: 'Save Bindings',
     visualTitle: 'openclaw.json Visual Links',
     updatedAt: 'Updated: {time}',
     empty: 'No displayable bindings relation found in openclaw config',
@@ -477,6 +481,9 @@ export default {
     messages: {
       parseConfigFailed: 'Failed to parse openclaw.json, please fix JSON format first',
       loadFailed: 'Failed to load config, unable to generate bindings graph',
+      noConfigLoaded: 'No config loaded, please refresh first',
+      saveSuccess: 'Bindings saved (config revision created)',
+      saveFailed: 'Failed to save bindings',
     },
   },
   backups: {
