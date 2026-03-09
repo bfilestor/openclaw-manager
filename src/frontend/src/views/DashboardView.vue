@@ -16,6 +16,27 @@
       :closable="false"
     />
 
+    <el-card shadow="never" class="trend-card">
+      <div class="trend-head">
+        <span class="trend-icon">📈</span>
+        <span class="trend-title">小趋势区</span>
+      </div>
+      <el-row :gutter="10">
+        <el-col :xs="24" :md="8">
+          <div class="trend-item">
+            <div class="trend-label">最近刷新时间</div>
+            <div class="trend-value">{{ lastRefreshText }}</div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :md="16">
+          <div class="trend-item">
+            <div class="trend-label">状态变化提示</div>
+            <div class="trend-value">{{ statusHint }}</div>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
     <el-row :gutter="14" class="cards">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover" class="stat-card gateway">
@@ -61,7 +82,7 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :sm="12" :lg="12">
+      <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover" class="stat-card bots">
           <div class="stat-head">
             <span class="stat-icon">🐧</span>
@@ -69,6 +90,17 @@
           </div>
           <div class="stat-main">{{ botCount }}</div>
           <div class="stat-sub">按 channels + accounts 聚合</div>
+        </el-card>
+      </el-col>
+
+      <el-col :xs="24" :sm="12" :lg="8">
+        <el-card shadow="hover" class="stat-card users">
+          <div class="stat-head">
+            <span class="stat-icon">👥</span>
+            <span class="stat-title">Users 数量</span>
+          </div>
+          <div class="stat-main">{{ userCount }}</div>
+          <div class="stat-sub">系统用户总数</div>
         </el-card>
       </el-col>
     </el-row>
@@ -84,6 +116,10 @@ const nvmWarning = ref(false)
 const skillCount = ref(0)
 const agentCount = ref(0)
 const botCount = ref(0)
+const userCount = ref(0)
+const lastRefreshAt = ref('')
+const statusHint = ref('等待首次刷新...')
+const previousGatewayState = ref('')
 
 let timer: any = null
 
@@ -93,6 +129,13 @@ const bindText = computed(() => {
   const port = status.value.port || '-'
   return `${host}:${port}`
 })
+const lastRefreshText = computed(() => {
+  if (!lastRefreshAt.value) return '-'
+  const d = new Date(lastRefreshAt.value)
+  if (Number.isNaN(d.getTime())) return lastRefreshAt.value
+  return d.toLocaleString()
+})
+
 const gatewayTagType = computed<'success' | 'warning' | 'info'>(() => {
   const s = gatewayStateText.value.toLowerCase()
   if (s === 'active' || s === 'running') return 'success'
@@ -121,20 +164,31 @@ function countBotsFromConfig(cfg: any): number {
 
 async function refresh() {
   try {
-    const [gatewayRes, skillsRes, agentsRes, configRes] = await Promise.all([
+    const [gatewayRes, skillsRes, agentsRes, configRes, usersRes] = await Promise.all([
       axios.get('/api/v1/gateway/status'),
       axios.get('/api/v1/skills', { params: { scope: 'global' } }),
       axios.get('/api/v1/agents'),
       axios.get('/api/v1/config/openclaw'),
+      axios.get('/api/v1/admin/users').catch(() => ({ data: { users: [] } })),
     ])
 
     const gd = gatewayRes.data
+    const nextState = String(gd?.service?.active_state || 'unknown')
     status.value = {
-      active_state: gd?.service?.active_state,
+      active_state: nextState,
       bind_addr: gd?.bind_addr,
       port: gd?.port,
     }
     nvmWarning.value = !!gd?.nvm_warning
+
+    if (!previousGatewayState.value) {
+      statusHint.value = `Gateway 当前状态：${nextState}`
+    } else if (previousGatewayState.value !== nextState) {
+      statusHint.value = `Gateway 状态变化：${previousGatewayState.value} → ${nextState}`
+    } else {
+      statusHint.value = `Gateway 状态稳定：${nextState}`
+    }
+    previousGatewayState.value = nextState
 
     const skills = skillsRes.data?.skills
     skillCount.value = Array.isArray(skills) ? skills.length : 0
@@ -149,6 +203,11 @@ async function refresh() {
       cfg = {}
     }
     botCount.value = countBotsFromConfig(cfg)
+
+    const users = usersRes.data?.users
+    userCount.value = Array.isArray(users) ? users.length : 0
+
+    lastRefreshAt.value = new Date().toISOString()
   } catch {
     // 静默失败，避免打断 Dashboard 展示
   }
@@ -184,6 +243,43 @@ onUnmounted(() => clearInterval(timer))
 .hero p {
   margin: 6px 0 0;
   opacity: 0.92;
+}
+
+.trend-card {
+  border-radius: 12px;
+  background: linear-gradient(145deg, #f8fafc, #eef2ff);
+}
+.trend-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.trend-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e7ff;
+}
+.trend-title {
+  font-weight: 600;
+}
+.trend-item {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 10px;
+}
+.trend-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+.trend-value {
+  margin-top: 4px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .cards {
@@ -243,5 +339,8 @@ onUnmounted(() => clearInterval(timer))
 }
 .bots {
   background: linear-gradient(145deg, #fdf2f8, #fce7f3);
+}
+.users {
+  background: linear-gradient(145deg, #f0fdf4, #dcfce7);
 }
 </style>
