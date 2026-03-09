@@ -5,6 +5,7 @@
       <el-space>
         <el-button :loading="loading" @click="loadAll">刷新</el-button>
         <el-button @click="formatJSON">格式化</el-button>
+        <el-button @click="previewCurrentDiff">保存前预览 Diff</el-button>
         <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveConfig">
           保存配置
         </el-button>
@@ -144,6 +145,7 @@ const deletingID = ref('')
 const errorMessage = ref('')
 
 const content = ref('')
+const originalContent = ref('{}')
 const sizeBytes = ref(0)
 const modifiedAt = ref('')
 const revisions = ref<Revision[]>([])
@@ -195,6 +197,7 @@ async function loadConfig() {
   const { data } = await axios.get('/api/v1/config/openclaw')
   const raw = data?.content
   content.value = typeof raw === 'string' ? raw : '{}'
+  originalContent.value = content.value
   sizeBytes.value = Number(data?.size || new Blob([content.value]).size || 0)
   modifiedAt.value = String(data?.modified_at || '')
 }
@@ -229,6 +232,20 @@ function formatJSON() {
   } catch {
     ElMessage.error('当前内容不是合法 JSON，无法格式化')
   }
+}
+
+function previewCurrentDiff() {
+  let normalized = ''
+  try {
+    normalized = normalizeJSON(content.value)
+  } catch {
+    ElMessage.error('JSON 格式不合法，无法生成 Diff 预览')
+    return
+  }
+  currentRevisionID.value = 'CURRENT -> EDITED'
+  diffFromText.value = originalContent.value || '{}'
+  diffToText.value = normalized
+  diffDialogVisible.value = true
 }
 
 async function saveConfig() {
