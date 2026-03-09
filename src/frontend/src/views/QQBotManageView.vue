@@ -55,21 +55,30 @@
 
       <div v-if="bots.length === 0" class="first-access">
         <el-form label-position="top">
-          <el-form-item label="QQBot AppID">
-            <el-input v-model="firstBot.appId" :disabled="!canEdit" placeholder="请输入AppID" />
-          </el-form-item>
-          <el-form-item label=" QQBot AppSecret">
-            <el-input
-              v-model="firstBot.clientSecret"
-              :disabled="!canEdit"
-              show-password
-              placeholder="请输入AppSecret"
-            />
-          </el-form-item>
+          <el-row :gutter="12">
+            <el-col :xs="24" :md="12">
+              <el-form-item label="QQBot AppID">
+                <el-input v-model="firstBot.appId" :disabled="!canEdit" placeholder="请输入AppID" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :md="12">
+              <el-form-item label="QQBot AppSecret">
+                <el-input
+                  v-model="firstBot.clientSecret"
+                  :disabled="!canEdit"
+                  show-password
+                  placeholder="请输入AppSecret"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
 
         <div class="cmd-box">
-          <div class="cmd-title">第一次接入命令</div>
+          <div class="cmd-title-row">
+            <div class="cmd-title">第一次接入命令</div>
+            <el-button type="primary" :disabled="!canEdit" @click="goExecuteFirstAccessCommands">去执行</el-button>
+          </div>
           <pre>{{ firstAccessCommand }}</pre>
         </div>
       </div>
@@ -126,6 +135,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
 import OpenclawSaveActions from '../components/OpenclawSaveActions.vue'
@@ -144,12 +154,19 @@ type AddRow = {
   name: string
   appId: string
   clientSecret: string
-} 
+}
+
+type ShellStashItem = {
+  id: string
+  command: string
+}
 
 const auth = useAuthStore()
+const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
+const SHELL_STASH_STORAGE_KEY = 'openclaw_manager_shell_stash_v1'
 
 const rawConfig = ref<any>({})
 const originalConfigText = ref('{}')
@@ -185,6 +202,13 @@ openclaw gateway restart`
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
   return typeof msg === 'string' && msg ? msg : fallback
+}
+
+function parseLines(raw: string): string[] {
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
 }
 
 function listBotsFromConfig(cfg: any): BotRow[] {
@@ -360,6 +384,46 @@ function buildNormalizedConfigText(): string {
   return JSON.stringify(rawConfig.value, null, 2)
 }
 
+function goExecuteFirstAccessCommands() {
+  const commands = parseLines(firstAccessCommand.value)
+  if (commands.length === 0) {
+    ElMessage.warning('没有可加入暂存区的命令')
+    return
+  }
+
+  try {
+    const raw = localStorage.getItem(SHELL_STASH_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    const stash: ShellStashItem[] = Array.isArray(parsed)
+      ? parsed
+          .map((item: any) => ({
+            id: String(item?.id || newRowID()),
+            command: String(item?.command || '').trim(),
+          }))
+          .filter((item) => item.command)
+      : []
+
+    const existing = new Set(stash.map((item) => item.command))
+    let added = 0
+    commands.forEach((command) => {
+      if (existing.has(command)) return
+      stash.push({ id: newRowID(), command })
+      existing.add(command)
+      added += 1
+    })
+
+    localStorage.setItem(SHELL_STASH_STORAGE_KEY, JSON.stringify(stash))
+    if (added > 0) {
+      ElMessage.success(`已加入 ${added} 条命令，正在跳转到 Shell 页面`)
+    } else {
+      ElMessage.info('命令已在暂存区，正在跳转到 Shell 页面')
+    }
+    router.push('/shell')
+  } catch {
+    ElMessage.error('写入命令暂存区失败，请稍后重试')
+  }
+}
+
 function previewDiff() {
   try {
     const diff = buildOpenclawDiff(originalConfigText.value, buildNormalizedConfigText())
@@ -430,6 +494,12 @@ onMounted(loadConfig)
 }
 .cmd-title {
   font-weight: 600;
+}
+.cmd-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 6px;
 }
 .cmd-box pre {
