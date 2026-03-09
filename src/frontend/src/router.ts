@@ -4,6 +4,7 @@ import { useAuthStore } from './stores/auth'
 import LoginView from './views/LoginView.vue'
 import RegisterView from './views/RegisterView.vue'
 import DashboardView from './views/DashboardView.vue'
+import GatewayView from './views/GatewayView.vue'
 import AdminUsersView from './views/AdminUsersView.vue'
 import TasksView from './views/TasksView.vue'
 import SkillsView from './views/SkillsView.vue'
@@ -21,7 +22,7 @@ const routes = [
   { path: '/login', component: LoginView },
   { path: '/register', component: RegisterView },
   { path: '/dashboard', component: DashboardView, meta: { auth: true } },
-  { path: '/gateway', component: DashboardView, meta: { auth: true } },
+  { path: '/gateway', component: GatewayView, meta: { auth: true } },
   { path: '/agents', component: AgentsView, meta: { auth: true } },
   { path: '/agent-sessions', component: AgentSessionsView, meta: { auth: true } },
   { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true } },
