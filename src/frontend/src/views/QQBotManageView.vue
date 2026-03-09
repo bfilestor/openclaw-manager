@@ -5,6 +5,8 @@
       :loading="loading"
       :saving="saving"
       :can-edit="canEdit"
+      :show-preview="hasBotRows"
+      :show-save="hasBotRows"
       @refresh="loadConfig"
       @preview="previewDiff"
       @save="saveConfig"
@@ -48,7 +50,7 @@
         :closable="false"
         show-icon
         title="首次接入提示：访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建，
-        或者输入 QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。
+        或者输入 QQBot 的 AppID 和 AppSecret 后点击去执行按钮，然后手动执行行命令完成第一次接入。
         "
       >
       </el-alert>
@@ -77,7 +79,9 @@
         <div class="cmd-box">
           <div class="cmd-title-row">
             <div class="cmd-title">第一次接入命令</div>
-            <el-button type="primary" :disabled="!canEdit" @click="goExecuteFirstAccessCommands">去执行</el-button>
+            <el-button type="primary" :disabled="!canEdit || !canExecuteFirstAccess" @click="goExecuteFirstAccessCommands">
+              去执行
+            </el-button>
           </div>
           <pre>{{ firstAccessCommand }}</pre>
         </div>
@@ -190,6 +194,8 @@ const canEdit = computed(() => {
   return role === 'Operator' || role === 'Admin'
 })
 
+const hasBotRows = computed(() => bots.value.length > 0)
+
 const firstAccessCommand = computed(() => {
   const appId = firstBot.value.appId || '[yourAppId]'
   const clientSecret = firstBot.value.clientSecret || '[yourAppSecret]'
@@ -197,6 +203,10 @@ const firstAccessCommand = computed(() => {
   return `openclaw plugins install @sliverp/qqbot@latest
 openclaw channels add --channel qqbot --token "${appId}:${clientSecret}"
 openclaw gateway restart`
+})
+
+const canExecuteFirstAccess = computed(() => {
+  return Boolean(firstBot.value.appId.trim() && firstBot.value.clientSecret.trim())
 })
 
 function parseError(err: any, fallback: string): string {
@@ -385,6 +395,21 @@ function buildNormalizedConfigText(): string {
 }
 
 function goExecuteFirstAccessCommands() {
+  const appId = firstBot.value.appId.trim()
+  const clientSecret = firstBot.value.clientSecret.trim()
+  if (!appId && !clientSecret) {
+    ElMessage.warning('请先输入 QQBot AppID 和 QQBot AppSecret')
+    return
+  }
+  if (!appId) {
+    ElMessage.warning('请先输入 QQBot AppID')
+    return
+  }
+  if (!clientSecret) {
+    ElMessage.warning('请先输入 QQBot AppSecret')
+    return
+  }
+
   const commands = parseLines(firstAccessCommand.value)
   if (commands.length === 0) {
     ElMessage.warning('没有可加入暂存区的命令')
