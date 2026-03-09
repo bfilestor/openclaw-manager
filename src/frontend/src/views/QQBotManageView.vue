@@ -47,8 +47,13 @@
         type="info"
         :closable="false"
         show-icon
-        title="首次接入提示：访问https://q.qq.com/bot/openclaw,扫码创建机器人，按页面提示直接创建<br/>或者输入QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。"
-      />
+        title="首次接入提示："
+      >
+        <template #description>
+          访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建<br/>
+          或者输入 QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。
+        </template>
+      </el-alert>
 
       <div v-if="bots.length === 0" class="first-access">
         <el-form label-position="top">
@@ -68,14 +73,14 @@
         <div class="cmd-box">
           <div class="cmd-title">第一次接入命令</div>
           <pre>openclaw plugins install @sliverp/qqbot@latest
-openclaw channels add --channel qqbot --token "[yourAppId]:[yourAppSecret]
+openclaw channels add --channel qqbot --token "[yourAppId]:[yourAppSecret]"
 openclaw gateway restart</pre>
             <div style="margin-top: 8px; color: #666;">将上面命令中的 [yourAppId] 和 [yourAppSecret] 替换为你输入的 AppID 和 AppSecret 后执行</div>
         </div>
       </div>
     </el-card>
 
-    <el-card shadow="never">
+    <el-card shadow="never" v-if="bots.length !== 0">
       <template #header>添加新 QQBot（支持一次添加多个）</template>
 
       <el-alert
