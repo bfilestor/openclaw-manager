@@ -13,6 +13,7 @@
         <el-button :loading="loading" @click="loadGraph">{{ t('common.actions.refresh') }}</el-button>
         <el-button v-if="!isEditMode" type="primary" @click="startEdit">{{ t('bindings.editMode') }}</el-button>
         <template v-else>
+          <el-button :disabled="!canUndo" @click="undoLast">{{ t('bindings.undo') }}</el-button>
           <el-button @click="cancelEdit">{{ t('bindings.cancelEdit') }}</el-button>
           <el-button type="primary" :loading="saving" @click="saveBindings">{{ t('bindings.saveBindings') }}</el-button>
         </template>
@@ -226,6 +227,8 @@ const draftLine = ref<DraftLine | null>(null)
 const activeBotID = ref('')
 const dragState = ref<null | { edgeID?: string; agentID: string; pointerId: number }>(null)
 const canvasRef = ref<HTMLElement | null>(null)
+const historyStack = ref<GraphEdge[][]>([])
+const canUndo = computed(() => historyStack.value.length > 0)
 
 const canvasWidth = 1180
 const nodeWidth = 250
@@ -754,6 +757,17 @@ function updateDraftLine(agentID: string, pointerX: number, pointerY: number) {
   }
 }
 
+function pushHistory() {
+  historyStack.value.push(editableEdges.value.map((edge) => ({ ...edge })))
+  if (historyStack.value.length > 100) historyStack.value.shift()
+}
+
+function undoLast() {
+  const last = historyStack.value.pop()
+  if (!last) return
+  editableEdges.value = last.map((edge) => ({ ...edge }))
+}
+
 function replaceEdgeTarget(edge: GraphEdge, targetBotID: string) {
   const [channel, account] = targetBotID.split('/')
   if (!channel || !account) return
@@ -781,6 +795,7 @@ function addEdgeByAgentToBot(agentID: string, targetBotID: string) {
 function finishDrag(targetBotID: string) {
   const state = dragState.value
   if (!state || !targetBotID) return
+  pushHistory()
   if (state.edgeID) {
     const edge = editableEdges.value.find((item) => item.id === state.edgeID)
     if (edge) replaceEdgeTarget(edge, targetBotID)
@@ -828,6 +843,7 @@ function startDragNew(agentID: string, ev: PointerEvent) {
 
 function startEdit() {
   isEditMode.value = true
+  historyStack.value = []
   editableEdges.value = graph.value.edges.map((edge) => ({ ...edge }))
 }
 
@@ -835,6 +851,7 @@ function cancelEdit() {
   cleanupDrag()
   previewVisible.value = false
   isEditMode.value = false
+  historyStack.value = []
   editableEdges.value = []
 }
 
@@ -858,6 +875,7 @@ function buildBindingsPayload(edges: GraphEdge[]) {
 }
 
 function removeEdge(edgeID: string) {
+  pushHistory()
   editableEdges.value = editableEdges.value.filter((edge) => edge.id !== edgeID)
 }
 
@@ -892,6 +910,7 @@ async function confirmSaveBindings() {
     ElMessage.success(t('bindings.messages.saveSuccess'))
     previewVisible.value = false
     isEditMode.value = false
+    historyStack.value = []
     await loadGraph()
   } catch (err) {
     ElMessage.error(parseError(err, t('bindings.messages.saveFailed')))

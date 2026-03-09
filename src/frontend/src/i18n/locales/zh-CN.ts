@@ -460,6 +460,7 @@ export default {
     editing: '编辑中',
     editMode: '编辑连线',
     cancelEdit: '取消编辑',
+    undo: '撤销一步',
     saveBindings: '保存绑定',
     previewTitle: '保存前预览',
     previewTip: '以下为 bindings 变更预览，确认后会写入 openclaw.json 并自动生成 Revisions。',

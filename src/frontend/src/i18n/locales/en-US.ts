@@ -460,6 +460,7 @@ export default {
     editing: 'Editing',
     editMode: 'Edit Links',
     cancelEdit: 'Cancel Edit',
+    undo: 'Undo',
     saveBindings: 'Save Bindings',
     previewTitle: 'Preview Before Save',
     previewTip: 'Preview binding changes below. Confirm to write openclaw.json and create a revision.',
