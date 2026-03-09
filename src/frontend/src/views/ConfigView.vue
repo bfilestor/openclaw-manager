@@ -125,6 +125,12 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
+import {
+  buildOpenclawDiff,
+  getOpenclawConfig,
+  normalizeOpenclawJSON,
+  saveOpenclawConfig,
+} from '../services/openclawConfig'
 
 type Revision = {
   revision_id: string
@@ -188,18 +194,13 @@ function parseError(err: any, fallback: string): string {
   return typeof msg === 'string' && msg ? msg : fallback
 }
 
-function normalizeJSON(raw: string): string {
-  const parsed = JSON.parse(raw)
-  return JSON.stringify(parsed, null, 2)
-}
 
 async function loadConfig() {
-  const { data } = await axios.get('/api/v1/config/openclaw')
-  const raw = data?.content
-  content.value = typeof raw === 'string' ? raw : '{}'
-  originalContent.value = content.value
-  sizeBytes.value = Number(data?.size || new Blob([content.value]).size || 0)
-  modifiedAt.value = String(data?.modified_at || '')
+  const payload = await getOpenclawConfig()
+  content.value = payload.content
+  originalContent.value = payload.content
+  sizeBytes.value = Number(payload.size || new Blob([content.value]).size || 0)
+  modifiedAt.value = String(payload.modified_at || '')
 }
 
 async function loadRevisions() {
@@ -227,7 +228,7 @@ async function loadAll() {
 
 function formatJSON() {
   try {
-    content.value = normalizeJSON(content.value)
+    content.value = normalizeOpenclawJSON(content.value)
     ElMessage.success('JSON 格式化完成')
   } catch {
     ElMessage.error('当前内容不是合法 JSON，无法格式化')
@@ -237,14 +238,15 @@ function formatJSON() {
 function previewCurrentDiff() {
   let normalized = ''
   try {
-    normalized = normalizeJSON(content.value)
+    normalized = normalizeOpenclawJSON(content.value)
   } catch {
     ElMessage.error('JSON 格式不合法，无法生成 Diff 预览')
     return
   }
   currentRevisionID.value = 'CURRENT -> EDITED'
-  diffFromText.value = originalContent.value || '{}'
-  diffToText.value = normalized
+  const diff = buildOpenclawDiff(originalContent.value, normalized)
+  diffFromText.value = diff.fromText
+  diffToText.value = diff.toText
   diffDialogVisible.value = true
 }
 
@@ -255,14 +257,14 @@ async function saveConfig() {
   }
   let normalized = ''
   try {
-    normalized = normalizeJSON(content.value)
+    normalized = normalizeOpenclawJSON(content.value)
   } catch {
     ElMessage.error('JSON 格式不合法，请修复后再保存')
     return
   }
   saving.value = true
   try {
-    await axios.put('/api/v1/config/openclaw', { content: normalized })
+    await saveOpenclawConfig(normalized)
     content.value = normalized
     ElMessage.success('配置保存成功')
     await loadAll()

@@ -123,10 +123,10 @@ openclaw gateway restart</pre>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
+import { buildOpenclawDiff, getOpenclawConfig, saveOpenclawConfig } from '../services/openclawConfig'
 
 type BotRow = {
   key: string
@@ -214,8 +214,8 @@ async function loadConfig() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const { data } = await axios.get('/api/v1/config/openclaw')
-    const text = String(data?.content || '{}')
+    const payload = await getOpenclawConfig()
+    const text = String(payload.content || '{}')
     originalConfigText.value = text
     rawConfig.value = JSON.parse(text)
     bots.value = listBotsFromConfig(rawConfig.value)
@@ -344,8 +344,9 @@ function buildNormalizedConfigText(): string {
 
 function previewDiff() {
   try {
-    diffFromText.value = originalConfigText.value || '{}'
-    diffToText.value = buildNormalizedConfigText()
+    const diff = buildOpenclawDiff(originalConfigText.value, buildNormalizedConfigText())
+    diffFromText.value = diff.fromText
+    diffToText.value = diff.toText
     diffDialogVisible.value = true
   } catch {
     ElMessage.error('生成变更预览失败，请检查输入内容')
@@ -374,7 +375,7 @@ async function saveConfig() {
 
   saving.value = true
   try {
-    await axios.put('/api/v1/config/openclaw', { content: normalized })
+    await saveOpenclawConfig(normalized)
     ElMessage.success('QQBot 配置保存成功')
     await loadConfig()
   } catch (err) {
