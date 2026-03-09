@@ -1,7 +1,7 @@
 <template>
   <div class="qqbot-page">
     <OpenclawSaveActions
-      title="QQBot 管理"
+      :title="t('qqbot.pageTitle')"
       :loading="loading"
       :saving="saving"
       :can-edit="canEdit"
@@ -17,28 +17,35 @@
     <el-card shadow="never">
       <template #header>
         <div class="card-title-row">
-          <span>已接入 QQBot 列表</span>
-          <el-tag type="info">共 {{ bots.length }} 个</el-tag>
+          <span>{{ t('qqbot.listTitle') }}</span>
+          <el-tag type="info">{{ t('qqbot.totalCount', { count: bots.length }) }}</el-tag>
         </div>
       </template>
 
-      <el-empty v-if="!loading && bots.length === 0" description="尚未接入任何 QQBot" />
+      <el-empty v-if="!loading && bots.length === 0" :description="t('qqbot.empty')" />
 
       <el-table v-else :data="bots" row-key="key" style="width: 100%">
-        <el-table-column prop="name" label="Bot 名称" min-width="140" />
-        <el-table-column label="AppID" min-width="220">
+        <el-table-column prop="name" :label="t('qqbot.botName')" min-width="140" />
+        <el-table-column :label="t('qqbot.appId')" min-width="220">
           <template #default="{ row }">
-            <el-input v-model="row.appId" :disabled="!canEdit" placeholder="请输入 AppID" />
+            <el-input v-model="row.appId" :disabled="!canEdit" :placeholder="t('qqbot.firstForm.appIdPlaceholder')" />
           </template>
         </el-table-column>
-        <el-table-column label="AppSecret" min-width="260">
+        <el-table-column :label="t('qqbot.appSecret')" min-width="260">
           <template #default="{ row }">
-            <el-input v-model="row.clientSecret" :disabled="!canEdit" placeholder="请输入 AppSecret" show-password />
+            <el-input
+              v-model="row.clientSecret"
+              :disabled="!canEdit"
+              :placeholder="t('qqbot.firstForm.appSecretPlaceholder')"
+              show-password
+            />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column :label="t('qqbot.operations')" width="120">
           <template #default="{ row }">
-            <el-button type="danger" link :disabled="!canEdit" @click="removeBot(row)">删除</el-button>
+            <el-button type="danger" link :disabled="!canEdit" @click="removeBot(row)">
+              {{ t('common.actions.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -49,9 +56,7 @@
         type="info"
         :closable="false"
         show-icon
-        title="首次接入提示：访问 https://q.qq.com/bot/openclaw，扫码创建机器人，按页面提示直接创建，
-        或者输入 QQBot 的 AppID 和 AppSecret 后点击去执行按钮，然后手动执行行命令完成第一次接入。
-        "
+        :title="t('qqbot.firstAccessTips')"
       >
       </el-alert>
 
@@ -59,17 +64,21 @@
         <el-form label-position="top">
           <el-row :gutter="12">
             <el-col :xs="24" :md="12">
-              <el-form-item label="QQBot AppID">
-                <el-input v-model="firstBot.appId" :disabled="!canEdit" placeholder="请输入AppID" />
+              <el-form-item :label="t('qqbot.firstForm.appIdLabel')">
+                <el-input
+                  v-model="firstBot.appId"
+                  :disabled="!canEdit"
+                  :placeholder="t('qqbot.firstForm.appIdPlaceholder')"
+                />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :md="12">
-              <el-form-item label="QQBot AppSecret">
+              <el-form-item :label="t('qqbot.firstForm.appSecretLabel')">
                 <el-input
                   v-model="firstBot.clientSecret"
                   :disabled="!canEdit"
                   show-password
-                  placeholder="请输入AppSecret"
+                  :placeholder="t('qqbot.firstForm.appSecretPlaceholder')"
                 />
               </el-form-item>
             </el-col>
@@ -78,9 +87,9 @@
 
         <div class="cmd-box">
           <div class="cmd-title-row">
-            <div class="cmd-title">第一次接入命令</div>
+            <div class="cmd-title">{{ t('qqbot.firstAccessCommandTitle') }}</div>
             <el-button type="primary" :disabled="!canEdit || !canExecuteFirstAccess" @click="goExecuteFirstAccessCommands">
-              去执行
+              {{ t('common.actions.goExecute') }}
             </el-button>
           </div>
           <pre>{{ firstAccessCommand }}</pre>
@@ -89,13 +98,13 @@
     </el-card>
 
     <el-card shadow="never" v-if="bots.length !== 0">
-      <template #header>添加新 QQBot（支持一次添加多个）</template>
+      <template #header>{{ t('qqbot.addTitle') }}</template>
 
       <el-alert
         type="warning"
         show-icon
         :closable="false"
-        title="如已有主 QQBot，新增会写入 qqbot.accounts。bot 名称仅允许字母和数字（例如 qqbot2），填写后，点击加入配置草稿按钮，然后保存配置。"
+        :title="t('qqbot.addTips')"
       />
 
       <div class="add-list">
@@ -105,32 +114,41 @@
               <el-input
                 v-model="item.name"
                 :disabled="!canEdit"
-                placeholder="bot名称，如 qqbot2"
+                :placeholder="t('qqbot.addForm.botNamePlaceholder')"
               />
             </el-col>
             <el-col :xs="24" :md="8">
-              <el-input v-model="item.appId" :disabled="!canEdit" placeholder="AppID" />
+              <el-input v-model="item.appId" :disabled="!canEdit" :placeholder="t('qqbot.addForm.appIdPlaceholder')" />
             </el-col>
             <el-col :xs="24" :md="8">
-              <el-input v-model="item.clientSecret" :disabled="!canEdit" placeholder="AppSecret" show-password />
+              <el-input
+                v-model="item.clientSecret"
+                :disabled="!canEdit"
+                :placeholder="t('qqbot.addForm.appSecretPlaceholder')"
+                show-password
+              />
             </el-col>
             <el-col :xs="24" :md="2" class="row-op">
-              <el-button type="danger" :disabled="!canEdit" @click="removeAddRow(idx)">删除</el-button>
+              <el-button type="danger" :disabled="!canEdit" @click="removeAddRow(idx)">
+                {{ t('common.actions.delete') }}
+              </el-button>
             </el-col>
           </el-row>
         </div>
       </div>
 
       <el-space>
-        <el-button :disabled="!canEdit" @click="addRow">+ 添加一行</el-button>
-        <el-button type="primary" :disabled="!canEdit" @click="appendRowsToConfig">加入配置草稿</el-button>
+        <el-button :disabled="!canEdit" @click="addRow">{{ t('common.actions.addRow') }}</el-button>
+        <el-button type="primary" :disabled="!canEdit" @click="appendRowsToConfig">
+          {{ t('common.actions.appendDraft') }}
+        </el-button>
       </el-space>
     </el-card>
 
-    <el-dialog v-model="diffDialogVisible" width="1080px" title="openclaw.json 变更预览">
+    <el-dialog v-model="diffDialogVisible" width="1080px" :title="t('qqbot.diffPreviewTitle')">
       <DiffViewer :from-text="diffFromText" :to-text="diffToText" :height="460" />
       <template #footer>
-        <el-button @click="diffDialogVisible = false">关闭</el-button>
+        <el-button @click="diffDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -140,6 +158,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
 import OpenclawSaveActions from '../components/OpenclawSaveActions.vue'
@@ -167,6 +186,7 @@ type ShellStashItem = {
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
@@ -272,7 +292,7 @@ async function loadConfig() {
     rawConfig.value = JSON.parse(text)
     bots.value = listBotsFromConfig(rawConfig.value)
   } catch (err) {
-    errorMessage.value = parseError(err, '加载配置失败')
+    errorMessage.value = parseError(err, t('qqbot.messages.loadConfigFailed'))
   } finally {
     loading.value = false
   }
@@ -311,7 +331,7 @@ function appendRowsToConfig() {
 
   if (bots.value.length === 0) {
     if (!firstBot.value.appId.trim() || !firstBot.value.clientSecret.trim()) {
-      ElMessage.warning('请先输入主 QQBot 的 AppID 和 AppSecret')
+      ElMessage.warning(t('qqbot.messages.needPrimaryCredentials'))
       return
     }
     ensureQQBotRoot(rawConfig.value)
@@ -322,7 +342,7 @@ function appendRowsToConfig() {
     rawConfig.value.channels.qqbot.appId = firstBot.value.appId.trim()
     rawConfig.value.channels.qqbot.clientSecret = firstBot.value.clientSecret.trim()
     bots.value = listBotsFromConfig(rawConfig.value)
-    ElMessage.success('主 QQBot 已加入配置草稿')
+    ElMessage.success(t('qqbot.messages.primaryAdded'))
     return
   }
 
@@ -338,11 +358,11 @@ function appendRowsToConfig() {
     if (!name && !appId && !clientSecret) continue
 
     if (!ensureValidBotName(name)) {
-      ElMessage.error(`Bot 名称不合法：${name || '(空)'}。仅允许字母和数字`)
+      ElMessage.error(t('qqbot.messages.invalidBotName', { name: name || t('qqbot.messages.emptyName') }))
       return
     }
     if (!appId || !clientSecret) {
-      ElMessage.error(`Bot ${name} 缺少 AppID 或 AppSecret`)
+      ElMessage.error(t('qqbot.messages.missingBotCredentials', { name }))
       return
     }
 
@@ -356,13 +376,13 @@ function appendRowsToConfig() {
   }
 
   if (added === 0) {
-    ElMessage.warning('没有可添加的数据，请填写至少一行')
+    ElMessage.warning(t('qqbot.messages.noRowsToAdd'))
     return
   }
 
   bots.value = listBotsFromConfig(rawConfig.value)
   addRows.value = [{ id: newRowID(), name: '', appId: '', clientSecret: '' }]
-  ElMessage.success(`已加入 ${added} 个 QQBot 到配置草稿`)
+  ElMessage.success(t('qqbot.messages.addedBots', { count: added }))
 }
 
 function buildNormalizedConfigText(): string {
@@ -398,21 +418,21 @@ function goExecuteFirstAccessCommands() {
   const appId = firstBot.value.appId.trim()
   const clientSecret = firstBot.value.clientSecret.trim()
   if (!appId && !clientSecret) {
-    ElMessage.warning('请先输入 QQBot AppID 和 QQBot AppSecret')
+    ElMessage.warning(t('qqbot.messages.needBothCredentials'))
     return
   }
   if (!appId) {
-    ElMessage.warning('请先输入 QQBot AppID')
+    ElMessage.warning(t('qqbot.messages.needAppId'))
     return
   }
   if (!clientSecret) {
-    ElMessage.warning('请先输入 QQBot AppSecret')
+    ElMessage.warning(t('qqbot.messages.needAppSecret'))
     return
   }
 
   const commands = parseLines(firstAccessCommand.value)
   if (commands.length === 0) {
-    ElMessage.warning('没有可加入暂存区的命令')
+    ElMessage.warning(t('qqbot.messages.noCommands'))
     return
   }
 
@@ -439,13 +459,13 @@ function goExecuteFirstAccessCommands() {
 
     localStorage.setItem(SHELL_STASH_STORAGE_KEY, JSON.stringify(stash))
     if (added > 0) {
-      ElMessage.success(`已加入 ${added} 条命令，正在跳转到 Shell 页面`)
+      ElMessage.success(t('qqbot.messages.addedCommandsAndRedirect', { count: added }))
     } else {
-      ElMessage.info('命令已在暂存区，正在跳转到 Shell 页面')
+      ElMessage.info(t('qqbot.messages.commandsAlreadyExist'))
     }
     router.push('/shell')
   } catch {
-    ElMessage.error('写入命令暂存区失败，请稍后重试')
+    ElMessage.error(t('qqbot.messages.writeStashFailed'))
   }
 }
 
@@ -456,13 +476,13 @@ function previewDiff() {
     diffToText.value = diff.toText
     diffDialogVisible.value = true
   } catch {
-    ElMessage.error('生成变更预览失败，请检查输入内容')
+    ElMessage.error(t('qqbot.messages.buildPreviewFailed'))
   }
 }
 
 async function saveConfig() {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('qqbot.messages.noEditPermission'))
     return
   }
 
@@ -470,12 +490,16 @@ async function saveConfig() {
   try {
     normalized = buildNormalizedConfigText()
   } catch {
-    ElMessage.error('配置序列化失败，请检查输入内容')
+    ElMessage.error(t('qqbot.messages.serializeFailed'))
     return
   }
 
   try {
-    await ElMessageBox.confirm('确认保存 QQBot 配置变更？保存前将按 revision 机制记录版本。', '保存确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('qqbot.messages.saveConfirmContent'),
+      t('qqbot.messages.saveConfirmTitle'),
+      { type: 'warning' },
+    )
   } catch {
     return
   }
@@ -483,10 +507,10 @@ async function saveConfig() {
   saving.value = true
   try {
     await saveOpenclawConfig(normalized)
-    ElMessage.success('QQBot 配置保存成功')
+    ElMessage.success(t('qqbot.messages.saveSuccess'))
     await loadConfig()
   } catch (err) {
-    ElMessage.error(parseError(err, '保存配置失败'))
+    ElMessage.error(parseError(err, t('qqbot.messages.saveFailed')))
   } finally {
     saving.value = false
   }
@@ -512,13 +536,14 @@ onMounted(loadConfig)
   margin-top: 12px;
 }
 .cmd-box {
-  border: 1px dashed #d9d9d9;
+  border: 1px dashed var(--oc-border-strong);
   border-radius: 8px;
   padding: 10px;
-  background: #fafafa;
+  background: var(--oc-surface-muted);
 }
 .cmd-title {
   font-weight: 600;
+  color: var(--oc-text);
 }
 .cmd-title-row {
   display: flex;
@@ -539,9 +564,10 @@ onMounted(loadConfig)
   gap: 8px;
 }
 .add-row {
-  border: 1px solid #eee;
+  border: 1px solid var(--oc-border);
   border-radius: 8px;
   padding: 8px;
+  background: var(--oc-surface);
 }
 .row-op {
   display: flex;

@@ -1,112 +1,170 @@
 <template>
-  <el-container v-if="auth.isAuthenticated" class="app-shell">
-    <el-aside class="app-aside" width="236px">
-      <div class="brand">
-        <div class="brand-title">OpenClaw Manager</div>
-        <el-text class="brand-sub" type="info">Operations Console</el-text>
-      </div>
-
-      <el-scrollbar class="nav-scroll">
-        <el-menu :default-active="activePath" router class="nav-menu">
-          <el-menu-item
-            v-for="item in visibleNavItems"
-            :key="item.path"
-            :index="item.path"
-          >
-            <span class="nav-item-content">
-              <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
-              <span class="nav-label">{{ item.label }}</span>
-            </span>
-          </el-menu-item>
-        </el-menu>
-      </el-scrollbar>
-
-      <div class="aside-footer">
-        <el-tag size="small" :type="roleTagType">{{ currentRole }}</el-tag>
-      </div>
-    </el-aside>
-
-    <el-container class="main-shell">
-      <el-header class="app-header">
-        <div class="header-title">
-          <div class="title-main"></div>
+  <el-config-provider :locale="elementLocale">
+    <el-container v-if="auth.isAuthenticated" class="app-shell">
+      <el-aside class="app-aside" width="236px">
+        <div class="brand">
+          <div class="brand-title">{{ t('common.appName') }}</div>
+          <el-text class="brand-sub" type="info">{{ t('common.operationsConsole') }}</el-text>
         </div>
 
-        <el-dropdown trigger="hover" @command="handleUserMenu">
-          <span class="user-trigger">
-            <el-avatar size="small" class="user-avatar">{{ usernameInitial }}</el-avatar>
-            <span class="user-name">{{ auth.user?.username || 'User' }}</span>
-            <el-tag size="small" :type="roleTagType">{{ currentRole }}</el-tag>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="change-password">修改密码</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出系统</el-dropdown-item>
-            </el-dropdown-menu>
+        <el-scrollbar class="nav-scroll">
+          <el-menu :default-active="activePath" router class="nav-menu">
+            <el-menu-item
+              v-for="item in visibleNavItems"
+              :key="item.path"
+              :index="item.path"
+            >
+              <span class="nav-item-content">
+                <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+                <span class="nav-label">{{ t(item.labelKey) }}</span>
+              </span>
+            </el-menu-item>
+          </el-menu>
+        </el-scrollbar>
+
+        <div class="aside-footer">
+          <el-tag size="small" :type="roleTagType">{{ currentRoleLabel }}</el-tag>
+        </div>
+      </el-aside>
+
+      <el-container class="main-shell">
+        <el-header class="app-header">
+          <div class="header-tools">
+            <div class="toolbar-group">
+              <el-text type="info">{{ t('common.localeLabel') }}</el-text>
+              <el-select v-model="localeModel" size="small" class="locale-select">
+                <el-option value="zh-CN" :label="t('common.locales.zhCN')" />
+                <el-option value="en-US" :label="t('common.locales.enUS')" />
+              </el-select>
+            </div>
+
+            <div class="toolbar-group">
+              <el-text type="info">{{ t('common.themeLabel') }}</el-text>
+              <el-radio-group v-model="themeModel" size="small">
+                <el-radio-button label="light">{{ t('common.themes.light') }}</el-radio-button>
+                <el-radio-button label="dark">{{ t('common.themes.dark') }}</el-radio-button>
+              </el-radio-group>
+            </div>
+          </div>
+
+          <el-dropdown trigger="hover" @command="handleUserMenu">
+            <span class="user-trigger">
+              <el-avatar size="small" class="user-avatar">{{ usernameInitial }}</el-avatar>
+              <span class="user-name">{{ auth.user?.username || t('common.user') }}</span>
+              <el-tag size="small" :type="roleTagType">{{ currentRoleLabel }}</el-tag>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="change-password">{{ t('app.userMenu.changePassword') }}</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>{{ t('app.userMenu.logout') }}</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-header>
+
+        <el-main class="app-main">
+          <router-view />
+        </el-main>
+
+        <el-dialog v-model="showPwdDialog" :title="t('app.passwordDialog.title')" width="420px">
+          <el-form label-position="top">
+            <el-form-item :label="t('app.passwordDialog.oldPassword')">
+              <el-input
+                v-model="passwordForm.old_password"
+                type="password"
+                show-password
+                :placeholder="t('app.passwordDialog.oldPasswordPlaceholder')"
+              />
+            </el-form-item>
+            <el-form-item :label="t('app.passwordDialog.newPassword')">
+              <el-input
+                v-model="passwordForm.new_password"
+                type="password"
+                show-password
+                :placeholder="t('app.passwordDialog.newPasswordPlaceholder')"
+              />
+            </el-form-item>
+            <el-form-item :label="t('app.passwordDialog.confirmPassword')">
+              <el-input
+                v-model="confirmPassword"
+                type="password"
+                show-password
+                :placeholder="t('app.passwordDialog.confirmPasswordPlaceholder')"
+              />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-space>
+              <el-button @click="showPwdDialog = false">{{ t('common.actions.cancel') }}</el-button>
+              <el-button type="primary" :loading="submittingPwd" @click="submitPasswordChange">
+                {{ t('app.passwordDialog.submit') }}
+              </el-button>
+            </el-space>
           </template>
-        </el-dropdown>
-      </el-header>
-
-      <el-main class="app-main">
-        <router-view />
-      </el-main>
-
-      <el-dialog v-model="showPwdDialog" title="修改密码" width="420px">
-        <el-form label-position="top">
-          <el-form-item label="旧密码">
-            <el-input v-model="passwordForm.old_password" type="password" show-password placeholder="请输入旧密码" />
-          </el-form-item>
-          <el-form-item label="新密码">
-            <el-input v-model="passwordForm.new_password" type="password" show-password placeholder="请输入新密码" />
-          </el-form-item>
-          <el-form-item label="确认新密码">
-            <el-input v-model="confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-space>
-            <el-button @click="showPwdDialog = false">取消</el-button>
-            <el-button type="primary" :loading="submittingPwd" @click="submitPasswordChange">确认修改</el-button>
-          </el-space>
-        </template>
-      </el-dialog>
+        </el-dialog>
+      </el-container>
     </el-container>
-  </el-container>
 
-  <router-view v-else />
+    <div v-else class="guest-shell">
+      <div class="guest-toolbar">
+        <div class="toolbar-group">
+          <el-text type="info">{{ t('common.localeLabel') }}</el-text>
+          <el-select v-model="localeModel" size="small" class="locale-select">
+            <el-option value="zh-CN" :label="t('common.locales.zhCN')" />
+            <el-option value="en-US" :label="t('common.locales.enUS')" />
+          </el-select>
+        </div>
+
+        <div class="toolbar-group">
+          <el-text type="info">{{ t('common.themeLabel') }}</el-text>
+          <el-radio-group v-model="themeModel" size="small">
+            <el-radio-button label="light">{{ t('common.themes.light') }}</el-radio-button>
+            <el-radio-button label="dark">{{ t('common.themes.dark') }}</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+      <router-view />
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import enUS from 'element-plus/es/locale/lang/en'
+import zhCN from 'element-plus/es/locale/lang/zh-cn'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from './stores/auth'
+import { type AppLocale, type AppTheme, usePreferencesStore } from './stores/preferences'
 
 type NavItem = {
   path: string
-  label: string
+  labelKey: string
   icon: string
   adminOnly?: boolean
 }
 
 const auth = useAuthStore()
+const preferences = usePreferencesStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const navItems: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
-  { path: '/gateway', label: 'Gateway', icon: '🌐' },
-  { path: '/agents', label: 'Agents', icon: '🤖' },
-  { path: '/agent-sessions', label: 'Sessions', icon: '🎬' },
-  { path: '/bindings', label: 'Bindings', icon: '🔗' },
-  { path: '/skills', label: 'Skills', icon: '🧩' },
-  { path: '/config', label: 'Config', icon: '⚙️' },
-  { path: '/qqbot', label: 'QQBot', icon: '🐧' },
-  { path: '/backups', label: 'Backups', icon: '💾' },
-  { path: '/tasks', label: 'Tasks', icon: '✅' },
-  { path: '/shell', label: 'Shell', icon: '🖥️' },
-  { path: '/admin/users', label: 'Users', icon: '👥', adminOnly: true },
+  { path: '/dashboard', labelKey: 'app.nav.dashboard', icon: '🏠' },
+  { path: '/gateway', labelKey: 'app.nav.gateway', icon: '🌐' },
+  { path: '/agents', labelKey: 'app.nav.agents', icon: '🤖' },
+  { path: '/agent-sessions', labelKey: 'app.nav.sessions', icon: '🎬' },
+  { path: '/bindings', labelKey: 'app.nav.bindings', icon: '🔗' },
+  { path: '/skills', labelKey: 'app.nav.skills', icon: '🧩' },
+  { path: '/config', labelKey: 'app.nav.config', icon: '⚙️' },
+  { path: '/qqbot', labelKey: 'app.nav.qqbot', icon: '🐧' },
+  { path: '/backups', labelKey: 'app.nav.backups', icon: '💾' },
+  { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅' },
+  { path: '/shell', labelKey: 'app.nav.shell', icon: '🖥️' },
+  { path: '/admin/users', labelKey: 'app.nav.users', icon: '👥', adminOnly: true },
 ]
 
 const visibleNavItems = computed(() => {
@@ -128,10 +186,20 @@ const usernameInitial = computed(() => {
 })
 
 const currentRole = computed(() => auth.user?.role || 'Viewer')
+const currentRoleLabel = computed(() => t(`roles.${currentRole.value}`))
 const showPwdDialog = ref(false)
 const submittingPwd = ref(false)
 const passwordForm = ref({ old_password: '', new_password: '' })
 const confirmPassword = ref('')
+const localeModel = computed<AppLocale>({
+  get: () => preferences.locale,
+  set: (value) => preferences.setLocale(value),
+})
+const themeModel = computed<AppTheme>({
+  get: () => preferences.theme,
+  set: (value) => preferences.setTheme(value),
+})
+const elementLocale = computed(() => (preferences.locale === 'en-US' ? enUS : zhCN))
 
 const roleTagType = computed<'info' | 'success' | 'warning'>(() => {
   if (currentRole.value === 'Admin') return 'warning'
@@ -168,22 +236,22 @@ async function handleUserMenu(command: string) {
 
 async function submitPasswordChange() {
   if (!passwordForm.value.old_password || !passwordForm.value.new_password) {
-    ElMessage.error('请完整填写密码信息')
+    ElMessage.error(t('app.messages.fillPasswordInfo'))
     return
   }
   if (passwordForm.value.new_password !== confirmPassword.value) {
-    ElMessage.error('两次输入的新密码不一致')
+    ElMessage.error(t('app.messages.passwordMismatch'))
     return
   }
   submittingPwd.value = true
   try {
     await axios.put('/api/v1/users/me/password', passwordForm.value)
-    ElMessage.success('密码修改成功，请重新登录')
+    ElMessage.success(t('app.messages.passwordChanged'))
     showPwdDialog.value = false
     resetPasswordForm()
     await logout()
   } catch {
-    ElMessage.error('密码修改失败，请检查旧密码是否正确')
+    ElMessage.error(t('app.messages.passwordChangeFailed'))
   } finally {
     submittingPwd.value = false
   }
@@ -193,17 +261,14 @@ async function submitPasswordChange() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  background:
-    radial-gradient(1000px 420px at -10% -5%, rgba(22, 119, 255, 0.12), transparent 55%),
-    radial-gradient(900px 360px at 110% 102%, rgba(255, 120, 50, 0.12), transparent 58%),
-    #f4f6fb;
+  background: var(--oc-bg);
 }
 
 .app-aside {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e4e8f0;
-  background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+  border-right: 1px solid var(--oc-border);
+  background: var(--oc-surface);
 }
 
 .brand {
@@ -215,10 +280,12 @@ async function submitPasswordChange() {
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.2px;
+  color: var(--oc-text);
 }
 
 .brand-sub {
   font-size: 12px;
+  color: var(--oc-text-muted);
 }
 
 .nav-scroll {
@@ -234,13 +301,15 @@ async function submitPasswordChange() {
 .nav-menu :deep(.el-menu-item) {
   position: relative;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 4px;
   height: 42px;
+  color: var(--oc-text);
   transition: transform 0.18s ease, background-color 0.2s ease;
 }
 
 .nav-menu :deep(.el-menu-item:hover) {
+  background: var(--oc-surface-muted);
   transform: translateX(2px);
 }
 
@@ -248,11 +317,11 @@ async function submitPasswordChange() {
   content: '';
   position: absolute;
   left: 0;
-  top: 8px;
-  bottom: 8px;
+  top: 7px;
+  bottom: 7px;
   width: 3px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #2f80ff 0%, #52c1ff 100%);
+  border-radius: 4px;
+  background: var(--oc-accent);
   transform: scaleY(0.25);
   opacity: 0;
   transform-origin: center;
@@ -269,18 +338,18 @@ async function submitPasswordChange() {
 .nav-icon {
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #eef4ff, #e9fbff);
+  background: var(--oc-surface-muted);
   font-size: 14px;
-  box-shadow: inset 0 0 0 1px rgba(73, 110, 255, 0.12);
+  box-shadow: inset 0 0 0 1px var(--oc-border);
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-label {
-  color: #2f3442;
+  color: var(--oc-text);
   transition: color 0.2s ease;
 }
 
@@ -298,18 +367,18 @@ async function submitPasswordChange() {
 }
 
 .nav-menu :deep(.is-active .nav-icon) {
-  background: linear-gradient(145deg, #2f80ff, #4aa8ff);
-  box-shadow: none;
+  background: var(--oc-accent);
+  box-shadow: inset 0 0 0 1px var(--oc-accent);
   transform: scale(1.04);
 }
 
 .nav-menu :deep(.is-active .nav-label) {
-  color: #1e4f9f;
+  color: var(--oc-accent);
   font-weight: 600;
 }
 
 .aside-footer {
-  border-top: 1px solid #edf0f6;
+  border-top: 1px solid var(--oc-border);
   padding: 12px 16px 16px;
 }
 
@@ -319,28 +388,33 @@ async function submitPasswordChange() {
 
 .app-header {
   height: 64px;
-  border-bottom: 1px solid #e7ebf2;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--oc-border);
+  background: var(--oc-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
 }
 
-.header-title {
-  min-width: 0;
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.title-main {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.25;
+.toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.locale-select {
+  width: 120px;
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #2a7fff, #44b0ff);
-  color: #fff;
+  background: var(--oc-accent);
+  color: var(--oc-accent-contrast);
 }
 
 .user-trigger {
@@ -352,12 +426,31 @@ async function submitPasswordChange() {
 }
 
 .user-name {
-  color: #2e3440;
+  color: var(--oc-text);
   font-size: 14px;
 }
 
 .app-main {
   padding: 14px;
+}
+
+.guest-shell {
+  min-height: 100vh;
+}
+
+.guest-toolbar {
+  position: fixed;
+  right: 14px;
+  top: 12px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: var(--oc-shadow);
 }
 
 @media (max-width: 900px) {
@@ -391,6 +484,29 @@ async function submitPasswordChange() {
 
   .app-header {
     padding: 0 10px;
+    gap: 8px;
+  }
+
+  .header-tools {
+    gap: 6px;
+  }
+
+  .toolbar-group :deep(.el-text) {
+    display: none;
+  }
+
+  .locale-select {
+    width: 96px;
+  }
+
+  .guest-toolbar {
+    left: 8px;
+    right: 8px;
+    justify-content: space-between;
+  }
+
+  .user-name {
+    display: none;
   }
 }
 </style>

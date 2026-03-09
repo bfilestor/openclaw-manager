@@ -1,0 +1,70 @@
+:root {
+  color-scheme: light;
+  --oc-bg: #f2f2f2;
+  --oc-surface: #ffffff;
+  --oc-surface-muted: #f8f8f8;
+  --oc-border: #d9d9d9;
+  --oc-border-strong: #bfbfbf;
+  --oc-text: #111111;
+  --oc-text-secondary: #4d4d4d;
+  --oc-text-muted: #666666;
+  --oc-accent: #111111;
+  --oc-accent-contrast: #ffffff;
+  --oc-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --oc-overlay: rgba(0, 0, 0, 0.45);
+
+  --el-bg-color: var(--oc-surface);
+  --el-bg-color-page: var(--oc-bg);
+  --el-bg-color-overlay: var(--oc-surface);
+  --el-fill-color-blank: var(--oc-surface);
+  --el-text-color-primary: var(--oc-text);
+  --el-text-color-regular: var(--oc-text-secondary);
+  --el-text-color-secondary: var(--oc-text-muted);
+  --el-border-color: var(--oc-border);
+  --el-border-color-light: var(--oc-border);
+  --el-border-color-lighter: #e6e6e6;
+  --el-mask-color: var(--oc-overlay);
+  --el-color-primary: var(--oc-accent);
+  --el-color-primary-light-3: #333333;
+  --el-color-primary-light-5: #555555;
+  --el-color-primary-light-7: #777777;
+  --el-color-primary-dark-2: #000000;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --oc-bg: #0a0a0a;
+  --oc-surface: #141414;
+  --oc-surface-muted: #1b1b1b;
+  --oc-border: #2c2c2c;
+  --oc-border-strong: #444444;
+  --oc-text: #f2f2f2;
+  --oc-text-secondary: #d9d9d9;
+  --oc-text-muted: #bfbfbf;
+  --oc-accent: #f2f2f2;
+  --oc-accent-contrast: #111111;
+  --oc-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --oc-overlay: rgba(0, 0, 0, 0.65);
+
+  --el-border-color-lighter: #333333;
+  --el-color-primary-light-3: #d9d9d9;
+  --el-color-primary-light-5: #bfbfbf;
+  --el-color-primary-light-7: #999999;
+  --el-color-primary-dark-2: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--oc-bg);
+  color: var(--oc-text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+}
