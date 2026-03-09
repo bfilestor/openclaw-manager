@@ -47,29 +47,30 @@
         type="info"
         :closable="false"
         show-icon
-        title="首次接入提示：输入主 QQBot 的 AppID 和 AppSecret 后保存，然后执行下方 3 行命令完成第一次接入。"
+        title="首次接入提示：访问https://q.qq.com/bot/openclaw,扫码创建机器人，按页面提示直接创建<br/>或者输入QQBot 的 AppID 和 AppSecret 后点击初始化命令，然后到系统中手动执行下方 3 行命令完成第一次接入。"
       />
 
       <div v-if="bots.length === 0" class="first-access">
         <el-form label-position="top">
-          <el-form-item label="主 QQBot AppID">
-            <el-input v-model="firstBot.appId" :disabled="!canEdit" placeholder="请输入第一个 bot 的 AppID" />
+          <el-form-item label="QQBot AppID">
+            <el-input v-model="firstBot.appId" :disabled="!canEdit" placeholder="请输入AppID" />
           </el-form-item>
-          <el-form-item label="主 QQBot AppSecret">
+          <el-form-item label=" QQBot AppSecret">
             <el-input
               v-model="firstBot.clientSecret"
               :disabled="!canEdit"
               show-password
-              placeholder="请输入第一个 bot 的 AppSecret"
+              placeholder="请输入AppSecret"
             />
           </el-form-item>
         </el-form>
 
         <div class="cmd-box">
-          <div class="cmd-title">第一次接入命令（保存后执行）</div>
-          <pre>cd /home/mixi/.openclaw/projects/manager
-scripts/build.sh
+          <div class="cmd-title">第一次接入命令</div>
+          <pre>openclaw plugins install @sliverp/qqbot@latest
+openclaw channels add --channel qqbot --token "[yourAppId]:[yourAppSecret]
 openclaw gateway restart</pre>
+            <div style="margin-top: 8px; color: #666;">将上面命令中的 [yourAppId] 和 [yourAppSecret] 替换为你输入的 AppID 和 AppSecret 后执行</div>
         </div>
       </div>
     </el-card>
@@ -81,7 +82,7 @@ openclaw gateway restart</pre>
         type="warning"
         show-icon
         :closable="false"
-        title="如已有主 QQBot，新增会写入 qqbot.accounts。bot 名称仅允许字母和数字（例如 qqbot2）。"
+        title="如已有主 QQBot，新增会写入 qqbot.accounts。bot 名称仅允许字母和数字（例如 qqbot2），填写后，点击加入配置草稿按钮，然后保存配置。"
       />
 
       <div class="add-list">

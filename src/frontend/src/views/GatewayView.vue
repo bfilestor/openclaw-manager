@@ -1,9 +1,8 @@
 <template>
   <div class="gateway-page">
     <div class="topbar">
-      <h3>Gateway 管理</h3>
+      <h3>Gateway</h3>
       <el-space>
-        <el-tag :type="gatewayTagType">状态: {{ gatewayStateText }}</el-tag>
         <el-button :loading="loading" @click="refresh">刷新</el-button>
       </el-space>
     </div>
@@ -18,7 +17,7 @@
 
     <el-row :gutter="12" class="cards">
       <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">Gateway 状态: {{ gatewayStateText }}</el-card>
+        <el-card shadow="hover">Gateway: {{ gatewayStateText }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="12">
         <el-card shadow="hover">Bind IP: {{ bindText }}</el-card>

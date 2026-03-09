@@ -2,8 +2,8 @@
   <div class="dashboard-page" v-loading="loading" element-loading-text="Dashboard 数据加载中...">
     <div class="hero">
       <div>
-        <h2>OpenClaw Dashboard</h2>
-        <p>系统总览入口 · 一眼看到关键状态</p>
+        <h2>Dashboard</h2>
+        <p>系统总览</p>
       </div>
       <el-tag :type="gatewayTagType" size="large">Gateway: {{ gatewayStateText }}</el-tag>
     </div>
@@ -19,7 +19,7 @@
     <el-card shadow="never" class="trend-card">
       <div class="trend-head">
         <span class="trend-icon">📈</span>
-        <span class="trend-title">小趋势区</span>
+        <span class="trend-title">运行趋势</span>
       </div>
       <el-row :gutter="10">
         <el-col :xs="24" :md="8">
@@ -30,7 +30,7 @@
         </el-col>
         <el-col :xs="24" :md="16">
           <div class="trend-item">
-            <div class="trend-label">状态变化提示</div>
+            <div class="trend-label">状态变化</div>
             <div class="trend-value">{{ statusHint }}</div>
           </div>
         </el-col>
@@ -42,7 +42,7 @@
         <el-card shadow="hover" class="stat-card gateway">
           <div class="stat-head">
             <span class="stat-icon">🚦</span>
-            <span class="stat-title">Gateway 状态</span>
+            <span class="stat-title">Gateway</span>
           </div>
           <div class="stat-main">{{ gatewayStateText }}</div>
           <div class="stat-sub">服务运行状态实时刷新</div>
