@@ -401,7 +401,7 @@ export default {
     title: '配置编辑器',
     size: '大小: {size}',
     updatedAt: '更新时间: {time}',
-    jsonPlaceholder: '请输入合法 JSON，例如 {"gateway":{"port":18790}}',
+    jsonPlaceholder: '请输入合法 JSON，例如将 gateway.port 设置为 18790',
     revisions: {
       title: '版本',
       selectedCount: '已选 {count}/2',

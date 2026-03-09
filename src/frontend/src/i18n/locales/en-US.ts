@@ -401,7 +401,7 @@ export default {
     title: 'Config Editor',
     size: 'Size: {size}',
     updatedAt: 'Updated: {time}',
-    jsonPlaceholder: 'Enter valid JSON, for example {"gateway":{"port":18790}}',
+    jsonPlaceholder: 'Enter valid JSON, for example set gateway.port to 18790',
     revisions: {
       title: 'Revisions',
       selectedCount: 'Selected {count}/2',
