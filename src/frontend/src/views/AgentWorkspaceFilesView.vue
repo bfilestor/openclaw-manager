@@ -1,10 +1,10 @@
 <template>
   <div class="workspace-files-page">
     <div class="topbar">
-      <h3>Workspace Markdown 文件</h3>
+      <h3>{{ t('workspaceFiles.title') }}</h3>
       <el-space>
-        <el-button @click="goBack">返回 Agents</el-button>
-        <el-button :loading="loading" @click="loadAll">刷新</el-button>
+        <el-button @click="goBack">{{ t('workspaceFiles.backToAgents') }}</el-button>
+        <el-button :loading="loading" @click="loadAll">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
 
@@ -19,40 +19,40 @@
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>Agent: {{ agentID }}</span>
-          <el-text type="info">Workspace: {{ workspacePath || '-' }}</el-text>
+          <span>{{ t('workspaceFiles.agentId', { id: agentID }) }}</span>
+          <el-text type="info">{{ t('workspaceFiles.workspacePath', { path: workspacePath || t('common.emptyValue') }) }}</el-text>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="files" row-key="path" style="width: 100%">
-        <el-table-column prop="path" label="文件路径" min-width="360" />
-        <el-table-column label="大小" width="120">
+        <el-table-column prop="path" :label="t('workspaceFiles.columns.path')" min-width="360" />
+        <el-table-column :label="t('workspaceFiles.columns.size')" width="120">
           <template #default="{ row }">{{ formatBytes(row.size) }}</template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="180">
+        <el-table-column :label="t('workspaceFiles.columns.updatedAt')" min-width="180">
           <template #default="{ row }">{{ formatDateTime(row.modified_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180">
+        <el-table-column :label="t('workspaceFiles.columns.actions')" width="180">
           <template #default="{ row }">
             <el-space>
-              <el-button type="info" link @click="viewFile(row.path)">查看</el-button>
-              <el-button type="primary" link @click="goEdit(row.path)">编辑</el-button>
+              <el-button type="info" link @click="viewFile(row.path)">{{ t('workspaceFiles.actions.view') }}</el-button>
+              <el-button type="primary" link @click="goEdit(row.path)">{{ t('workspaceFiles.actions.edit') }}</el-button>
             </el-space>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-empty v-if="!loading && files.length === 0" description="该 Agent Workspace 下暂无 .md 文件" />
+      <el-empty v-if="!loading && files.length === 0" :description="t('workspaceFiles.empty')" />
     </el-card>
 
-    <el-dialog v-model="previewVisible" width="860px" :title="`查看文件 - ${previewPath || '-'}`">
+    <el-dialog v-model="previewVisible" width="860px" :title="t('workspaceFiles.previewTitle', { path: previewPath || t('common.emptyValue') })">
       <el-scrollbar height="460px" v-loading="previewLoading">
         <pre class="preview-content">{{ previewContent }}</pre>
       </el-scrollbar>
       <template #footer>
         <el-space>
-          <el-button @click="previewVisible = false">关闭</el-button>
-          <el-button type="primary" @click="goEdit(previewPath)">去编辑</el-button>
+          <el-button @click="previewVisible = false">{{ t('common.actions.close') }}</el-button>
+          <el-button type="primary" @click="goEdit(previewPath)">{{ t('workspaceFiles.actions.goEdit') }}</el-button>
         </el-space>
       </template>
     </el-dialog>
@@ -63,6 +63,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 
 type AgentItem = {
   agent_id: string
@@ -85,6 +86,7 @@ const previewVisible = ref(false)
 const previewLoading = ref(false)
 const previewPath = ref('')
 const previewContent = ref('')
+const { t } = useI18n()
 
 const agentID = computed(() => String(route.params.id || '').trim())
 
@@ -112,7 +114,7 @@ async function viewFile(path: string) {
     })
     previewContent.value = typeof data?.content === 'string' ? data.content : ''
   } catch (err) {
-    previewContent.value = parseError(err, '读取文件失败')
+    previewContent.value = parseError(err, t('workspaceFiles.messages.readFailed'))
   } finally {
     previewLoading.value = false
   }
@@ -124,7 +126,7 @@ function parseError(err: any, fallback: string): string {
 }
 
 function formatDateTime(v: string): string {
-  if (!v) return '-'
+  if (!v) return t('common.emptyValue')
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return v
   return d.toLocaleString()
@@ -140,7 +142,7 @@ function formatBytes(bytes: number): string {
 
 async function loadAll() {
   if (!agentID.value) {
-    errorMessage.value = '缺少 agent_id 参数'
+    errorMessage.value = t('workspaceFiles.messages.missingAgentId')
     return
   }
   loading.value = true
@@ -153,7 +155,7 @@ async function loadAll() {
     workspacePath.value = String(agentResp.data?.workspace_path || '')
     files.value = Array.isArray(filesResp.data?.files) ? filesResp.data.files : []
   } catch (err) {
-    errorMessage.value = parseError(err, '加载 Workspace 文件列表失败')
+    errorMessage.value = parseError(err, t('workspaceFiles.messages.loadFailed'))
     files.value = []
   } finally {
     loading.value = false

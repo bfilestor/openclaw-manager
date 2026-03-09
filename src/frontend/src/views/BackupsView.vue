@@ -1,8 +1,8 @@
 <template>
   <div class="backups-page">
     <div class="topbar">
-      <h3>Backups</h3>
-      <el-button :loading="loading" @click="loadBackups">刷新</el-button>
+      <h3>{{ t('backups.title') }}</h3>
+      <el-button :loading="loading" @click="loadBackups">{{ t('common.actions.refresh') }}</el-button>
     </div>
 
     <el-alert
@@ -14,20 +14,20 @@
     />
 
     <el-card shadow="never">
-      <template #header>创建备份</template>
+      <template #header>{{ t('backups.createTitle') }}</template>
       <el-form label-position="top">
-        <el-form-item label="备份标签">
+        <el-form-item :label="t('backups.backupLabel')">
           <el-input
             v-model="createForm.label"
-            placeholder="例如：before-upgrade-2026-03-05"
+            :placeholder="t('backups.backupLabelPlaceholder')"
             maxlength="120"
             clearable
           />
         </el-form-item>
-        <el-form-item label="备份范围">
+        <el-form-item :label="t('backups.backupScope')">
           <el-checkbox-group v-model="createForm.scope">
             <el-checkbox v-for="opt in scopeOptions" :key="opt.value" :label="opt.value">
-              {{ opt.label }}
+              {{ t(`backups.scopeOptions.${opt.value}`) }}
             </el-checkbox>
           </el-checkbox-group>
         </el-form-item>
@@ -37,27 +37,27 @@
           :disabled="!canCreate || createForm.scope.length === 0"
           @click="createBackup"
         >
-          创建备份
+          {{ t('backups.createAction') }}
         </el-button>
       </el-form>
     </el-card>
 
     <el-card shadow="never">
-      <template #header>备份列表</template>
+      <template #header>{{ t('backups.listTitle') }}</template>
       <el-table v-loading="loading" :data="backups" row-key="backup_id" style="width: 100%">
-        <el-table-column prop="label" label="标签" min-width="220" />
-        <el-table-column prop="backup_id" label="Backup ID" min-width="280" />
-        <el-table-column label="大小" width="130">
+        <el-table-column prop="label" :label="t('backups.columns.label')" min-width="220" />
+        <el-table-column prop="backup_id" :label="t('backups.columns.backupId')" min-width="280" />
+        <el-table-column :label="t('backups.columns.size')" width="130">
           <template #default="{ row }">{{ formatBytes(row.size_bytes) }}</template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="200">
+        <el-table-column :label="t('backups.columns.createdAt')" min-width="200">
           <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="320">
+        <el-table-column :label="t('backups.columns.actions')" width="320">
           <template #default="{ row }">
             <el-space>
               <el-button type="info" link @click="viewBackupDetail(row.backup_id)">
-                详情
+                {{ t('backups.actions.detail') }}
               </el-button>
               <el-button
                 type="success"
@@ -66,7 +66,7 @@
                 :disabled="!canDownload"
                 @click="downloadBackup(row.backup_id)"
               >
-                下载
+                {{ t('backups.actions.download') }}
               </el-button>
               <el-button
                 type="primary"
@@ -74,7 +74,7 @@
                 :disabled="!canRestore"
                 @click="previewRestore(row.backup_id)"
               >
-                还原
+                {{ t('backups.actions.restore') }}
               </el-button>
               <el-button
                 type="danger"
@@ -82,42 +82,42 @@
                 :disabled="!canDelete"
                 @click="deleteBackup(row.backup_id)"
               >
-                删除
+                {{ t('common.actions.delete') }}
               </el-button>
             </el-space>
           </template>
         </el-table-column>
       </el-table>
-      <el-empty v-if="!loading && backups.length === 0" description="暂无备份记录" />
+      <el-empty v-if="!loading && backups.length === 0" :description="t('backups.empty')" />
     </el-card>
 
     <el-dialog
       v-model="restoreDialogVisible"
       width="700px"
-      :title="`还原预演 - ${pendingRestoreId || '-'}`"
+      :title="t('backups.restoreDialogTitle', { id: pendingRestoreId || t('common.emptyValue') })"
     >
       <el-alert
-        title="将先查看覆盖清单，确认后才会执行真正还原。"
+        :title="t('backups.restorePreviewTip')"
         type="warning"
         show-icon
         :closable="false"
       />
       <el-checkbox v-model="restoreRestartGateway" class="restart-opt">
-        还原后重启 Gateway
+        {{ t('backups.restartGatewayAfterRestore') }}
       </el-checkbox>
       <el-card shadow="never">
         <template #header>
-          覆盖文件清单（{{ restorePreview.length }}）
+          {{ t('backups.overwriteList', { count: restorePreview.length }) }}
         </template>
         <el-scrollbar height="260px">
-          <pre class="preview-box">{{ restorePreview.join('\n') || '（空）' }}</pre>
+          <pre class="preview-box">{{ restorePreview.join('\n') || t('backups.emptyList') }}</pre>
         </el-scrollbar>
       </el-card>
       <template #footer>
         <el-space>
-          <el-button @click="restoreDialogVisible = false">取消</el-button>
+          <el-button @click="restoreDialogVisible = false">{{ t('common.actions.cancel') }}</el-button>
           <el-button type="primary" :loading="restoring" @click="confirmRestore">
-            确认还原
+            {{ t('backups.confirmRestore') }}
           </el-button>
         </el-space>
       </template>
@@ -126,11 +126,11 @@
     <el-dialog
       v-model="manifestDialogVisible"
       width="760px"
-      :title="`备份详情 - ${manifestBackupID || '-'}`"
+      :title="t('backups.manifestDialogTitle', { id: manifestBackupID || t('common.emptyValue') })"
     >
       <el-card shadow="never" v-loading="manifestLoading" class="manifest-summary-card">
-        <template #header>本次纳入的 Workspace（{{ workspacePaths.length }}）</template>
-        <el-empty v-if="workspacePaths.length === 0" description="该备份未包含 workspace 目录" />
+        <template #header>{{ t('backups.workspaceIncluded', { count: workspacePaths.length }) }}</template>
+        <el-empty v-if="workspacePaths.length === 0" :description="t('backups.noWorkspaceIncluded')" />
         <el-scrollbar v-else height="120px">
           <div class="workspace-list">
             <el-tag v-for="p in workspacePaths" :key="p" type="success" effect="plain">{{ p }}</el-tag>
@@ -143,7 +143,7 @@
           type="warning"
           show-icon
           :closable="false"
-          :title="`检测到 ${missingWorkspacePaths.length} 个当前 Agent Workspace 未出现在该备份中`"
+          :title="t('backups.missingWorkspaceWarning', { count: missingWorkspacePaths.length })"
         />
         <el-scrollbar v-if="missingWorkspacePaths.length > 0" height="100px">
           <div class="workspace-list missing">
@@ -153,13 +153,13 @@
       </el-card>
 
       <el-card shadow="never" v-loading="manifestLoading">
-        <template #header>Manifest 原文</template>
+        <template #header>{{ t('backups.manifestRaw') }}</template>
         <el-scrollbar height="240px">
           <pre class="manifest-box">{{ manifestContent }}</pre>
         </el-scrollbar>
       </el-card>
       <template #footer>
-        <el-button @click="manifestDialogVisible = false">关闭</el-button>
+        <el-button @click="manifestDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -170,6 +170,7 @@ import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
 type BackupItem = {
@@ -186,6 +187,7 @@ type AgentItem = {
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const creating = ref(false)
 const restoring = ref(false)
@@ -200,11 +202,11 @@ const createForm = ref({
 })
 
 const scopeOptions = [
-  { value: 'openclaw_json', label: 'openclaw.json 配置' },
-  { value: 'global_skills', label: '全局 skills' },
-  { value: 'workspaces', label: 'agents workspaces' },
-  { value: 'user_systemd_unit', label: 'user systemd unit' },
-  { value: 'manager_revisions', label: 'manager revisions' }
+  { value: 'openclaw_json' },
+  { value: 'global_skills' },
+  { value: 'workspaces' },
+  { value: 'user_systemd_unit' },
+  { value: 'manager_revisions' }
 ]
 
 const role = computed(() => auth.user?.role || 'Viewer')
@@ -232,7 +234,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDateTime(v: string): string {
-  if (!v) return '-'
+  if (!v) return t('common.emptyValue')
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return v
   return d.toLocaleString()
@@ -288,7 +290,7 @@ async function loadBackups() {
     backups.value = Array.isArray(data?.backups) ? data.backups : []
   } catch (err) {
     backups.value = []
-    errorMessage.value = parseError(err, '加载备份列表失败')
+    errorMessage.value = parseError(err, t('backups.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -296,11 +298,11 @@ async function loadBackups() {
 
 async function createBackup() {
   if (!canCreate.value) {
-    ElMessage.warning('当前角色无创建备份权限')
+    ElMessage.warning(t('backups.messages.noCreatePermission'))
     return
   }
   if (createForm.value.scope.length === 0) {
-    ElMessage.warning('请至少选择一个备份范围')
+    ElMessage.warning(t('backups.messages.needScope'))
     return
   }
   creating.value = true
@@ -311,15 +313,15 @@ async function createBackup() {
     })
     const taskID = String(data?.task_id || '').trim()
     if (taskID) {
-      ElMessage.success(`备份任务已提交，task_id: ${taskID}`)
+      ElMessage.success(t('backups.messages.createTaskSubmitted', { taskId: taskID }))
       await router.push({ path: '/tasks', query: { task_id: taskID } })
       return
     }
-    ElMessage.success('备份创建请求已提交')
+    ElMessage.success(t('backups.messages.createSubmitted'))
     createForm.value.label = ''
     await loadBackups()
   } catch (err) {
-    ElMessage.error(parseError(err, '创建备份失败'))
+    ElMessage.error(parseError(err, t('backups.messages.createFailed')))
   } finally {
     creating.value = false
   }
@@ -327,7 +329,7 @@ async function createBackup() {
 
 async function previewRestore(backupID: string) {
   if (!canRestore.value) {
-    ElMessage.warning('当前角色无还原权限')
+    ElMessage.warning(t('backups.messages.noRestorePermission'))
     return
   }
   restoring.value = true
@@ -337,7 +339,7 @@ async function previewRestore(backupID: string) {
     pendingRestoreId.value = backupID
     restoreDialogVisible.value = true
   } catch (err) {
-    ElMessage.error(parseError(err, '还原预演失败'))
+    ElMessage.error(parseError(err, t('backups.messages.previewRestoreFailed')))
   } finally {
     restoring.value = false
   }
@@ -354,14 +356,14 @@ async function confirmRestore() {
     restoreDialogVisible.value = false
     const taskID = String(data?.task_id || '').trim()
     if (taskID) {
-      ElMessage.success(`还原任务已提交，task_id: ${taskID}`)
+      ElMessage.success(t('backups.messages.restoreTaskSubmitted', { taskId: taskID }))
       await router.push({ path: '/tasks', query: { task_id: taskID } })
       return
     }
-    ElMessage.success('还原请求已提交')
+    ElMessage.success(t('backups.messages.restoreSubmitted'))
     await loadBackups()
   } catch (err) {
-    ElMessage.error(parseError(err, '执行还原失败'))
+    ElMessage.error(parseError(err, t('backups.messages.restoreFailed')))
   } finally {
     restoring.value = false
   }
@@ -379,7 +381,7 @@ async function viewBackupDetail(backupID: string) {
     await detectMissingWorkspaces(workspacePaths.value)
     manifestDialogVisible.value = true
   } catch (err) {
-    ElMessage.error(parseError(err, '读取备份详情失败'))
+    ElMessage.error(parseError(err, t('backups.messages.detailFailed')))
   } finally {
     manifestLoading.value = false
   }
@@ -387,7 +389,7 @@ async function viewBackupDetail(backupID: string) {
 
 async function downloadBackup(backupID: string) {
   if (!canDownload.value) {
-    ElMessage.warning('当前角色无下载权限')
+    ElMessage.warning(t('backups.messages.noDownloadPermission'))
     return
   }
   downloadingID.value = backupID
@@ -406,9 +408,9 @@ async function downloadBackup(backupID: string) {
     a.click()
     a.remove()
     window.URL.revokeObjectURL(url)
-    ElMessage.success('备份下载已开始')
+    ElMessage.success(t('backups.messages.downloadStarted'))
   } catch (err) {
-    ElMessage.error(parseError(err, '下载备份失败'))
+    ElMessage.error(parseError(err, t('backups.messages.downloadFailed')))
   } finally {
     downloadingID.value = ''
   }
@@ -416,17 +418,21 @@ async function downloadBackup(backupID: string) {
 
 async function deleteBackup(backupID: string) {
   if (!canDelete.value) {
-    ElMessage.warning('当前角色无删除权限')
+    ElMessage.warning(t('backups.messages.noDeletePermission'))
     return
   }
   try {
-    await ElMessageBox.confirm(`确认删除备份 ${backupID} ？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('backups.messages.confirmDelete', { id: backupID }),
+      t('backups.messages.deleteConfirmTitle'),
+      { type: 'warning' }
+    )
     await axios.delete(`/api/v1/backups/${backupID}`)
-    ElMessage.success('备份已删除')
+    ElMessage.success(t('backups.messages.deleteSuccess'))
     await loadBackups()
   } catch (err: any) {
     if (err === 'cancel' || err === 'close') return
-    ElMessage.error(parseError(err, '删除备份失败'))
+    ElMessage.error(parseError(err, t('backups.messages.deleteFailed')))
   }
 }
 

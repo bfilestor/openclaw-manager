@@ -1,10 +1,10 @@
 <template>
   <div>
     <el-space class="diff-toolbar" wrap>
-      <el-text type="info">显示模式</el-text>
+      <el-text type="info">{{ t('diffViewer.mode') }}</el-text>
       <el-radio-group v-model="viewMode" size="small">
-        <el-radio-button label="unified">统一视图</el-radio-button>
-        <el-radio-button label="split">左右分栏</el-radio-button>
+        <el-radio-button label="unified">{{ t('diffViewer.unified') }}</el-radio-button>
+        <el-radio-button label="split">{{ t('diffViewer.split') }}</el-radio-button>
       </el-radio-group>
     </el-space>
 
@@ -15,8 +15,8 @@
       <table v-else class="split-diff-table">
         <thead>
           <tr>
-            <th>{{ leftTitle }}</th>
-            <th>{{ rightTitle }}</th>
+            <th>{{ resolvedLeftTitle }}</th>
+            <th>{{ resolvedRightTitle }}</th>
           </tr>
         </thead>
         <tbody>
@@ -33,6 +33,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { diffLines as calcDiffLines } from 'diff'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(defineProps<{
   fromText: string
@@ -41,12 +42,15 @@ const props = withDefaults(defineProps<{
   rightTitle?: string
   height?: number | string
 }>(), {
-  leftTitle: '旧版本',
-  rightTitle: '新版本',
+  leftTitle: '',
+  rightTitle: '',
   height: 460,
 })
 
+const { t } = useI18n()
 const viewMode = ref<'unified' | 'split'>('unified')
+const resolvedLeftTitle = computed(() => props.leftTitle || t('diffViewer.leftTitle'))
+const resolvedRightTitle = computed(() => props.rightTitle || t('diffViewer.rightTitle'))
 
 watch(() => [props.fromText, props.toText], () => {
   viewMode.value = 'unified'

@@ -1,16 +1,16 @@
 <template>
-  <div class="dashboard-page" v-loading="loading" element-loading-text="Dashboard 数据加载中...">
+  <div class="dashboard-page" v-loading="loading" :element-loading-text="t('dashboard.loading')">
     <div class="hero">
       <div>
-        <h2>Dashboard</h2>
-        <p>系统总览</p>
+        <h2>{{ t('dashboard.title') }}</h2>
+        <p>{{ t('dashboard.subtitle') }}</p>
       </div>
-      <el-tag :type="gatewayTagType" size="large">Gateway: {{ gatewayStateText }}</el-tag>
+      <el-tag :type="gatewayTagType" size="large">{{ t('dashboard.gatewayState', { state: gatewayStateText }) }}</el-tag>
     </div>
 
     <el-alert
       v-if="nvmWarning"
-      title="检测到 NVM Node 风险，建议修复"
+      :title="t('dashboard.nvmWarning')"
       type="warning"
       show-icon
       :closable="false"
@@ -19,18 +19,18 @@
     <el-card shadow="never" class="trend-card">
       <div class="trend-head">
         <span class="trend-icon">📈</span>
-        <span class="trend-title">运行趋势</span>
+        <span class="trend-title">{{ t('dashboard.trendTitle') }}</span>
       </div>
       <el-row :gutter="10">
         <el-col :xs="24" :md="8">
           <div class="trend-item">
-            <div class="trend-label">最近刷新时间</div>
+            <div class="trend-label">{{ t('dashboard.lastRefreshLabel') }}</div>
             <div class="trend-value">{{ lastRefreshText }}</div>
           </div>
         </el-col>
         <el-col :xs="24" :md="16">
           <div class="trend-item">
-            <div class="trend-label">状态变化</div>
+            <div class="trend-label">{{ t('dashboard.statusChangeLabel') }}</div>
             <div class="trend-value">{{ statusHint }}</div>
           </div>
         </el-col>
@@ -42,10 +42,10 @@
         <el-card shadow="hover" class="stat-card gateway">
           <div class="stat-head">
             <span class="stat-icon">🚦</span>
-            <span class="stat-title">Gateway</span>
+            <span class="stat-title">{{ t('dashboard.cards.gateway.title') }}</span>
           </div>
           <div class="stat-main">{{ gatewayStateText }}</div>
-          <div class="stat-sub">服务运行状态实时刷新</div>
+          <div class="stat-sub">{{ t('dashboard.cards.gateway.sub') }}</div>
         </el-card>
       </el-col>
 
@@ -53,10 +53,10 @@
         <el-card shadow="hover" class="stat-card bind">
           <div class="stat-head">
             <span class="stat-icon">🌐</span>
-            <span class="stat-title">Bind 信息</span>
+            <span class="stat-title">{{ t('dashboard.cards.bind.title') }}</span>
           </div>
           <div class="stat-main monospace">{{ bindText }}</div>
-          <div class="stat-sub">Gateway 监听地址</div>
+          <div class="stat-sub">{{ t('dashboard.cards.bind.sub') }}</div>
         </el-card>
       </el-col>
 
@@ -64,10 +64,10 @@
         <el-card shadow="hover" class="stat-card skills">
           <div class="stat-head">
             <span class="stat-icon">🧩</span>
-            <span class="stat-title">Skills 数量</span>
+            <span class="stat-title">{{ t('dashboard.cards.skills.title') }}</span>
           </div>
           <div class="stat-main">{{ skillCount }}</div>
-          <div class="stat-sub">当前已安装技能总数</div>
+          <div class="stat-sub">{{ t('dashboard.cards.skills.sub') }}</div>
         </el-card>
       </el-col>
 
@@ -75,10 +75,10 @@
         <el-card shadow="hover" class="stat-card agents">
           <div class="stat-head">
             <span class="stat-icon">🤖</span>
-            <span class="stat-title">Agent 数量</span>
+            <span class="stat-title">{{ t('dashboard.cards.agents.title') }}</span>
           </div>
           <div class="stat-main">{{ agentCount }}</div>
-          <div class="stat-sub">当前系统可用 Agent</div>
+          <div class="stat-sub">{{ t('dashboard.cards.agents.sub') }}</div>
         </el-card>
       </el-col>
 
@@ -86,10 +86,10 @@
         <el-card shadow="hover" class="stat-card bots">
           <div class="stat-head">
             <span class="stat-icon">🐧</span>
-            <span class="stat-title">Bot 数量</span>
+            <span class="stat-title">{{ t('dashboard.cards.bots.title') }}</span>
           </div>
           <div class="stat-main">{{ botCount }}</div>
-          <div class="stat-sub">按 channels + accounts 聚合</div>
+          <div class="stat-sub">{{ t('dashboard.cards.bots.sub') }}</div>
         </el-card>
       </el-col>
 
@@ -97,10 +97,10 @@
         <el-card shadow="hover" class="stat-card users">
           <div class="stat-head">
             <span class="stat-icon">👥</span>
-            <span class="stat-title">Users 数量</span>
+            <span class="stat-title">{{ t('dashboard.cards.users.title') }}</span>
           </div>
           <div class="stat-main">{{ userCount }}</div>
-          <div class="stat-sub">系统用户总数</div>
+          <div class="stat-sub">{{ t('dashboard.cards.users.sub') }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 
 const loading = ref(false)
 const status = ref<any>({})
@@ -120,8 +121,9 @@ const agentCount = ref(0)
 const botCount = ref(0)
 const userCount = ref(0)
 const lastRefreshAt = ref('')
-const statusHint = ref('等待首次刷新...')
+const statusHint = ref('')
 const previousGatewayState = ref('')
+const { t } = useI18n()
 
 let timer: any = null
 
@@ -132,7 +134,7 @@ const bindText = computed(() => {
   return `${host}:${port}`
 })
 const lastRefreshText = computed(() => {
-  if (!lastRefreshAt.value) return '-'
+  if (!lastRefreshAt.value) return t('common.emptyValue')
   const d = new Date(lastRefreshAt.value)
   if (Number.isNaN(d.getTime())) return lastRefreshAt.value
   return d.toLocaleString()
@@ -176,7 +178,7 @@ function loadCache() {
     botCount.value = Number(cached.botCount || 0)
     userCount.value = Number(cached.userCount || 0)
     lastRefreshAt.value = String(cached.lastRefreshAt || '')
-    statusHint.value = String(cached.statusHint || statusHint.value)
+    statusHint.value = String(cached.statusHint || '')
     previousGatewayState.value = String(cached.previousGatewayState || '')
   } catch {
     // ignore cache parse errors
@@ -223,11 +225,11 @@ async function refresh() {
     nvmWarning.value = !!gd?.nvm_warning
 
     if (!previousGatewayState.value) {
-      statusHint.value = `Gateway 当前状态：${nextState}`
+      statusHint.value = t('dashboard.status.current', { state: nextState })
     } else if (previousGatewayState.value !== nextState) {
-      statusHint.value = `Gateway 状态变化：${previousGatewayState.value} → ${nextState}`
+      statusHint.value = t('dashboard.status.changed', { from: previousGatewayState.value, to: nextState })
     } else {
-      statusHint.value = `Gateway 状态稳定：${nextState}`
+      statusHint.value = t('dashboard.status.stable', { state: nextState })
     }
     previousGatewayState.value = nextState
 
@@ -251,14 +253,16 @@ async function refresh() {
     lastRefreshAt.value = new Date().toISOString()
     saveCache()
   } catch {
-    // 静默失败，避免打断 Dashboard 展示
+    // Keep silent to avoid interrupting dashboard rendering
   } finally {
     if (firstLoad) loading.value = false
   }
 }
 
 onMounted(() => {
+  statusHint.value = t('dashboard.status.waiting')
   loadCache()
+  if (!statusHint.value) statusHint.value = t('dashboard.status.waiting')
   refresh()
   timer = setInterval(refresh, 30000)
 })

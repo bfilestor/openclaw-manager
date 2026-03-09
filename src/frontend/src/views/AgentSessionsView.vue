@@ -1,16 +1,16 @@
 <template>
   <div class="sessions-page">
     <div class="topbar">
-      <h3>Agent Office Live</h3>
+      <h3>{{ t('sessions.title') }}</h3>
       <div class="topbar-actions">
         <el-input
           v-model="agentFilter"
           clearable
-          placeholder="按 Agent ID 过滤（如 main / xcoder）"
+          :placeholder="t('sessions.filterPlaceholder')"
           class="agent-filter"
           @keyup.enter="loadSessions"
         />
-        <el-button :loading="loading" @click="loadSessions">刷新</el-button>
+        <el-button :loading="loading" @click="loadSessions">{{ t('common.actions.refresh') }}</el-button>
       </div>
     </div>
 
@@ -24,19 +24,19 @@
 
     <el-row :gutter="12" class="stats-row">
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">总 Agent: {{ officeAgents.length }}</el-card>
+        <el-card shadow="never">{{ t('sessions.totalAgents', { count: officeAgents.length }) }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">在线中: {{ onlineCount }}</el-card>
+        <el-card shadow="never">{{ t('sessions.onlineCount', { count: onlineCount }) }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">最后刷新: {{ lastRefreshText }}</el-card>
+        <el-card shadow="never">{{ t('sessions.lastRefresh', { time: lastRefreshText }) }}</el-card>
       </el-col>
     </el-row>
 
     <el-card shadow="never" class="office-board">
       <template #header>
-        <div class="office-title">像素办公室 · 状态实时可视化</div>
+        <div class="office-title">{{ t('sessions.boardTitle') }}</div>
       </template>
 
       <div class="office-grid">
@@ -56,7 +56,7 @@
           </div>
 
           <div v-if="(agentsByState[zone.state]?.length || 0) === 0" class="zone-empty">
-            目前这个区域没人，安静如鸡 🐥
+            {{ t('sessions.zoneEmpty') }}
           </div>
 
           <div v-else class="agent-list">
@@ -83,6 +83,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 type SessionItem = {
   id: string
@@ -109,24 +110,25 @@ const officeAgents = ref<OfficeAgent[]>([])
 const agentFilter = ref('')
 const lastRefreshAt = ref<Date | null>(null)
 let timer: ReturnType<typeof setInterval> | null = null
+const { t } = useI18n()
 
-const officeZones: Array<{ state: VisualState; label: string; emoji: string; desc: string }> = [
-  { state: 'idle', label: '休息区', emoji: '🛋️', desc: '待命 / 暂无任务' },
-  { state: 'writing', label: '文档区', emoji: '📝', desc: '写文档 / 产出内容' },
-  { state: 'researching', label: '调研区', emoji: '🔎', desc: '查资料 / 搜证据' },
-  { state: 'executing', label: '执行区', emoji: '⚙️', desc: '跑任务 / 执行中' },
-  { state: 'syncing', label: '同步区', emoji: '☁️', desc: '同步状态 / 收尾' },
-  { state: 'error', label: '排障区', emoji: '🚨', desc: '故障 / 需要关注' },
-]
+const officeZones = computed<Array<{ state: VisualState; label: string; emoji: string; desc: string }>>(() => [
+  { state: 'idle', label: t('sessions.zones.idle.label'), emoji: '🛋️', desc: t('sessions.zones.idle.desc') },
+  { state: 'writing', label: t('sessions.zones.writing.label'), emoji: '📝', desc: t('sessions.zones.writing.desc') },
+  { state: 'researching', label: t('sessions.zones.researching.label'), emoji: '🔎', desc: t('sessions.zones.researching.desc') },
+  { state: 'executing', label: t('sessions.zones.executing.label'), emoji: '⚙️', desc: t('sessions.zones.executing.desc') },
+  { state: 'syncing', label: t('sessions.zones.syncing.label'), emoji: '☁️', desc: t('sessions.zones.syncing.desc') },
+  { state: 'error', label: t('sessions.zones.error.label'), emoji: '🚨', desc: t('sessions.zones.error.desc') },
+])
 
-const bubbleTexts: Record<VisualState, string[]> = {
-  idle: ['待命中，随叫随到～', '先喝口水，等任务', '我在，随时开工'],
-  writing: ['文档写得飞起 ✍️', '正在整理关键结论', '边写边打磨表达'],
-  researching: ['正在翻资料找证据', '我在检索关键线索', '查完这个就给你结论'],
-  executing: ['任务执行中，别眨眼', '脚本正在疯狂搬砖', '我在跑流程，稳住'],
-  syncing: ['状态同步中...', '收尾打包上传中', '进度正在对齐'],
-  error: ['这里有异常，正在排查', '检测到故障，先止血', '警报拉响，马上修'],
-}
+const bubbleTexts = computed<Record<VisualState, string[]>>(() => ({
+  idle: [t('sessions.bubbles.idle1'), t('sessions.bubbles.idle2'), t('sessions.bubbles.idle3')],
+  writing: [t('sessions.bubbles.writing1'), t('sessions.bubbles.writing2'), t('sessions.bubbles.writing3')],
+  researching: [t('sessions.bubbles.researching1'), t('sessions.bubbles.researching2'), t('sessions.bubbles.researching3')],
+  executing: [t('sessions.bubbles.executing1'), t('sessions.bubbles.executing2'), t('sessions.bubbles.executing3')],
+  syncing: [t('sessions.bubbles.syncing1'), t('sessions.bubbles.syncing2'), t('sessions.bubbles.syncing3')],
+  error: [t('sessions.bubbles.error1'), t('sessions.bubbles.error2'), t('sessions.bubbles.error3')],
+}))
 
 const agentsByState = computed<Record<VisualState, OfficeAgent[]>>(() => {
   const grouped: Record<VisualState, OfficeAgent[]> = {
@@ -144,7 +146,7 @@ const agentsByState = computed<Record<VisualState, OfficeAgent[]>>(() => {
 const onlineCount = computed(() => officeAgents.value.filter((item) => item.visualState !== 'idle').length)
 
 const lastRefreshText = computed(() => {
-  if (!lastRefreshAt.value) return '-'
+  if (!lastRefreshAt.value) return t('common.emptyValue')
   return lastRefreshAt.value.toLocaleTimeString()
 })
 
@@ -167,12 +169,12 @@ function statusToVisualState(status: string): VisualState {
 }
 
 function pickBubble(state: VisualState) {
-  const words = bubbleTexts[state]
+  const words = bubbleTexts.value[state]
   return words[Math.floor(Math.random() * words.length)]
 }
 
 function formatTime(value: string) {
-  if (!value) return '-'
+  if (!value) return t('common.emptyValue')
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
@@ -195,7 +197,7 @@ function buildOfficeAgents(rows: SessionItem[]) {
     const visualState = statusToVisualState(row.status)
     return {
       id: row.id,
-      agentId: row.agentId || 'unknown',
+      agentId: row.agentId || t('sessions.unknownAgent'),
       visualState,
       lastActivity: row.lastActivity || row.createdAt,
       bubble: pickBubble(visualState),
@@ -215,8 +217,8 @@ async function loadSessions() {
   } catch {
     sessions.value = []
     officeAgents.value = []
-    errorMessage.value = '加载 Agent Session 失败，请检查 API 状态'
-    ElMessage.error('加载 Agent Session 失败')
+    errorMessage.value = t('sessions.messages.loadFailedHint')
+    ElMessage.error(t('sessions.messages.loadFailed'))
   } finally {
     loading.value = false
   }

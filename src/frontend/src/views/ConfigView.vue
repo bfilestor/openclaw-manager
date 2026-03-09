@@ -1,7 +1,7 @@
 <template>
   <div class="config-page">
     <OpenclawSaveActions
-      title="Config Editor"
+      :title="t('config.title')"
       :loading="loading"
       :saving="saving"
       :can-edit="canEdit"
@@ -25,8 +25,8 @@
         <el-card shadow="never">
           <template #header>openclaw.json</template>
           <el-space class="meta-row">
-            <el-tag type="info">大小: {{ formatBytes(sizeBytes) }}</el-tag>
-            <el-tag type="info">更新时间: {{ formatDateTime(modifiedAt) }}</el-tag>
+            <el-tag type="info">{{ t('config.size', { size: formatBytes(sizeBytes) }) }}</el-tag>
+            <el-tag type="info">{{ t('config.updatedAt', { time: formatDateTime(modifiedAt) }) }}</el-tag>
           </el-space>
           <el-input
             v-model="content"
@@ -35,7 +35,7 @@
             spellcheck="false"
             :autosize="{ minRows: 20, maxRows: 28 }"
             class="editor"
-            placeholder='请输入合法 JSON，例如 {"gateway":{"port":18790}}'
+            :placeholder='t("config.jsonPlaceholder")'
           />
         </el-card>
       </el-col>
@@ -43,11 +43,11 @@
         <el-card shadow="never">
           <template #header>
             <div class="revision-header">
-              <span>Revisions</span>
+              <span>{{ t('config.revisions.title') }}</span>
               <el-space wrap>
-                <el-text type="info">已选 {{ selectedRevisions.length }}/2</el-text>
+                <el-text type="info">{{ t('config.revisions.selectedCount', { count: selectedRevisions.length }) }}</el-text>
                 <el-button type="primary" size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
-                  版本比较
+                  {{ t('config.revisions.compare') }}
                 </el-button>
               </el-space>
             </div>
@@ -61,19 +61,19 @@
             @selection-change="onRevisionSelectionChange"
           >
             <el-table-column type="selection" width="44" />
-            <el-table-column prop="created_at" label="时间" min-width="170">
+            <el-table-column prop="created_at" :label="t('config.revisions.columns.time')" min-width="170">
               <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
             </el-table-column>
-            <el-table-column label="SHA" min-width="120">
+            <el-table-column :label="t('config.revisions.columns.sha')" min-width="120">
               <template #default="{ row }">
                 <code>{{ shortSHA(row.sha256) }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180">
+            <el-table-column :label="t('config.revisions.columns.actions')" width="180">
               <template #default="{ row }">
                 <el-space>
-                  <el-button type="info" link @click="previewRevision(row)">查看</el-button>
-                  <el-button type="primary" link @click="compareWithCurrent(row)">对比当前</el-button>
+                  <el-button type="info" link @click="previewRevision(row)">{{ t('config.revisions.view') }}</el-button>
+                  <el-button type="primary" link @click="compareWithCurrent(row)">{{ t('config.revisions.compareCurrent') }}</el-button>
                   <el-button
                     type="warning"
                     link
@@ -81,7 +81,7 @@
                     :loading="restoringID === row.revision_id"
                     @click="restoreRevision(row)"
                   >
-                    回滚
+                    {{ t('config.revisions.restore') }}
                   </el-button>
                   <el-button
                     type="danger"
@@ -90,30 +90,30 @@
                     :loading="deletingID === row.revision_id"
                     @click="deleteRevision(row)"
                   >
-                    删除
+                    {{ t('common.actions.delete') }}
                   </el-button>
                 </el-space>
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-if="!loadingRevisions && revisions.length === 0" description="暂无历史版本" />
+          <el-empty v-if="!loadingRevisions && revisions.length === 0" :description="t('config.revisions.empty')" />
         </el-card>
       </el-col>
     </el-row>
 
-    <el-dialog v-model="revisionDialogVisible" width="760px" :title="`Revision - ${currentRevisionID || '-'}`">
+    <el-dialog v-model="revisionDialogVisible" width="760px" :title="t('config.revisions.previewTitle', { id: currentRevisionID || t('common.emptyValue') })">
       <el-scrollbar height="420px">
         <pre class="revision-content">{{ currentRevisionContent }}</pre>
       </el-scrollbar>
       <template #footer>
-        <el-button @click="revisionDialogVisible = false">关闭</el-button>
+        <el-button @click="revisionDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="diffDialogVisible" width="1080px" :title="`Diff - ${currentRevisionID || '-'}`">
+    <el-dialog v-model="diffDialogVisible" width="1080px" :title="t('config.revisions.diffTitle', { id: currentRevisionID || t('common.emptyValue') })">
       <DiffViewer :from-text="diffFromText" :to-text="diffToText" :height="460" />
       <template #footer>
-        <el-button @click="diffDialogVisible = false">关闭</el-button>
+        <el-button @click="diffDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -123,6 +123,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import DiffViewer from '../components/DiffViewer.vue'
 import OpenclawSaveActions from '../components/OpenclawSaveActions.vue'
@@ -144,6 +145,7 @@ type Revision = {
 }
 
 const auth = useAuthStore()
+const { t } = useI18n()
 const loading = ref(false)
 const loadingRevisions = ref(false)
 const saving = ref(false)
@@ -172,7 +174,7 @@ const canEdit = computed(() => {
 })
 
 function formatDateTime(v: string): string {
-  if (!v) return '-'
+  if (!v) return t('common.emptyValue')
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return v
   return d.toLocaleString()
@@ -187,7 +189,7 @@ function formatBytes(bytes: number): string {
 }
 
 function shortSHA(sha: string): string {
-  return String(sha || '').slice(0, 10) || '-'
+  return String(sha || '').slice(0, 10) || t('common.emptyValue')
 }
 
 function parseError(err: any, fallback: string): string {
@@ -221,7 +223,7 @@ async function loadAll() {
   try {
     await Promise.all([loadConfig(), loadRevisions()])
   } catch (err) {
-    errorMessage.value = parseError(err, '加载配置失败')
+    errorMessage.value = parseError(err, t('config.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -230,9 +232,9 @@ async function loadAll() {
 function formatJSON() {
   try {
     content.value = normalizeOpenclawJSON(content.value)
-    ElMessage.success('JSON 格式化完成')
+    ElMessage.success(t('config.messages.formatSuccess'))
   } catch {
-    ElMessage.error('当前内容不是合法 JSON，无法格式化')
+    ElMessage.error(t('config.messages.invalidJsonFormat'))
   }
 }
 
@@ -241,10 +243,10 @@ function previewCurrentDiff() {
   try {
     normalized = normalizeOpenclawJSON(content.value)
   } catch {
-    ElMessage.error('JSON 格式不合法，无法生成 Diff 预览')
+    ElMessage.error(t('config.messages.invalidJsonForDiff'))
     return
   }
-  currentRevisionID.value = 'CURRENT -> EDITED'
+  currentRevisionID.value = t('config.revisions.currentToEdited')
   const diff = buildOpenclawDiff(originalContent.value, normalized)
   diffFromText.value = diff.fromText
   diffToText.value = diff.toText
@@ -253,24 +255,24 @@ function previewCurrentDiff() {
 
 async function saveConfig() {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('config.messages.noEditPermission'))
     return
   }
   let normalized = ''
   try {
     normalized = normalizeOpenclawJSON(content.value)
   } catch {
-    ElMessage.error('JSON 格式不合法，请修复后再保存')
+    ElMessage.error(t('config.messages.invalidJsonBeforeSave'))
     return
   }
   saving.value = true
   try {
     await saveOpenclawConfig(normalized)
     content.value = normalized
-    ElMessage.success('配置保存成功')
+    ElMessage.success(t('config.messages.saveSuccess'))
     await loadAll()
   } catch (err) {
-    ElMessage.error(parseError(err, '保存配置失败'))
+    ElMessage.error(parseError(err, t('config.messages.saveFailed')))
   } finally {
     saving.value = false
   }
@@ -283,7 +285,7 @@ function previewRevision(rev: Revision) {
 }
 
 function compareWithCurrent(rev: Revision) {
-  currentRevisionID.value = `${rev.revision_id} -> CURRENT`
+  currentRevisionID.value = t('config.revisions.toCurrent', { id: rev.revision_id })
   diffFromText.value = rev.content || ''
   diffToText.value = content.value || ''
   diffDialogVisible.value = true
@@ -296,7 +298,7 @@ function onRevisionSelectionChange(rows: Revision[]) {
     return
   }
 
-  ElMessage.warning('最多选择 2 个版本进行比较')
+  ElMessage.warning(t('config.messages.maxTwoRevisions'))
   const keep = list.slice(-2)
   selectedRevisions.value = keep
   if (revisionTableRef.value) {
@@ -307,7 +309,7 @@ function onRevisionSelectionChange(rows: Revision[]) {
 
 function compareSelectedRevisions() {
   if (selectedRevisions.value.length !== 2) {
-    ElMessage.warning('请先勾选 2 个版本再对比')
+    ElMessage.warning(t('config.messages.selectTwoRevisions'))
     return
   }
   const [a, b] = selectedRevisions.value
@@ -322,21 +324,25 @@ function compareSelectedRevisions() {
 
 async function restoreRevision(rev: Revision) {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('config.messages.noEditPermission'))
     return
   }
   try {
-    await ElMessageBox.confirm('确认回滚到该历史版本？', '回滚确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('config.messages.confirmRestore'),
+      t('config.messages.restoreConfirmTitle'),
+      { type: 'warning' }
+    )
   } catch {
     return
   }
   restoringID.value = rev.revision_id
   try {
     await axios.post(`/api/v1/config/openclaw/revisions/${rev.revision_id}/restore`)
-    ElMessage.success('回滚成功')
+    ElMessage.success(t('config.messages.restoreSuccess'))
     await loadAll()
   } catch (err) {
-    ElMessage.error(parseError(err, '回滚失败'))
+    ElMessage.error(parseError(err, t('config.messages.restoreFailed')))
   } finally {
     restoringID.value = ''
   }
@@ -344,21 +350,25 @@ async function restoreRevision(rev: Revision) {
 
 async function deleteRevision(rev: Revision) {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('config.messages.noEditPermission'))
     return
   }
   try {
-    await ElMessageBox.confirm('确认删除该历史版本？删除后不可恢复。', '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('config.messages.confirmDeleteRevision'),
+      t('config.messages.deleteConfirmTitle'),
+      { type: 'warning' }
+    )
   } catch {
     return
   }
   deletingID.value = rev.revision_id
   try {
     await axios.delete(`/api/v1/config/openclaw/revisions/${rev.revision_id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('config.messages.deleteSuccess'))
     await loadRevisions()
   } catch (err) {
-    ElMessage.error(parseError(err, '删除失败'))
+    ElMessage.error(parseError(err, t('config.messages.deleteFailed')))
   } finally {
     deletingID.value = ''
   }

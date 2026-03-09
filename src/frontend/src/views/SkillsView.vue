@@ -1,9 +1,9 @@
 <template>
   <div class="skills-page">
     <div class="topbar">
-      <h3>Skills</h3>
+      <h3>{{ t('skills.title') }}</h3>
       <el-space>
-        <el-button :loading="loading" @click="loadSkills">刷新</el-button>
+        <el-button :loading="loading" @click="loadSkills">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
 
@@ -17,45 +17,45 @@
 
     <el-row :gutter="12" class="stats-row">
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">已安装技能: {{ skills.length }}</el-card>
+        <el-card shadow="never">{{ t('skills.installedCount', { count: skills.length }) }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">总占用空间: {{ formatBytes(totalBytes) }}</el-card>
+        <el-card shadow="never">{{ t('skills.totalSize', { size: formatBytes(totalBytes) }) }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card shadow="never">当前视图: {{ scopeLabel }}</el-card>
+        <el-card shadow="never">{{ t('skills.currentView', { scope: scopeLabel }) }}</el-card>
       </el-col>
     </el-row>
 
     <el-card shadow="never">
-      <template #header>安装 Skill</template>
+      <template #header>{{ t('skills.installTitle') }}</template>
       <el-form label-position="top">
         <el-row :gutter="12">
           <el-col :xs="24" :sm="8">
-            <el-form-item label="安装范围">
+            <el-form-item :label="t('skills.installScope')">
               <el-select v-model="installForm.scope" style="width: 100%">
-                <el-option label="全局 (global)" value="global" />
-                <el-option label="指定 Agent" value="agent" />
+                <el-option :label="t('skills.scopeGlobal')" value="global" />
+                <el-option :label="t('skills.scopeAgent')" value="agent" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col v-if="installForm.scope === 'agent'" :xs="24" :sm="8">
-            <el-form-item label="Agent ID">
+            <el-form-item :label="t('skills.columns.agentId')">
               <el-select v-model="installForm.agent_id" filterable clearable style="width: 100%">
                 <el-option v-for="a in agents" :key="a.agent_id" :label="a.agent_id" :value="a.agent_id" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="8">
-            <el-form-item label="技能名（可选）">
-              <el-input v-model="installForm.skill_name" placeholder="留空则按文件名推断" clearable />
+            <el-form-item :label="t('skills.skillNameOptional')">
+              <el-input v-model="installForm.skill_name" :placeholder="t('skills.skillNamePlaceholder')" clearable />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="上传包 (.zip / .tar.gz)">
+        <el-form-item :label="t('skills.uploadPackage')">
           <input ref="fileInputRef" type="file" accept=".zip,.tar.gz" @change="onFileChange" />
-          <el-text type="info" class="file-hint">当前文件：{{ selectedFileName || '未选择' }}</el-text>
+          <el-text type="info" class="file-hint">{{ t('skills.currentFile', { fileName: selectedFileName || t('skills.notSelected') }) }}</el-text>
         </el-form-item>
 
         <el-button
@@ -64,7 +64,7 @@
           :disabled="!canInstall"
           @click="installSkill"
         >
-          安装
+          {{ t('skills.install') }}
         </el-button>
       </el-form>
     </el-card>
@@ -72,18 +72,18 @@
     <el-card shadow="never">
       <template #header>
         <div class="list-header">
-          <span>技能列表</span>
+          <span>{{ t('skills.listTitle') }}</span>
           <el-space>
             <el-select v-model="viewScope" style="width: 180px" @change="loadSkills">
-              <el-option label="全局 (global)" value="global" />
-              <el-option label="指定 Agent" value="agent" />
+              <el-option :label="t('skills.scopeGlobal')" value="global" />
+              <el-option :label="t('skills.scopeAgent')" value="agent" />
             </el-select>
             <el-select
               v-if="viewScope === 'agent'"
               v-model="viewAgentID"
               filterable
               clearable
-              placeholder="选择 Agent"
+              :placeholder="t('skills.selectAgent')"
               style="width: 220px"
               @change="loadSkills"
             >
@@ -94,37 +94,37 @@
       </template>
 
       <el-table v-loading="loading" :data="skills" row-key="name" style="width: 100%">
-        <el-table-column prop="name" label="Skill 名称" min-width="220" />
-        <el-table-column label="作用域" width="160">
+        <el-table-column prop="name" :label="t('skills.columns.name')" min-width="220" />
+        <el-table-column :label="t('skills.columns.scope')" width="160">
           <template #default="{ row }">
             <el-tag type="info">{{ row.scope }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Agent" width="180">
+        <el-table-column :label="t('skills.columns.agentId')" width="180">
           <template #default="{ row }">
-            <el-text>{{ row.agent_id || '-' }}</el-text>
+            <el-text>{{ row.agent_id || t('common.emptyValue') }}</el-text>
           </template>
         </el-table-column>
-        <el-table-column label="元信息" width="120">
+        <el-table-column :label="t('skills.columns.meta')" width="120">
           <template #default="{ row }">
             <el-tag :type="row.has_meta ? 'success' : 'warning'">
-              {{ row.has_meta ? '完整' : '缺失' }}
+              {{ row.has_meta ? t('skills.metaComplete') : t('skills.metaMissing') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="大小" width="160">
+        <el-table-column :label="t('skills.columns.size')" width="160">
           <template #default="{ row }">{{ formatBytes(row.size_bytes) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column :label="t('skills.columns.actions')" width="120">
           <template #default="{ row }">
-            <el-button type="danger" link :loading="deletingName === row.name" @click="deleteSkill(row)">删除</el-button>
+            <el-button type="danger" link :loading="deletingName === row.name" @click="deleteSkill(row)">{{ t('common.actions.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <el-empty
         v-if="!loading && skills.length === 0"
-        description="当前条件下没有已安装的 Skill"
+        :description="t('skills.empty')"
       />
     </el-card>
   </div>
@@ -134,6 +134,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 type SkillItem = {
   name: string
@@ -156,6 +157,7 @@ const agents = ref<AgentItem[]>([])
 const selectedFile = ref<File | null>(null)
 const selectedFileName = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const { t } = useI18n()
 
 const installForm = ref({
   scope: 'global',
@@ -167,7 +169,7 @@ const viewScope = ref<'global' | 'agent'>('global')
 const viewAgentID = ref('')
 
 const totalBytes = computed(() => skills.value.reduce((sum, it) => sum + (it.size_bytes || 0), 0))
-const scopeLabel = computed(() => viewScope.value === 'global' ? 'global' : `agent:${viewAgentID.value || '-'}`)
+const scopeLabel = computed(() => viewScope.value === 'global' ? 'global' : `agent:${viewAgentID.value || t('common.emptyValue')}`)
 const canInstall = computed(() => {
   if (!selectedFile.value) return false
   if (installForm.value.scope === 'agent' && !installForm.value.agent_id.trim()) return false
@@ -204,7 +206,7 @@ async function loadSkills() {
     if (viewScope.value === 'agent') {
       if (!viewAgentID.value.trim()) {
         skills.value = []
-        errorMessage.value = '请选择 Agent 后再查看 Agent 级 Skills'
+        errorMessage.value = t('skills.messages.selectAgentForScope')
         return
       }
       params.agent_id = viewAgentID.value.trim()
@@ -213,8 +215,8 @@ async function loadSkills() {
     skills.value = Array.isArray(data?.skills) ? data.skills : []
   } catch (err) {
     skills.value = []
-    errorMessage.value = parseError(err, '加载 Skill 列表失败，请检查服务状态后重试')
-    ElMessage.error('加载 Skill 列表失败')
+    errorMessage.value = parseError(err, t('skills.messages.loadFailedHint'))
+    ElMessage.error(t('skills.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -229,11 +231,11 @@ function onFileChange(ev: Event) {
 
 async function installSkill() {
   if (!selectedFile.value) {
-    ElMessage.warning('请先选择上传包')
+    ElMessage.warning(t('skills.messages.needPackage'))
     return
   }
   if (installForm.value.scope === 'agent' && !installForm.value.agent_id.trim()) {
-    ElMessage.warning('请选择 Agent')
+    ElMessage.warning(t('skills.messages.needAgent'))
     return
   }
 
@@ -246,7 +248,7 @@ async function installSkill() {
   installing.value = true
   try {
     await axios.post('/api/v1/skills/install', fd)
-    ElMessage.success('Skill 安装请求已提交')
+    ElMessage.success(t('skills.messages.installSubmitted'))
     installForm.value.skill_name = ''
     selectedFile.value = null
     selectedFileName.value = ''
@@ -260,7 +262,7 @@ async function installSkill() {
     }
     await loadSkills()
   } catch (err) {
-    ElMessage.error(parseError(err, '安装 Skill 失败'))
+    ElMessage.error(parseError(err, t('skills.messages.installFailed')))
   } finally {
     installing.value = false
   }
@@ -268,7 +270,11 @@ async function installSkill() {
 
 async function deleteSkill(row: SkillItem) {
   try {
-    await ElMessageBox.confirm(`确认删除 Skill ${row.name} ？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('skills.messages.confirmDelete', { name: row.name }),
+      t('skills.messages.deleteConfirmTitle'),
+      { type: 'warning' }
+    )
   } catch {
     return
   }
@@ -277,10 +283,10 @@ async function deleteSkill(row: SkillItem) {
     const params: Record<string, string> = { scope: row.scope || viewScope.value }
     if (params.scope === 'agent' && row.agent_id) params.agent_id = row.agent_id
     await axios.delete(`/api/v1/skills/${encodeURIComponent(row.name)}`, { params })
-    ElMessage.success('Skill 已删除')
+    ElMessage.success(t('skills.messages.deleteSuccess'))
     await loadSkills()
   } catch (err) {
-    ElMessage.error(parseError(err, '删除 Skill 失败'))
+    ElMessage.error(parseError(err, t('skills.messages.deleteFailed')))
   } finally {
     deletingName.value = ''
   }

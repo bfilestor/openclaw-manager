@@ -1,12 +1,12 @@
 <template>
   <div class="config-page">
     <div class="topbar">
-      <h3>Markdown 编辑器</h3>
+      <h3>{{ t('workspaceEditor.title') }}</h3>
       <el-space>
-        <el-button @click="goBack">返回文件列表</el-button>
-        <el-button :loading="loading" @click="loadAll">刷新</el-button>
+        <el-button @click="goBack">{{ t('workspaceEditor.backToFiles') }}</el-button>
+        <el-button :loading="loading" @click="loadAll">{{ t('common.actions.refresh') }}</el-button>
         <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveFile">
-          保存
+          {{ t('workspaceEditor.save') }}
         </el-button>
       </el-space>
     </div>
@@ -22,10 +22,10 @@
     <el-row :gutter="12">
       <el-col :xs="24" :lg="15">
         <el-card shadow="never">
-          <template #header>{{ filePath || '-' }}</template>
+          <template #header>{{ filePath || t('common.emptyValue') }}</template>
           <el-space class="meta-row">
-            <el-tag type="info">大小: {{ formatBytes(sizeBytes) }}</el-tag>
-            <el-tag type="info">更新时间: {{ formatDateTime(modifiedAt) }}</el-tag>
+            <el-tag type="info">{{ t('workspaceEditor.size', { size: formatBytes(sizeBytes) }) }}</el-tag>
+            <el-tag type="info">{{ t('workspaceEditor.updatedAt', { time: formatDateTime(modifiedAt) }) }}</el-tag>
           </el-space>
           <el-input
             v-model="content"
@@ -34,7 +34,7 @@
             spellcheck="false"
             :autosize="{ minRows: 20, maxRows: 28 }"
             class="editor"
-            placeholder="请输入 Markdown 内容"
+            :placeholder="t('workspaceEditor.markdownPlaceholder')"
           />
         </el-card>
       </el-col>
@@ -42,11 +42,11 @@
         <el-card shadow="never">
           <template #header>
             <div class="revision-header">
-              <span>Revisions</span>
+              <span>{{ t('workspaceEditor.revisions.title') }}</span>
               <el-space>
-                <el-text type="info">已选 {{ selectedRevisions.length }}</el-text>
+                <el-text type="info">{{ t('workspaceEditor.revisions.selectedCount', { count: selectedRevisions.length }) }}</el-text>
                 <el-button size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
-                  对比所选版本
+                  {{ t('workspaceEditor.revisions.compareSelected') }}
                 </el-button>
               </el-space>
             </div>
@@ -59,19 +59,19 @@
             @selection-change="onRevisionSelectionChange"
           >
             <el-table-column type="selection" width="44" />
-            <el-table-column prop="created_at" label="时间" min-width="170">
+            <el-table-column prop="created_at" :label="t('workspaceEditor.revisions.columns.time')" min-width="170">
               <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
             </el-table-column>
-            <el-table-column label="SHA" min-width="120">
+            <el-table-column :label="t('workspaceEditor.revisions.columns.sha')" min-width="120">
               <template #default="{ row }">
                 <code>{{ shortSHA(row.sha256) }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180">
+            <el-table-column :label="t('workspaceEditor.revisions.columns.actions')" width="180">
               <template #default="{ row }">
                 <el-space>
-                  <el-button type="info" link @click="previewRevision(row)">查看</el-button>
-                  <el-button type="primary" link @click="compareWithCurrent(row)">对比当前</el-button>
+                  <el-button type="info" link @click="previewRevision(row)">{{ t('workspaceEditor.revisions.view') }}</el-button>
+                  <el-button type="primary" link @click="compareWithCurrent(row)">{{ t('workspaceEditor.revisions.compareCurrent') }}</el-button>
                   <el-button
                     type="warning"
                     link
@@ -79,7 +79,7 @@
                     :loading="restoringID === row.revision_id"
                     @click="restoreRevision(row)"
                   >
-                    回滚
+                    {{ t('workspaceEditor.revisions.restore') }}
                   </el-button>
                   <el-button
                     type="danger"
@@ -88,30 +88,30 @@
                     :loading="deletingID === row.revision_id"
                     @click="deleteRevision(row)"
                   >
-                    删除
+                    {{ t('common.actions.delete') }}
                   </el-button>
                 </el-space>
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-if="!loadingRevisions && revisions.length === 0" description="暂无历史版本" />
+          <el-empty v-if="!loadingRevisions && revisions.length === 0" :description="t('workspaceEditor.revisions.empty')" />
         </el-card>
       </el-col>
     </el-row>
 
-    <el-dialog v-model="revisionDialogVisible" width="760px" :title="`Revision - ${currentRevisionID || '-'}`">
+    <el-dialog v-model="revisionDialogVisible" width="760px" :title="t('workspaceEditor.revisions.previewTitle', { id: currentRevisionID || t('common.emptyValue') })">
       <el-scrollbar height="420px">
         <pre class="revision-content">{{ currentRevisionContent }}</pre>
       </el-scrollbar>
       <template #footer>
-        <el-button @click="revisionDialogVisible = false">关闭</el-button>
+        <el-button @click="revisionDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="diffDialogVisible" width="1080px" :title="`Diff - ${currentRevisionID || '-'}`">
+    <el-dialog v-model="diffDialogVisible" width="1080px" :title="t('workspaceEditor.revisions.diffTitle', { id: currentRevisionID || t('common.emptyValue') })">
       <DiffViewer :from-text="diffFromText" :to-text="diffToText" :height="460" />
       <template #footer>
-        <el-button @click="diffDialogVisible = false">关闭</el-button>
+        <el-button @click="diffDialogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -121,6 +121,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useRoute, useRouter } from 'vue-router'
 import DiffViewer from '../components/DiffViewer.vue'
@@ -135,6 +136,7 @@ type Revision = {
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const loadingRevisions = ref(false)
 const saving = ref(false)
@@ -168,7 +170,7 @@ function goBack() {
 }
 
 function formatDateTime(v: string): string {
-  if (!v) return '-'
+  if (!v) return t('common.emptyValue')
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return v
   return d.toLocaleString()
@@ -183,7 +185,7 @@ function formatBytes(bytes: number): string {
 }
 
 function shortSHA(sha: string): string {
-  return String(sha || '').slice(0, 10) || '-'
+  return String(sha || '').slice(0, 10) || t('common.emptyValue')
 }
 
 function parseError(err: any, fallback: string): string {
@@ -219,7 +221,7 @@ async function loadRevisions() {
 
 async function loadAll() {
   if (!agentID.value || !filePath.value) {
-    errorMessage.value = '缺少 agent_id 或 path 参数'
+    errorMessage.value = t('workspaceEditor.messages.missingParams')
     return
   }
   loading.value = true
@@ -227,7 +229,7 @@ async function loadAll() {
   try {
     await Promise.all([loadFile(), loadRevisions()])
   } catch (err) {
-    errorMessage.value = parseError(err, '加载文件失败')
+    errorMessage.value = parseError(err, t('workspaceEditor.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -235,7 +237,7 @@ async function loadAll() {
 
 async function saveFile() {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('workspaceEditor.messages.noEditPermission'))
     return
   }
   saving.value = true
@@ -245,10 +247,10 @@ async function saveFile() {
     }, {
       params: fileApiParams(),
     })
-    ElMessage.success('保存成功')
+    ElMessage.success(t('workspaceEditor.messages.saveSuccess'))
     await loadAll()
   } catch (err) {
-    ElMessage.error(parseError(err, '保存失败'))
+    ElMessage.error(parseError(err, t('workspaceEditor.messages.saveFailed')))
   } finally {
     saving.value = false
   }
@@ -261,7 +263,7 @@ function previewRevision(rev: Revision) {
 }
 
 function compareWithCurrent(rev: Revision) {
-  currentRevisionID.value = `${rev.revision_id} -> CURRENT`
+  currentRevisionID.value = t('workspaceEditor.revisions.toCurrent', { id: rev.revision_id })
   diffFromText.value = rev.content || ''
   diffToText.value = content.value || ''
   diffDialogVisible.value = true
@@ -273,7 +275,7 @@ function onRevisionSelectionChange(rows: Revision[]) {
 
 function compareSelectedRevisions() {
   if (selectedRevisions.value.length !== 2) {
-    ElMessage.warning('请先勾选 2 个版本再对比')
+    ElMessage.warning(t('workspaceEditor.messages.selectTwoRevisions'))
     return
   }
   const [a, b] = selectedRevisions.value
@@ -288,11 +290,15 @@ function compareSelectedRevisions() {
 
 async function restoreRevision(rev: Revision) {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('workspaceEditor.messages.noEditPermission'))
     return
   }
   try {
-    await ElMessageBox.confirm('确认回滚到该历史版本？', '回滚确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('workspaceEditor.messages.confirmRestore'),
+      t('workspaceEditor.messages.restoreConfirmTitle'),
+      { type: 'warning' }
+    )
   } catch {
     return
   }
@@ -301,10 +307,10 @@ async function restoreRevision(rev: Revision) {
     await axios.post(`/api/v1/agents/${encodeURIComponent(agentID.value)}/workspace/markdown/revisions/${rev.revision_id}/restore`, {}, {
       params: fileApiParams(),
     })
-    ElMessage.success('回滚成功')
+    ElMessage.success(t('workspaceEditor.messages.restoreSuccess'))
     await loadAll()
   } catch (err) {
-    ElMessage.error(parseError(err, '回滚失败'))
+    ElMessage.error(parseError(err, t('workspaceEditor.messages.restoreFailed')))
   } finally {
     restoringID.value = ''
   }
@@ -312,11 +318,15 @@ async function restoreRevision(rev: Revision) {
 
 async function deleteRevision(rev: Revision) {
   if (!canEdit.value) {
-    ElMessage.warning('当前角色无编辑权限')
+    ElMessage.warning(t('workspaceEditor.messages.noEditPermission'))
     return
   }
   try {
-    await ElMessageBox.confirm('确认删除该历史版本？删除后不可恢复。', '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('workspaceEditor.messages.confirmDeleteRevision'),
+      t('workspaceEditor.messages.deleteConfirmTitle'),
+      { type: 'warning' }
+    )
   } catch {
     return
   }
@@ -325,10 +335,10 @@ async function deleteRevision(rev: Revision) {
     await axios.delete(`/api/v1/agents/${encodeURIComponent(agentID.value)}/workspace/markdown/revisions/${rev.revision_id}`, {
       params: fileApiParams(),
     })
-    ElMessage.success('删除成功')
+    ElMessage.success(t('workspaceEditor.messages.deleteSuccess'))
     await loadRevisions()
   } catch (err) {
-    ElMessage.error(parseError(err, '删除失败'))
+    ElMessage.error(parseError(err, t('workspaceEditor.messages.deleteFailed')))
   } finally {
     deletingID.value = ''
   }

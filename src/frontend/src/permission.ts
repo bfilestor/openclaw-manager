@@ -1,5 +1,6 @@
 import type { App, DirectiveBinding } from 'vue'
 import { useAuthStore } from './stores/auth'
+import { i18n } from './i18n'
 
 const level: Record<string, number> = { Viewer: 1, Operator: 2, Admin: 3 }
 
@@ -16,7 +17,7 @@ export default {
         const required = (binding.value || 'Viewer') as 'Viewer'|'Operator'|'Admin'
         if (!canAccess(required)) {
           el.setAttribute('disabled', 'true')
-          el.setAttribute('title', `需要 ${required} 权限`)
+          el.setAttribute('title', i18n.global.t('permission.needRole', { role: required }))
         }
       }
     })

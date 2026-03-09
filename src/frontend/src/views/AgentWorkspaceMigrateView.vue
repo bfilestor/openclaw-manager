@@ -1,8 +1,8 @@
 <template>
   <div class="workspace-migrate-page">
     <div class="topbar">
-      <h3>Workspace 迁移</h3>
-      <el-button @click="goBack">返回 Agent 列表</el-button>
+      <h3>{{ t('workspaceMigrate.title') }}</h3>
+      <el-button @click="goBack">{{ t('workspaceMigrate.backToAgents') }}</el-button>
     </div>
 
     <el-alert
@@ -14,26 +14,26 @@
     />
 
     <el-card shadow="never">
-      <template #header>迁移信息</template>
+      <template #header>{{ t('workspaceMigrate.infoTitle') }}</template>
       <el-form label-position="top">
-        <el-form-item label="Agent ID">
+        <el-form-item :label="t('workspaceMigrate.agentId')">
           <el-input :model-value="agentID" disabled />
         </el-form-item>
 
-        <el-form-item label="旧目录地址">
+        <el-form-item :label="t('workspaceMigrate.oldPath')">
           <el-input :model-value="oldWorkspacePath" disabled />
         </el-form-item>
 
-        <el-form-item label="新目录地址">
+        <el-form-item :label="t('workspaceMigrate.newPath')">
           <el-input
             v-model="newWorkspacePath"
-            placeholder="例如：/home/mixi/.openclaw/workspace-xcoder-v2"
+            :placeholder="t('workspaceMigrate.newPathPlaceholder')"
             clearable
           />
         </el-form-item>
 
         <el-alert
-          title="保存后会移动旧目录下的全部内容，并更新 openclaw.json 对应 Agent 的 workspace，最后自动重启 openclaw gateway。"
+          :title="t('workspaceMigrate.warning')"
           type="warning"
           show-icon
           :closable="false"
@@ -46,7 +46,7 @@
           :disabled="!newWorkspacePath.trim()"
           @click="submitMigrate"
         >
-          保存并迁移
+          {{ t('workspaceMigrate.submit') }}
         </el-button>
       </el-form>
     </el-card>
@@ -58,6 +58,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 type AgentItem = {
   agent_id: string
@@ -66,6 +67,7 @@ type AgentItem = {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
@@ -85,7 +87,7 @@ function parseError(err: any, fallback: string): string {
 
 async function loadAgent() {
   if (!agentID.value) {
-    errorMessage.value = '缺少 agent_id 参数'
+    errorMessage.value = t('workspaceMigrate.messages.missingAgentId')
     return
   }
   loading.value = true
@@ -94,12 +96,12 @@ async function loadAgent() {
     const { data } = await axios.get<AgentItem>(`/api/v1/agents/${encodeURIComponent(agentID.value)}`)
     oldWorkspacePath.value = String(data?.workspace_path || '').trim()
     if (!oldWorkspacePath.value) {
-      errorMessage.value = '该 Agent 未返回 workspace 路径，暂时无法迁移'
+      errorMessage.value = t('workspaceMigrate.messages.emptyWorkspace')
       return
     }
     newWorkspacePath.value = oldWorkspacePath.value
   } catch (err) {
-    errorMessage.value = parseError(err, '加载 Agent 信息失败')
+    errorMessage.value = parseError(err, t('workspaceMigrate.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -108,23 +110,27 @@ async function loadAgent() {
 async function submitMigrate() {
   if (!agentID.value) return
   if (!oldWorkspacePath.value) {
-    ElMessage.error('旧目录地址为空，无法迁移')
+    ElMessage.error(t('workspaceMigrate.messages.oldPathEmpty'))
     return
   }
   const target = newWorkspacePath.value.trim()
   if (!target) {
-    ElMessage.error('请填写新目录地址')
+    ElMessage.error(t('workspaceMigrate.messages.needNewPath'))
     return
   }
   if (target === oldWorkspacePath.value) {
-    ElMessage.error('新目录地址不能与旧目录相同')
+    ElMessage.error(t('workspaceMigrate.messages.samePath'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确认将 ${agentID.value} 的 workspace 迁移到新目录？\n\n旧目录：${oldWorkspacePath.value}\n新目录：${target}`,
-      '迁移确认',
+      t('workspaceMigrate.messages.confirmContent', {
+        agentId: agentID.value,
+        oldPath: oldWorkspacePath.value,
+        newPath: target,
+      }),
+      t('workspaceMigrate.messages.confirmTitle'),
       { type: 'warning' }
     )
   } catch {
@@ -136,10 +142,10 @@ async function submitMigrate() {
     await axios.post(`/api/v1/agents/${encodeURIComponent(agentID.value)}/workspace/migrate`, {
       new_workspace_path: target,
     })
-    ElMessage.success('迁移完成，Gateway 已重启')
+    ElMessage.success(t('workspaceMigrate.messages.success'))
     await router.push('/agents')
   } catch (err) {
-    ElMessage.error(parseError(err, '迁移失败'))
+    ElMessage.error(parseError(err, t('workspaceMigrate.messages.failed')))
   } finally {
     submitting.value = false
   }

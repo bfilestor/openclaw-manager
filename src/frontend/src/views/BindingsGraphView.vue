@@ -2,14 +2,14 @@
   <div class="binding-graph-page">
     <div class="topbar">
       <el-space>
-        <el-button @click="goBackToAgents">返回 Agents</el-button>
-        <h3>Bindings 图谱</h3>
+        <el-button @click="goBackToAgents">{{ t('bindings.backToAgents') }}</el-button>
+        <h3>{{ t('bindings.title') }}</h3>
       </el-space>
       <el-space>
-        <el-tag type="info">Agent: {{ graph.agents.length }}</el-tag>
-        <el-tag type="info">Bot: {{ graph.bots.length }}</el-tag>
-        <el-tag type="success">连线: {{ relationEdges.length }}</el-tag>
-        <el-button :loading="loading" @click="loadGraph">刷新</el-button>
+        <el-tag type="info">{{ t('bindings.agentCount', { count: graph.agents.length }) }}</el-tag>
+        <el-tag type="info">{{ t('bindings.botCount', { count: graph.bots.length }) }}</el-tag>
+        <el-tag type="success">{{ t('bindings.edgeCount', { count: relationEdges.length }) }}</el-tag>
+        <el-button :loading="loading" @click="loadGraph">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
 
@@ -24,20 +24,20 @@
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>openclaw.json 可视化连线</span>
-          <el-text type="info">更新时间: {{ formatDateTime(modifiedAt) }}</el-text>
+          <span>{{ t('bindings.visualTitle') }}</span>
+          <el-text type="info">{{ t('bindings.updatedAt', { time: formatDateTime(modifiedAt) }) }}</el-text>
         </div>
       </template>
 
       <el-empty
         v-if="!loading && relationEdges.length === 0"
-        description="未在 openclaw 配置中识别到可展示的 bindings 关系"
+        :description="t('bindings.empty')"
       />
 
       <el-scrollbar v-else class="graph-scroll">
         <div class="graph-canvas" :style="{ height: `${canvasHeight}px` }">
-          <div class="column-label left">Agents</div>
-          <div class="column-label right">Bots</div>
+          <div class="column-label left">{{ t('bindings.columns.agents') }}</div>
+          <div class="column-label right">{{ t('bindings.columns.bots') }}</div>
 
           <svg class="edge-layer" :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`" preserveAspectRatio="none">
             <defs>
@@ -65,7 +65,7 @@
                 :x="(edge.startX + edge.endX) / 2"
                 :y="(edge.startY + edge.endY) / 2 - 6"
               >
-                {{ edge.channel && edge.account ? `${edge.channel}/${edge.account}` : edge.peer || 'binding' }}
+                {{ edge.channel && edge.account ? `${edge.channel}/${edge.account}` : edge.peer || t('bindings.bindingFallback') }}
               </text>
             </g>
           </svg>
@@ -77,7 +77,7 @@
             :style="nodeStyle('agent', agent.id)"
           >
             <div class="node-title">{{ agent.label }}</div>
-            <div class="node-subtitle">Agent</div>
+            <div class="node-subtitle">{{ t('bindings.columns.agent') }}</div>
           </div>
 
           <div
@@ -87,7 +87,7 @@
             :style="nodeStyle('bot', bot.id)"
           >
             <div class="node-title">{{ bot.label }}</div>
-            <div class="node-subtitle">Bot</div>
+            <div class="node-subtitle">{{ t('bindings.columns.bot') }}</div>
           </div>
         </div>
       </el-scrollbar>
@@ -96,11 +96,11 @@
     <el-card shadow="never">
       <template #header>
         <div class="detail-header">
-          <span>Binding 明细</span>
+          <span>{{ t('bindings.detailsTitle') }}</span>
           <el-space>
-            <el-text type="info">按 Channel 筛选</el-text>
+            <el-text type="info">{{ t('bindings.filterByChannel') }}</el-text>
             <el-select v-model="channelFilter" style="width: 180px">
-              <el-option label="全部" value="ALL" />
+              <el-option :label="t('bindings.all')" value="ALL" />
               <el-option
                 v-for="channel in channelOptions"
                 :key="channel"
@@ -112,12 +112,12 @@
         </div>
       </template>
       <el-table :data="filteredEdges" row-key="id" style="width: 100%">
-        <el-table-column prop="agent_id" label="Agent" min-width="180" />
-        <el-table-column prop="bot_id" label="Bot" min-width="220" />
-        <el-table-column prop="channel" label="Channel" min-width="120" />
-        <el-table-column prop="account" label="Account" min-width="120" />
-        <el-table-column prop="peer" label="Peer" min-width="180" />
-        <el-table-column prop="source" label="来源路径" min-width="220" />
+        <el-table-column prop="agent_id" :label="t('bindings.columns.agent')" min-width="180" />
+        <el-table-column prop="bot_id" :label="t('bindings.columns.bot')" min-width="220" />
+        <el-table-column prop="channel" :label="t('bindings.columns.channel')" min-width="120" />
+        <el-table-column prop="account" :label="t('bindings.columns.account')" min-width="120" />
+        <el-table-column prop="peer" :label="t('bindings.columns.peer')" min-width="180" />
+        <el-table-column prop="source" :label="t('bindings.sourcePath')" min-width="220" />
       </el-table>
     </el-card>
   </div>
@@ -127,6 +127,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 type AnyRecord = Record<string, any>
 
@@ -165,6 +166,7 @@ const modifiedAt = ref('')
 const graph = ref<GraphSnapshot>({ agents: [], bots: [], edges: [] })
 const channelFilter = ref('ALL')
 const router = useRouter()
+const { t } = useI18n()
 
 const canvasWidth = 1180
 const nodeWidth = 250
@@ -661,7 +663,7 @@ function parseError(err: any, fallback: string): string {
 }
 
 function formatDateTime(value: string): string {
-  if (!value) return '-'
+  if (!value) return t('common.emptyValue')
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return value
   return d.toLocaleString()
@@ -682,7 +684,7 @@ async function loadGraph() {
     try {
       parsed = JSON.parse(rawContent)
     } catch {
-      throw new Error('openclaw.json 解析失败，请先修复配置 JSON 格式')
+      throw new Error(t('bindings.messages.parseConfigFailed'))
     }
     graph.value = extractGraphFromConfig(parsed)
     if (channelFilter.value !== 'ALL' && !graph.value.edges.some((edge) => edge.channel === channelFilter.value)) {
@@ -691,7 +693,7 @@ async function loadGraph() {
   } catch (err) {
     graph.value = { agents: [], bots: [], edges: [] }
     channelFilter.value = 'ALL'
-    errorMessage.value = parseError(err, '加载配置失败，无法生成绑定图谱')
+    errorMessage.value = parseError(err, t('bindings.messages.loadFailed'))
   } finally {
     loading.value = false
   }

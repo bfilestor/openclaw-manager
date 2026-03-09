@@ -386,7 +386,7 @@ function appendRowsToConfig() {
 }
 
 function buildNormalizedConfigText(): string {
-  // 同步页面已编辑的 bot 列表到配置对象
+  // Sync edited bot rows from the page back into the config object
   if (bots.value.length > 0) {
     ensureQQBotRoot(rawConfig.value)
     const qqbot = rawConfig.value.channels.qqbot

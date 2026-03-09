@@ -1,15 +1,15 @@
 <template>
   <div class="gateway-page">
     <div class="topbar">
-      <h3>Gateway</h3>
+      <h3>{{ t('gateway.title') }}</h3>
       <el-space>
-        <el-button :loading="loading" @click="refresh">刷新</el-button>
+        <el-button :loading="loading" @click="refresh">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
 
     <el-alert
       v-if="nvmWarning"
-      title="检测到 NVM Node 风险，建议修复"
+      :title="t('gateway.nvmWarning')"
       type="warning"
       show-icon
       :closable="false"
@@ -17,24 +17,24 @@
 
     <el-row :gutter="12" class="cards">
       <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">Gateway: {{ gatewayStateText }}</el-card>
+        <el-card shadow="hover">{{ t('gateway.gatewayState', { state: gatewayStateText }) }}</el-card>
       </el-col>
       <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">Bind IP: {{ bindText }}</el-card>
+        <el-card shadow="hover">{{ t('gateway.bindIp', { bind: bindText }) }}</el-card>
       </el-col>
     </el-row>
 
     <el-card shadow="never">
-      <template #header>操作</template>
+      <template #header>{{ t('gateway.operations') }}</template>
       <el-space>
         <el-button type="success" :loading="acting==='start'" :disabled="!canOperate || isCoolingDown || !!acting" @click="act('start')">
-          {{ actionLabel('启动') }}
+          {{ actionLabel('start') }}
         </el-button>
         <el-button type="warning" :loading="acting==='stop'" :disabled="!canOperate || isCoolingDown || !!acting" @click="act('stop')">
-          {{ actionLabel('停止') }}
+          {{ actionLabel('stop') }}
         </el-button>
         <el-button type="primary" :loading="acting==='restart'" :disabled="!canOperate || isCoolingDown || !!acting" @click="act('restart')">
-          {{ actionLabel('重启') }}
+          {{ actionLabel('restart') }}
         </el-button>
       </el-space>
     </el-card>
@@ -44,9 +44,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
+const { t } = useI18n()
 const status = ref<any>({})
 const nvmWarning = ref(false)
 const loading = ref(false)
@@ -95,8 +97,11 @@ function startCooldown(seconds = 10) {
   }, 1000)
 }
 
-function actionLabel(base: string): string {
-  return isCoolingDown.value ? `${base} (${cooldownSec.value}s)` : base
+function actionLabel(op: 'start' | 'stop' | 'restart'): string {
+  if (isCoolingDown.value) {
+    return t(`gateway.actions.${op}WithCooldown`, { seconds: cooldownSec.value })
+  }
+  return t(`gateway.actions.${op}`)
 }
 
 async function act(op: 'start' | 'stop' | 'restart') {
