@@ -521,6 +521,9 @@ export default {
       noConfigLoaded: '当前没有可用配置，请先刷新',
       saveSuccess: '绑定关系已保存（已生成配置修订）',
       saveFailed: '保存绑定关系失败',
+      shapeMismatch: '检测到 bindings 结构与当前标准不一致',
+      shapeMismatchConfirmTitle: '结构校查提示',
+      shapeMismatchConfirmBody: '检测到 bindings 结构与当前标准不一致，继续保存可能影响兼容性。确认继续保存吗？',
     },
   },
   backups: {

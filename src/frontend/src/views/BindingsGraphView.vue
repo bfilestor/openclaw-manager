@@ -173,7 +173,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -928,6 +928,13 @@ function saveBindings() {
   previewVisible.value = true
 }
 
+function validateBindingShape(oldBindings: any, nextBindings: any[]) {
+  if (!Array.isArray(oldBindings) || !Array.isArray(nextBindings)) {
+    return t('bindings.messages.shapeMismatch')
+  }
+  return ''
+}
+
 async function confirmSaveBindings() {
   if (!rawConfig.value) {
     ElMessage.error(t('bindings.messages.noConfigLoaded'))
@@ -936,7 +943,20 @@ async function confirmSaveBindings() {
   saving.value = true
   try {
     const next = JSON.parse(JSON.stringify(rawConfig.value))
-    next.bindings = buildBindingsPayload(editableEdges.value)
+    const nextBindings = buildBindingsPayload(editableEdges.value)
+    const shapeError = validateBindingShape(rawConfig.value?.bindings, nextBindings)
+    if (shapeError) {
+      await ElMessageBox.confirm(
+        t('bindings.messages.shapeMismatchConfirmBody'),
+        t('bindings.messages.shapeMismatchConfirmTitle'),
+        {
+          type: 'warning',
+          confirmButtonText: t('common.actions.confirm'),
+          cancelButtonText: t('common.actions.cancel')
+        }
+      )
+    }
+    next.bindings = nextBindings
     const formatted = JSON.stringify(next, null, 2)
     await axios.put('/api/v1/config/openclaw', { content: formatted })
     ElMessage.success(t('bindings.messages.saveSuccess'))
@@ -945,6 +965,10 @@ async function confirmSaveBindings() {
     historyStack.value = []
     await loadGraph()
   } catch (err) {
+    const text = String((err as any)?.message || err || '').toLowerCase()
+    if (text.includes('cancel') || text.includes('close')) {
+      return
+    }
     ElMessage.error(parseError(err, t('bindings.messages.saveFailed')))
   } finally {
     saving.value = false

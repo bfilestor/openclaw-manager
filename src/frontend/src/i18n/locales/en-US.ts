@@ -521,6 +521,9 @@ export default {
       noConfigLoaded: 'No config loaded, please refresh first',
       saveSuccess: 'Bindings saved (config revision created)',
       saveFailed: 'Failed to save bindings',
+      shapeMismatch: 'Detected bindings structure mismatch',
+      shapeMismatchConfirmTitle: 'Structure Check Notice',
+      shapeMismatchConfirmBody: 'Detected bindings structure mismatch. Continuing to save may affect compatibility. Continue anyway?',
     },
   },
   backups: {
