@@ -81,7 +81,8 @@ func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.Exec.Run(ctx, "openclaw", "agents", "create", req.AgentID)
+	workspacePath := h.newWorkspacePath(req.AgentID)
+	_, err = h.Exec.Run(ctx, "openclaw", "agents", "add", "--workspace", workspacePath, req.AgentID)
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok && strings.Contains(strings.ToLower(string(ee.Stderr)), "exist") {
 			middleware.WriteAppError(w, &middleware.AppError{Code: "CONFLICT", Message: "agent exists", StatusCode: http.StatusConflict})
@@ -91,7 +92,6 @@ func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspacePath := h.newWorkspacePath(req.AgentID)
 	if err := copyTemplateWorkspaceFiles(templateWorkspace, workspacePath, templateMarkdownFiles); err != nil {
 		_, _ = h.Exec.Run(ctx, "openclaw", "agents", "delete", req.AgentID)
 		middleware.WriteAppError(w, err)
@@ -379,9 +379,6 @@ func copyTemplateWorkspaceFiles(templateWorkspace, targetWorkspace string, files
 	targetWorkspace = filepath.Clean(targetWorkspace)
 	if templateWorkspace == "" {
 		return &middleware.AppError{Code: "VALIDATION_ERROR", Message: "template workspace is empty", StatusCode: http.StatusBadRequest}
-	}
-	if _, err := os.Stat(targetWorkspace); err == nil {
-		return &middleware.AppError{Code: "CONFLICT", Message: "target workspace already exists", StatusCode: http.StatusConflict}
 	}
 	if err := os.MkdirAll(targetWorkspace, 0o755); err != nil {
 		return err
