@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Manager Service
+After=network.target
+
+[Service]
+Type=simple
+Environment=PATH=${node_bin_dir}:${openclaw_bin_dir}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=${myhome}/.openclaw/projects/manager/src/bin/managerd --config ${myhome}/.openclaw-manager/config.toml --static-dir ${myhome}/.openclaw/projects/manager/src/frontend/dist
+Restart=on-failure
+RestartSec=5
+Environment=OPENCLAW_JWT_SECRET=
+WorkingDirectory=${myhome}/.openclaw/projects/manager/src
+
+[Install]
+WantedBy=default.target
