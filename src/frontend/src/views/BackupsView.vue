@@ -43,6 +43,49 @@
     </el-card>
 
     <el-card shadow="never">
+      <template #header>备份计划</template>
+      <el-form inline>
+        <el-form-item label="名称">
+          <el-input v-model="planForm.name" placeholder="例如：每日配置备份" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input v-model="planForm.label" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="间隔(分钟)">
+          <el-input-number v-model="planForm.interval_minutes" :min="1" :max="10080" />
+        </el-form-item>
+      </el-form>
+      <el-form-item label="备份范围">
+        <el-checkbox-group v-model="planForm.scope">
+          <el-checkbox v-for="opt in scopeOptions" :key="`plan-${opt.value}`" :label="opt.value">
+            {{ t(`backups.scopeOptions.${opt.value}`) }}
+          </el-checkbox>
+        </el-checkbox-group>
+      </el-form-item>
+      <el-button type="primary" :disabled="!canCreate" @click="createPlan">新增计划</el-button>
+
+      <el-table :data="plans" row-key="plan_id" style="width: 100%; margin-top: 12px">
+        <el-table-column prop="name" label="名称" min-width="180" />
+        <el-table-column prop="interval_minutes" label="间隔" width="100">
+          <template #default="{ row }">{{ row.interval_minutes }} min</template>
+        </el-table-column>
+        <el-table-column prop="next_run_at" label="下次执行" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.next_run_at) }}</template>
+        </el-table-column>
+        <el-table-column prop="enabled" label="状态" width="80">
+          <template #default="{ row }">{{ row.enabled ? '启用' : '停用' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="220">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="runPlanNow(row.plan_id)">立即执行</el-button>
+            <el-button link :type="row.enabled ? 'warning' : 'success'" @click="togglePlan(row)">{{ row.enabled ? '停用' : '启用' }}</el-button>
+            <el-button link type="danger" @click="deletePlan(row.plan_id)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <el-card shadow="never">
       <template #header>{{ t('backups.listTitle') }}</template>
       <el-table v-loading="loading" :data="backups" row-key="backup_id" style="width: 100%">
         <el-table-column prop="label" :label="t('backups.columns.label')" min-width="220" />
@@ -185,6 +228,16 @@ type AgentItem = {
   workspace_path?: string
 }
 
+type PlanItem = {
+  plan_id: string
+  name: string
+  label: string
+  scope: string[]
+  interval_minutes: number
+  enabled: boolean
+  next_run_at: string
+}
+
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
@@ -201,12 +254,20 @@ const createForm = ref({
   scope: ['openclaw_json', 'global_skills']
 })
 
+const plans = ref<PlanItem[]>([])
+const planForm = ref({
+  name: '',
+  label: '',
+  scope: ['openclaw_json', 'global_skills'],
+  interval_minutes: 1440
+})
+
 const scopeOptions = [
   { value: 'openclaw_json' },
   { value: 'global_skills' },
   { value: 'workspaces' },
   { value: 'user_systemd_unit' },
-  { value: 'manager_revisions' }
+  { value: 'manager_db' }
 ]
 
 const role = computed(() => auth.user?.role || 'Viewer')
@@ -293,6 +354,76 @@ async function loadBackups() {
     errorMessage.value = parseError(err, t('backups.messages.loadFailed'))
   } finally {
     loading.value = false
+  }
+}
+
+async function loadPreference() {
+  try {
+    const { data } = await axios.get('/api/v1/backup-preferences/me')
+    const scope = Array.isArray(data?.scope) && data.scope.length > 0 ? data.scope : ['openclaw_json', 'global_skills']
+    createForm.value.scope = scope
+    planForm.value.scope = [...scope]
+    if (typeof data?.label === 'string') createForm.value.label = data.label
+  } catch {
+    // Ignore preference fetch failure and keep defaults.
+  }
+}
+
+async function loadPlans() {
+  try {
+    const { data } = await axios.get('/api/v1/backup-plans')
+    plans.value = Array.isArray(data?.plans) ? data.plans : []
+  } catch {
+    plans.value = []
+  }
+}
+
+async function createPlan() {
+  if (!canCreate.value) return
+  if (!planForm.value.name.trim() || planForm.value.scope.length === 0 || planForm.value.interval_minutes <= 0) {
+    ElMessage.warning('请填写完整的计划信息')
+    return
+  }
+  try {
+    await axios.post('/api/v1/backup-plans', {
+      name: planForm.value.name.trim(),
+      label: planForm.value.label.trim(),
+      scope: planForm.value.scope,
+      interval_minutes: planForm.value.interval_minutes
+    })
+    ElMessage.success('计划创建成功')
+    planForm.value.name = ''
+    await loadPlans()
+  } catch (err) {
+    ElMessage.error(parseError(err, '计划创建失败'))
+  }
+}
+
+async function togglePlan(row: PlanItem) {
+  try {
+    await axios.post(`/api/v1/backup-plans/${row.plan_id}/${row.enabled ? 'disable' : 'enable'}`)
+    await loadPlans()
+  } catch (err) {
+    ElMessage.error(parseError(err, '操作失败'))
+  }
+}
+
+async function deletePlan(planID: string) {
+  try {
+    await axios.delete(`/api/v1/backup-plans/${planID}`)
+    await loadPlans()
+  } catch (err) {
+    ElMessage.error(parseError(err, '删除失败'))
+  }
+}
+
+async function runPlanNow(planID: string) {
+  try {
+    const { data } = await axios.post(`/api/v1/backup-plans/${planID}/run`)
+    ElMessage.success(`执行成功，backup_id=${data?.backup_id || ''}`)
+    await Promise.all([loadPlans(), loadBackups()])
+  } catch (err) {
+    ElMessage.error(parseError(err, '执行失败'))
   }
 }
 
@@ -436,7 +567,9 @@ async function deleteBackup(backupID: string) {
   }
 }
 
-onMounted(loadBackups)
+onMounted(async () => {
+  await Promise.all([loadPreference(), loadPlans(), loadBackups()])
+})
 </script>
 
 <style scoped>

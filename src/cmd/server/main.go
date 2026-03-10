@@ -122,7 +122,9 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 			OpenclawHome: cfg.Paths.OpenClawHome,
 			ManagerHome:  cfg.Paths.ManagerHome,
 		}
-		backupAPI := &backup.APIHandler{Service: backupSvc, DB: sqlDB}
+		backupPlanSvc := &backup.PlanService{DB: sqlDB, Backup: backupSvc}
+		backupPlanSvc.Start()
+		backupAPI := &backup.APIHandler{Service: backupSvc, PlanSvc: backupPlanSvc, DB: sqlDB}
 
 		taskAPI := &task.Handler{Repo: taskRepo}
 		taskSSE := &task.SSEHandler{Repo: taskRepo}
@@ -202,6 +204,14 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("GET /api/v1/backups/{id}/download", wrap(backupAPI.DownloadBackup, authMW))
 		mux.HandleFunc("POST /api/v1/backups/{id}/restore", wrap(backupAPI.RestoreBackup, authMW))
 		mux.HandleFunc("DELETE /api/v1/backups/{id}", wrap(backupAPI.DeleteBackup, authMW))
+		mux.HandleFunc("GET /api/v1/backup-plans", wrap(backupAPI.ListPlans, authMW))
+		mux.HandleFunc("POST /api/v1/backup-plans", wrap(backupAPI.CreatePlan, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("PUT /api/v1/backup-plans/{id}", wrap(backupAPI.UpdatePlan, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("DELETE /api/v1/backup-plans/{id}", wrap(backupAPI.DeletePlan, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("POST /api/v1/backup-plans/{id}/enable", wrap(backupAPI.EnablePlan, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("POST /api/v1/backup-plans/{id}/disable", wrap(backupAPI.DisablePlan, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("POST /api/v1/backup-plans/{id}/run", wrap(backupAPI.RunPlanNow, authMW, auth.RequireRole(user.RoleOperator)))
+		mux.HandleFunc("GET /api/v1/backup-preferences/me", wrap(backupAPI.GetMyPreference, authMW))
 	}
 }
 

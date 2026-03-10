@@ -19,6 +19,7 @@ import (
 
 type APIHandler struct {
 	Service *Service
+	PlanSvc *PlanService
 	DB      *sql.DB
 }
 
@@ -62,6 +63,9 @@ func (h *APIHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = taskRepo.UpdateResult(taskID, nil, fmt.Sprintf("backup_id=%s", id), "", "")
 	_ = taskRepo.UpdateStatus(taskID, task.StatusSucceeded)
+	if h.PlanSvc != nil {
+		_ = h.PlanSvc.SavePreference(createdBy, req.Label, req.Scope)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
