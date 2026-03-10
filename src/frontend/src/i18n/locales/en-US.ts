@@ -364,6 +364,12 @@ export default {
     gatewayState: 'Gateway: {state}',
     bindIp: 'Bind IP: {bind}',
     connectFailed: 'Failed to fetch Gateway status: {reason}',
+    diagnose: 'Diagnose',
+    diagnoseResultTitle: 'Gateway Diagnose Result',
+    diagnoseSummaryOk: 'Diagnose completed: no NVM risk detected. Latest Gateway logs are shown below.',
+    diagnoseSummaryNvm: 'Diagnose completed: NVM risk detected. It is recommended to run doctor --repair. Latest Gateway logs are shown below.',
+    diagnoseFailed: 'Diagnose failed: {reason}',
+    noLogs: 'No logs available',
     operations: 'Operations',
     actions: {
       start: 'Start',

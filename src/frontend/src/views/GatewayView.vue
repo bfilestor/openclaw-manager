@@ -4,6 +4,7 @@
       <h3>{{ t('gateway.title') }}</h3>
       <el-space>
         <el-button :loading="loading" @click="refresh">{{ t('common.actions.refresh') }}</el-button>
+        <el-button :loading="diagnosing" @click="runDiagnose">{{ t('gateway.diagnose') }}</el-button>
       </el-space>
     </div>
 
@@ -46,12 +47,23 @@
         </el-button>
       </el-space>
     </el-card>
+
+    <el-dialog v-model="diagnoseVisible" :title="t('gateway.diagnoseResultTitle')" width="860px">
+      <el-alert :title="diagnoseSummary" type="info" show-icon :closable="false" />
+      <el-scrollbar height="320px">
+        <pre class="diagnose-box">{{ diagnoseLogs }}</pre>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="diagnoseVisible = false">{{ t('common.actions.close') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
@@ -61,6 +73,10 @@ const status = ref<any>({})
 const nvmWarning = ref(false)
 const loading = ref(false)
 const statusError = ref('')
+const diagnosing = ref(false)
+const diagnoseVisible = ref(false)
+const diagnoseLogs = ref('')
+const diagnoseSummary = ref('')
 
 const canOperate = computed(() => ['Operator', 'Admin'].includes(auth.user?.role || 'Viewer'))
 const acting = ref<'' | 'start' | 'stop' | 'restart'>('')
@@ -149,6 +165,27 @@ async function act(op: 'start' | 'stop' | 'restart') {
   }
 }
 
+async function runDiagnose() {
+  diagnosing.value = true
+  diagnoseLogs.value = ''
+  diagnoseSummary.value = ''
+  try {
+    const [doctorResp, logsResp] = await Promise.all([
+      axios.post('/api/v1/gateway/doctor'),
+      axios.get('/api/v1/gateway/logs', { params: { source: 'journald', lines: 120 } }),
+    ])
+    const nvmDetected = !!doctorResp?.data?.nvm_detected
+    diagnoseSummary.value = nvmDetected ? t('gateway.diagnoseSummaryNvm') : t('gateway.diagnoseSummaryOk')
+    const logs = Array.isArray(logsResp?.data?.logs) ? logsResp.data.logs : []
+    diagnoseLogs.value = logs.join('\n') || t('gateway.noLogs')
+    diagnoseVisible.value = true
+  } catch (err) {
+    ElMessage.error(t('gateway.diagnoseFailed', { reason: classifyGatewayError(err) }))
+  } finally {
+    diagnosing.value = false
+  }
+}
+
 onMounted(() => {
   refresh()
   timer = setInterval(refresh, 30000)
@@ -175,5 +212,14 @@ onUnmounted(() => {
 }
 .cards {
   margin: 0;
+}
+
+.diagnose-box {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #374151;
+  padding: 8px;
 }
 </style>

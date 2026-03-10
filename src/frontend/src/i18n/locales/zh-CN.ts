@@ -364,6 +364,12 @@ export default {
     gatewayState: 'Gateway: {state}',
     bindIp: 'Bind IP: {bind}',
     connectFailed: 'Gateway 状态获取失败：{reason}',
+    diagnose: '一键诊断',
+    diagnoseResultTitle: 'Gateway 诊断结果',
+    diagnoseSummaryOk: '诊断完成：未检测到 NVM 风险，以下是最新 Gateway 日志。',
+    diagnoseSummaryNvm: '诊断完成：检测到 NVM 风险，建议执行 doctor --repair。以下是最新 Gateway 日志。',
+    diagnoseFailed: '执行诊断失败：{reason}',
+    noLogs: '暂无日志输出',
     operations: '操作',
     actions: {
       start: '启动',
