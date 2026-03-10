@@ -22,6 +22,10 @@ type WorkspaceResolver interface {
 	GetWorkspacePath(ctx context.Context, agentID string) (string, error)
 }
 
+type cacheInvalidator interface {
+	InvalidateCache()
+}
+
 type ManageHandler struct {
 	Exec             Executor
 	Workspaces       WorkspaceResolver
@@ -104,6 +108,7 @@ func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.invalidateAgentCache()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
@@ -128,6 +133,7 @@ func (h *ManageHandler) DeleteAgent(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
+	h.invalidateAgentCache()
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = w.Write([]byte(`{"task_type":"agent.delete","status":"PENDING"}`))
 }
@@ -189,6 +195,7 @@ func (h *ManageHandler) MigrateWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	h.invalidateAgentCache()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
@@ -351,6 +358,12 @@ func copyPath(src, dst string) error {
 func asString(v any) string {
 	s, _ := v.(string)
 	return s
+}
+
+func (h *ManageHandler) invalidateAgentCache() {
+	if ci, ok := h.Workspaces.(cacheInvalidator); ok {
+		ci.InvalidateCache()
+	}
 }
 
 func validCreateAgentID(id string) bool {

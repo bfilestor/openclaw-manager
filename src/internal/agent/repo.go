@@ -49,6 +49,13 @@ func NewRepository(exec Executor, validator *storage.PathValidator) *Repository 
 	}
 }
 
+func (r *Repository) InvalidateCache() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.cachedAt = time.Time{}
+	r.cached = nil
+}
+
 func (r *Repository) List(ctx context.Context) ([]Agent, error) {
 	r.mu.Lock()
 	if time.Since(r.cachedAt) < r.ttl && r.cached != nil {
