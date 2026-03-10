@@ -363,6 +363,7 @@ export default {
     nvmWarning: '检测到 NVM Node 风险，建议修复',
     gatewayState: 'Gateway: {state}',
     bindIp: 'Bind IP: {bind}',
+    connectFailed: 'Gateway 状态获取失败：{reason}',
     operations: '操作',
     actions: {
       start: '启动',
@@ -371,6 +372,16 @@ export default {
       startWithCooldown: '启动 ({seconds}s)',
       stopWithCooldown: '停止 ({seconds}s)',
       restartWithCooldown: '重启 ({seconds}s)',
+    },
+    errorReasons: {
+      authDenied: '认证失败或权限不足（401/403）',
+      apiNotFound: '接口不存在（404），可能是 Manager 版本不匹配',
+      managerInternal: 'Manager 内部错误（5xx）',
+      gatewayTimeout: '请求 Gateway 超时（可能网关卡住或负载过高）',
+      gatewayDown: 'Gateway 进程未运行或端口未监听',
+      systemdIssue: 'systemd 服务状态异常（请检查 openclaw-gateway.service）',
+      browserNetwork: '浏览器到 Manager 网络异常',
+      unknown: '未知错误，请查看 Manager/Gateway 日志',
     },
   },
   dashboard: {

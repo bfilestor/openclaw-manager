@@ -363,6 +363,7 @@ export default {
     nvmWarning: 'NVM Node risk detected, fix is recommended',
     gatewayState: 'Gateway: {state}',
     bindIp: 'Bind IP: {bind}',
+    connectFailed: 'Failed to fetch Gateway status: {reason}',
     operations: 'Operations',
     actions: {
       start: 'Start',
@@ -371,6 +372,16 @@ export default {
       startWithCooldown: 'Start ({seconds}s)',
       stopWithCooldown: 'Stop ({seconds}s)',
       restartWithCooldown: 'Restart ({seconds}s)',
+    },
+    errorReasons: {
+      authDenied: 'Authentication failed or permission denied (401/403)',
+      apiNotFound: 'API not found (404), possible Manager version mismatch',
+      managerInternal: 'Manager internal error (5xx)',
+      gatewayTimeout: 'Gateway request timeout (gateway may be stuck or overloaded)',
+      gatewayDown: 'Gateway process is down or port is not listening',
+      systemdIssue: 'systemd service issue (check openclaw-gateway.service)',
+      browserNetwork: 'Browser-to-Manager network issue',
+      unknown: 'Unknown error, check Manager/Gateway logs',
     },
   },
   dashboard: {

@@ -15,6 +15,14 @@
       :closable="false"
     />
 
+    <el-alert
+      v-if="statusError"
+      :title="t('gateway.connectFailed', { reason: statusError })"
+      type="error"
+      show-icon
+      :closable="false"
+    />
+
     <el-row :gutter="12" class="cards">
       <el-col :xs="24" :sm="12">
         <el-card shadow="hover">{{ t('gateway.gatewayState', { state: gatewayStateText }) }}</el-card>
@@ -52,6 +60,7 @@ const { t } = useI18n()
 const status = ref<any>({})
 const nvmWarning = ref(false)
 const loading = ref(false)
+const statusError = ref('')
 
 const canOperate = computed(() => ['Operator', 'Admin'].includes(auth.user?.role || 'Viewer'))
 const acting = ref<'' | 'start' | 'stop' | 'restart'>('')
@@ -70,8 +79,27 @@ const gatewayTagType = computed<'success' | 'warning' | 'info'>(() => {
 let timer: any = null
 let cooldownTimer: any = null
 
+function classifyGatewayError(err: any): string {
+  const httpStatus = Number(err?.response?.status || 0)
+  if (httpStatus === 401 || httpStatus === 403) return t('gateway.errorReasons.authDenied')
+  if (httpStatus === 404) return t('gateway.errorReasons.apiNotFound')
+  if (httpStatus >= 500) return t('gateway.errorReasons.managerInternal')
+
+  const msg = String(err?.response?.data?.message || err?.response?.data?.error || err?.message || '').toLowerCase()
+  if (msg.includes('timed out') || msg.includes('timeout')) return t('gateway.errorReasons.gatewayTimeout')
+  if (msg.includes('connection refused') || msg.includes('connect: no such file') || msg.includes('dial tcp')) {
+    return t('gateway.errorReasons.gatewayDown')
+  }
+  if (msg.includes('systemctl') || msg.includes('unit') || msg.includes('service')) {
+    return t('gateway.errorReasons.systemdIssue')
+  }
+  if (msg.includes('network error') || msg.includes('failed to fetch')) return t('gateway.errorReasons.browserNetwork')
+  return t('gateway.errorReasons.unknown')
+}
+
 async function refresh() {
   loading.value = true
+  statusError.value = ''
   try {
     const { data } = await axios.get('/api/v1/gateway/status')
     status.value = {
@@ -80,6 +108,9 @@ async function refresh() {
       port: data?.port,
     }
     nvmWarning.value = !!data?.nvm_warning
+  } catch (err) {
+    status.value = { active_state: 'unknown', bind_addr: '-', port: '-' }
+    statusError.value = classifyGatewayError(err)
   } finally {
     loading.value = false
   }
@@ -111,6 +142,8 @@ async function act(op: 'start' | 'stop' | 'restart') {
     await axios.post(`/api/v1/gateway/${op}`)
     startCooldown(10)
     await refresh()
+  } catch (err) {
+    statusError.value = classifyGatewayError(err)
   } finally {
     acting.value = ''
   }
