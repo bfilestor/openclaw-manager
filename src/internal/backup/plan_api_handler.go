@@ -13,7 +13,11 @@ type createPlanReq struct {
 	Name            string   `json:"name"`
 	Label           string   `json:"label"`
 	Scope           []string `json:"scope"`
+	ScheduleKind    string   `json:"schedule_kind"`
+	DailyTime       string   `json:"daily_time"`
+	MonthlyDay      int      `json:"monthly_day"`
 	IntervalMinutes int      `json:"interval_minutes"`
+	RetentionCount  int      `json:"retention_count"`
 }
 
 func (h *APIHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +49,16 @@ func (h *APIHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createdBy := currentUserID(r)
-	plan, err := h.PlanSvc.CreatePlan(strings.TrimSpace(req.Name), strings.TrimSpace(req.Label), req.Scope, req.IntervalMinutes, createdBy)
+	plan, err := h.PlanSvc.CreatePlan(&BackupPlan{
+		Name:            strings.TrimSpace(req.Name),
+		Label:           strings.TrimSpace(req.Label),
+		Scope:           req.Scope,
+		ScheduleKind:    req.ScheduleKind,
+		DailyTime:       strings.TrimSpace(req.DailyTime),
+		MonthlyDay:      req.MonthlyDay,
+		IntervalMinutes: req.IntervalMinutes,
+		RetentionCount:  req.RetentionCount,
+	}, createdBy)
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
@@ -66,7 +79,16 @@ func (h *APIHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	plan, err := h.PlanSvc.UpdatePlan(planID, strings.TrimSpace(req.Name), strings.TrimSpace(req.Label), req.Scope, req.IntervalMinutes)
+	plan, err := h.PlanSvc.UpdatePlan(planID, &BackupPlan{
+		Name:            strings.TrimSpace(req.Name),
+		Label:           strings.TrimSpace(req.Label),
+		Scope:           req.Scope,
+		ScheduleKind:    req.ScheduleKind,
+		DailyTime:       strings.TrimSpace(req.DailyTime),
+		MonthlyDay:      req.MonthlyDay,
+		IntervalMinutes: req.IntervalMinutes,
+		RetentionCount:  req.RetentionCount,
+	})
 	if err == sql.ErrNoRows {
 		middleware.WriteAppError(w, &middleware.AppError{Code: middleware.CodeNotFound, Message: "plan not found", StatusCode: http.StatusNotFound})
 		return

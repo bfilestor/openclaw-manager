@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,17 +12,21 @@ import (
 )
 
 type BackupPlan struct {
-	PlanID           string   `json:"plan_id"`
-	Name             string   `json:"name"`
-	Label            string   `json:"label"`
-	Scope            []string `json:"scope"`
-	IntervalMinutes  int      `json:"interval_minutes"`
-	Enabled          bool     `json:"enabled"`
-	LastRunAt        string   `json:"last_run_at,omitempty"`
-	NextRunAt        string   `json:"next_run_at,omitempty"`
-	CreatedBy        string   `json:"created_by,omitempty"`
-	CreatedAt        string   `json:"created_at"`
-	UpdatedAt        string   `json:"updated_at"`
+	PlanID          string   `json:"plan_id"`
+	Name            string   `json:"name"`
+	Label           string   `json:"label"`
+	Scope           []string `json:"scope"`
+	ScheduleKind    string   `json:"schedule_kind"`
+	DailyTime       string   `json:"daily_time,omitempty"`
+	MonthlyDay      int      `json:"monthly_day,omitempty"`
+	IntervalMinutes int      `json:"interval_minutes,omitempty"`
+	RetentionCount  int      `json:"retention_count"`
+	Enabled         bool     `json:"enabled"`
+	LastRunAt       string   `json:"last_run_at,omitempty"`
+	NextRunAt       string   `json:"next_run_at,omitempty"`
+	CreatedBy       string   `json:"created_by,omitempty"`
+	CreatedAt       string   `json:"created_at"`
+	UpdatedAt       string   `json:"updated_at"`
 }
 
 type BackupPreference struct {
@@ -30,20 +35,20 @@ type BackupPreference struct {
 }
 
 type PlanService struct {
-	DB      *sql.DB
-	Backup  *Service
-	mu      sync.Mutex
-	started bool
-	stopCh  chan struct{}
+	DB     *sql.DB
+	Backup *Service
+	mu     sync.Mutex
+	start  bool
+	stopCh chan struct{}
 }
 
 func (s *PlanService) Start() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.started {
+	if s.start {
 		return
 	}
-	s.started = true
+	s.start = true
 	s.stopCh = make(chan struct{})
 	go s.loop(s.stopCh)
 }
@@ -63,14 +68,12 @@ func (s *PlanService) loop(stopCh chan struct{}) {
 
 func (s *PlanService) runDuePlans() error {
 	now := time.Now().UTC()
-	rows, err := s.DB.Query(`SELECT plan_id,name,label,scope_json,interval_minutes,enabled,last_run_at,next_run_at,created_by,created_at,updated_at FROM backup_plans WHERE enabled=1`)
+	plans, err := s.ListPlans()
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		p, err := scanPlan(rows)
-		if err != nil {
+	for _, p := range plans {
+		if !p.Enabled || strings.TrimSpace(p.NextRunAt) == "" {
 			continue
 		}
 		nextAt, err := time.Parse(time.RFC3339, p.NextRunAt)
@@ -82,16 +85,43 @@ func (s *PlanService) runDuePlans() error {
 	return nil
 }
 
-func (s *PlanService) CreatePlan(name, label string, scope []string, intervalMinutes int, createdBy string) (*BackupPlan, error) {
-	if intervalMinutes <= 0 {
-		return nil, fmt.Errorf("interval_minutes must be > 0")
+func (s *PlanService) CreatePlan(p *BackupPlan, createdBy string) (*BackupPlan, error) {
+	if p == nil {
+		return nil, fmt.Errorf("plan is nil")
+	}
+	if strings.TrimSpace(p.Name) == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	if len(p.Scope) == 0 {
+		return nil, fmt.Errorf("scope is required")
+	}
+	if p.RetentionCount <= 0 {
+		p.RetentionCount = 30
+	}
+	nextRunAt, err := computeNextRunAt(p, time.Now().UTC())
+	if err != nil {
+		return nil, err
 	}
 	now := time.Now().UTC()
 	id := uuid.NewString()
-	scopeJSON, _ := json.Marshal(scope)
-	nextRunAt := now.Add(time.Duration(intervalMinutes) * time.Minute).Format(time.RFC3339)
-	_, err := s.DB.Exec(`INSERT INTO backup_plans(plan_id,name,label,scope_json,interval_minutes,enabled,last_run_at,next_run_at,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-		id, name, label, string(scopeJSON), intervalMinutes, 1, nil, nextRunAt, nullIfEmpty(createdBy), now.Format(time.RFC3339), now.Format(time.RFC3339))
+	scopeJSON, _ := json.Marshal(p.Scope)
+	_, err = s.DB.Exec(`INSERT INTO backup_plans(plan_id,name,label,scope_json,schedule_kind,daily_time,monthly_day,interval_minutes,retention_count,enabled,last_run_at,next_run_at,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		id,
+		p.Name,
+		p.Label,
+		string(scopeJSON),
+		normalizeScheduleKind(p.ScheduleKind),
+		nullIfEmpty(p.DailyTime),
+		nullIfZero(p.MonthlyDay),
+		nullIfZero(p.IntervalMinutes),
+		p.RetentionCount,
+		1,
+		nil,
+		nextRunAt,
+		nullIfEmpty(createdBy),
+		now.Format(time.RFC3339),
+		now.Format(time.RFC3339),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +129,7 @@ func (s *PlanService) CreatePlan(name, label string, scope []string, intervalMin
 }
 
 func (s *PlanService) ListPlans() ([]*BackupPlan, error) {
-	rows, err := s.DB.Query(`SELECT plan_id,name,label,scope_json,interval_minutes,enabled,last_run_at,next_run_at,created_by,created_at,updated_at FROM backup_plans ORDER BY created_at DESC`)
+	rows, err := s.DB.Query(`SELECT plan_id,name,label,scope_json,schedule_kind,daily_time,monthly_day,interval_minutes,retention_count,enabled,last_run_at,next_run_at,created_by,created_at,updated_at FROM backup_plans ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -115,19 +145,25 @@ func (s *PlanService) ListPlans() ([]*BackupPlan, error) {
 }
 
 func (s *PlanService) GetPlan(planID string) (*BackupPlan, error) {
-	row := s.DB.QueryRow(`SELECT plan_id,name,label,scope_json,interval_minutes,enabled,last_run_at,next_run_at,created_by,created_at,updated_at FROM backup_plans WHERE plan_id=?`, planID)
+	row := s.DB.QueryRow(`SELECT plan_id,name,label,scope_json,schedule_kind,daily_time,monthly_day,interval_minutes,retention_count,enabled,last_run_at,next_run_at,created_by,created_at,updated_at FROM backup_plans WHERE plan_id=?`, planID)
 	return scanPlan(row)
 }
 
-func (s *PlanService) UpdatePlan(planID, name, label string, scope []string, intervalMinutes int) (*BackupPlan, error) {
-	if intervalMinutes <= 0 {
-		return nil, fmt.Errorf("interval_minutes must be > 0")
+func (s *PlanService) UpdatePlan(planID string, p *BackupPlan) (*BackupPlan, error) {
+	if p == nil {
+		return nil, fmt.Errorf("plan is nil")
 	}
-	scopeJSON, _ := json.Marshal(scope)
+	if p.RetentionCount <= 0 {
+		p.RetentionCount = 30
+	}
+	nextRunAt, err := computeNextRunAt(p, time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+	scopeJSON, _ := json.Marshal(p.Scope)
 	now := time.Now().UTC()
-	nextRunAt := now.Add(time.Duration(intervalMinutes) * time.Minute).Format(time.RFC3339)
-	res, err := s.DB.Exec(`UPDATE backup_plans SET name=?,label=?,scope_json=?,interval_minutes=?,next_run_at=?,updated_at=? WHERE plan_id=?`,
-		name, label, string(scopeJSON), intervalMinutes, nextRunAt, now.Format(time.RFC3339), planID)
+	res, err := s.DB.Exec(`UPDATE backup_plans SET name=?,label=?,scope_json=?,schedule_kind=?,daily_time=?,monthly_day=?,interval_minutes=?,retention_count=?,next_run_at=?,updated_at=? WHERE plan_id=?`,
+		p.Name, p.Label, string(scopeJSON), normalizeScheduleKind(p.ScheduleKind), nullIfEmpty(p.DailyTime), nullIfZero(p.MonthlyDay), nullIfZero(p.IntervalMinutes), p.RetentionCount, nextRunAt, now.Format(time.RFC3339), planID)
 	if err != nil {
 		return nil, err
 	}
@@ -142,11 +178,15 @@ func (s *PlanService) SetPlanEnabled(planID string, enabled bool) error {
 	now := time.Now().UTC()
 	nextRunAt := interface{}(nil)
 	if enabled {
-		var intervalMinutes int
-		if err := s.DB.QueryRow(`SELECT interval_minutes FROM backup_plans WHERE plan_id=?`, planID).Scan(&intervalMinutes); err != nil {
+		p, err := s.GetPlan(planID)
+		if err != nil {
 			return err
 		}
-		nextRunAt = now.Add(time.Duration(intervalMinutes) * time.Minute).Format(time.RFC3339)
+		next, err := computeNextRunAt(p, now)
+		if err != nil {
+			return err
+		}
+		nextRunAt = next
 	}
 	res, err := s.DB.Exec(`UPDATE backup_plans SET enabled=?,next_run_at=?,updated_at=? WHERE plan_id=?`, boolToInt(enabled), nextRunAt, now.Format(time.RFC3339), planID)
 	if err != nil {
@@ -176,13 +216,42 @@ func (s *PlanService) ExecuteNow(planID, createdBy string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	backupID, err := s.Backup.Create(p.Scope, p.Label, createdBy)
+	backupID, err := s.Backup.Create(p.Scope, p.Label, createdBy, planID)
 	now := time.Now().UTC()
 	if err == nil {
-		next := now.Add(time.Duration(p.IntervalMinutes) * time.Minute).Format(time.RFC3339)
+		next, _ := computeNextRunAt(p, now)
 		_, _ = s.DB.Exec(`UPDATE backup_plans SET last_run_at=?,next_run_at=?,updated_at=? WHERE plan_id=?`, now.Format(time.RFC3339), next, now.Format(time.RFC3339), planID)
+		_ = s.pruneBackups(planID, p.RetentionCount)
 	}
 	return backupID, err
+}
+
+func (s *PlanService) pruneBackups(planID string, retention int) error {
+	if retention <= 0 {
+		retention = 30
+	}
+	type item struct{ id string }
+	rows, err := s.DB.Query(`SELECT backup_id FROM backups WHERE plan_id=? ORDER BY created_at DESC`, planID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) <= retention {
+		return nil
+	}
+	for _, id := range ids[retention:] {
+		_, _ = s.DB.Exec(`DELETE FROM backups WHERE backup_id=?`, id)
+		_ = removeIfExists(s.Backup.BackupHome + "/" + id + ".tar.gz")
+		_ = removeIfExists(s.Backup.BackupHome + "/" + id + ".manifest.json")
+	}
+	return nil
 }
 
 func (s *PlanService) SavePreference(userID, label string, scope []string) error {
@@ -217,12 +286,22 @@ func scanPlan(scanner interface{ Scan(dest ...any) error }) (*BackupPlan, error)
 	var p BackupPlan
 	var scopeJSON string
 	var enabledInt int
-	var lastRunAt, nextRunAt, createdBy sql.NullString
-	if err := scanner.Scan(&p.PlanID, &p.Name, &p.Label, &scopeJSON, &p.IntervalMinutes, &enabledInt, &lastRunAt, &nextRunAt, &createdBy, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	var lastRunAt, nextRunAt, createdBy, dailyTime sql.NullString
+	var monthlyDay, intervalMinutes sql.NullInt64
+	if err := scanner.Scan(&p.PlanID, &p.Name, &p.Label, &scopeJSON, &p.ScheduleKind, &dailyTime, &monthlyDay, &intervalMinutes, &p.RetentionCount, &enabledInt, &lastRunAt, &nextRunAt, &createdBy, &p.CreatedAt, &p.UpdatedAt); err != nil {
 		return nil, err
 	}
 	_ = json.Unmarshal([]byte(scopeJSON), &p.Scope)
 	p.Enabled = enabledInt == 1
+	if dailyTime.Valid {
+		p.DailyTime = dailyTime.String
+	}
+	if monthlyDay.Valid {
+		p.MonthlyDay = int(monthlyDay.Int64)
+	}
+	if intervalMinutes.Valid {
+		p.IntervalMinutes = int(intervalMinutes.Int64)
+	}
 	if lastRunAt.Valid {
 		p.LastRunAt = lastRunAt.String
 	}
@@ -232,7 +311,114 @@ func scanPlan(scanner interface{ Scan(dest ...any) error }) (*BackupPlan, error)
 	if createdBy.Valid {
 		p.CreatedBy = createdBy.String
 	}
+	if p.RetentionCount <= 0 {
+		p.RetentionCount = 30
+	}
 	return &p, nil
+}
+
+func computeNextRunAt(p *BackupPlan, from time.Time) (string, error) {
+	kind := normalizeScheduleKind(p.ScheduleKind)
+	now := from.UTC().Truncate(time.Second)
+	switch kind {
+	case "daily":
+		h, m, s, err := parseHMS(p.DailyTime)
+		if err != nil {
+			return "", fmt.Errorf("daily_time invalid: %w", err)
+		}
+		next := time.Date(now.Year(), now.Month(), now.Day(), h, m, s, 0, time.UTC)
+		if !next.After(now) {
+			next = next.Add(24 * time.Hour)
+		}
+		return next.Format(time.RFC3339), nil
+	case "monthly":
+		h, m, s, err := parseHMS(p.DailyTime)
+		if err != nil {
+			return "", fmt.Errorf("daily_time invalid: %w", err)
+		}
+		if p.MonthlyDay < 1 || p.MonthlyDay > 31 {
+			return "", fmt.Errorf("monthly_day must be 1..31")
+		}
+		y, mon := now.Year(), now.Month()
+		next := monthlyAt(y, mon, p.MonthlyDay, h, m, s)
+		if !next.After(now) {
+			mon++
+			if mon > 12 {
+				mon = 1
+				y++
+			}
+			next = monthlyAt(y, mon, p.MonthlyDay, h, m, s)
+		}
+		return next.Format(time.RFC3339), nil
+	default:
+		if p.IntervalMinutes <= 0 {
+			return "", fmt.Errorf("interval_minutes must be > 0")
+		}
+		return now.Add(time.Duration(p.IntervalMinutes) * time.Minute).Format(time.RFC3339), nil
+	}
+}
+
+func monthlyAt(year int, month time.Month, day, hour, minute, second int) time.Time {
+	maxDay := daysInMonth(year, month)
+	if day > maxDay {
+		day = maxDay
+	}
+	return time.Date(year, month, day, hour, minute, second, 0, time.UTC)
+}
+
+func daysInMonth(year int, month time.Month) int {
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+func parseHMS(v string) (int, int, int, error) {
+	parts := strings.Split(strings.TrimSpace(v), ":")
+	if len(parts) != 3 {
+		return 0, 0, 0, fmt.Errorf("must be HH:MM:SS")
+	}
+	vals := make([]int, 3)
+	for i := 0; i < 3; i++ {
+		n, err := atoi(parts[i])
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		vals[i] = n
+	}
+	if vals[0] < 0 || vals[0] > 23 || vals[1] < 0 || vals[1] > 59 || vals[2] < 0 || vals[2] > 59 {
+		return 0, 0, 0, fmt.Errorf("must be valid time")
+	}
+	return vals[0], vals[1], vals[2], nil
+}
+
+func atoi(v string) (int, error) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0, fmt.Errorf("empty")
+	}
+	n := 0
+	for _, ch := range v {
+		if ch < '0' || ch > '9' {
+			return 0, fmt.Errorf("invalid number")
+		}
+		n = n*10 + int(ch-'0')
+	}
+	return n, nil
+}
+
+func normalizeScheduleKind(kind string) string {
+	k := strings.ToLower(strings.TrimSpace(kind))
+	switch k {
+	case "daily", "monthly":
+		return k
+	default:
+		return "interval"
+	}
+}
+
+func nullIfZero(v int) any {
+	if v == 0 {
+		return nil
+	}
+	return v
 }
 
 func boolToInt(v bool) int {
@@ -241,3 +427,4 @@ func boolToInt(v bool) int {
 	}
 	return 0
 }
+

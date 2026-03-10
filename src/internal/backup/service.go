@@ -34,7 +34,7 @@ type Manifest struct {
 	CreatedBy string   `json:"created_by"`
 }
 
-func (s *Service) Create(scope []string, label, createdBy string) (string, error) {
+func (s *Service) Create(scope []string, label, createdBy string, planIDs ...string) (string, error) {
 	id := uuid.NewString()
 	if err := os.MkdirAll(s.BackupHome, 0o755); err != nil {
 		return "", err
@@ -54,8 +54,12 @@ func (s *Service) Create(scope []string, label, createdBy string) (string, error
 	if err := os.WriteFile(manifestPath, mb, 0o644); err != nil {
 		return "", err
 	}
-	_, err = s.DB.Exec(`INSERT INTO backups(backup_id,label,scope_json,manifest_path,size_bytes,sha256,verified,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)`,
-		id, label, string(mb), manifestPath, size, sha, 1, nullIfEmpty(createdBy), time.Now().UTC().Format(time.RFC3339))
+	var planID any
+	if len(planIDs) > 0 && strings.TrimSpace(planIDs[0]) != "" {
+		planID = planIDs[0]
+	}
+	_, err = s.DB.Exec(`INSERT INTO backups(backup_id,label,scope_json,manifest_path,size_bytes,sha256,verified,created_by,created_at,plan_id) VALUES(?,?,?,?,?,?,?,?,?,?)`,
+		id, label, string(mb), manifestPath, size, sha, 1, nullIfEmpty(createdBy), time.Now().UTC().Format(time.RFC3339), planID)
 	if err != nil {
 		return "", err
 	}
@@ -81,10 +85,25 @@ func (s *Service) resolveScope(scope []string) []string {
 		home, _ := os.UserHomeDir()
 		out = append(out, filepath.Join(home, ".config/systemd/user/openclaw-gateway.service"))
 	}
-	if set["manager_revisions"] {
-		out = append(out, filepath.Join(s.ManagerHome, "revisions"))
+	if set["manager_db"] {
+		out = append(out, s.resolveManagerDBPaths()...)
 	}
 	return uniqPaths(out)
+}
+
+func (s *Service) resolveManagerDBPaths() []string {
+	base := ""
+	if strings.TrimSpace(s.ManagerHome) != "" {
+		base = filepath.Join(s.ManagerHome, "manager.db")
+	} else {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			base = filepath.Join(".", "manager.db")
+		} else {
+			base = filepath.Join(home, ".openclaw-manager", "manager.db")
+		}
+	}
+	return []string{base, base + "-wal", base + "-shm"}
 }
 
 func (s *Service) resolveOpenclawCoreConfigPaths() []string {

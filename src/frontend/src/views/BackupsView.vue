@@ -51,8 +51,24 @@
         <el-form-item label="标签">
           <el-input v-model="planForm.label" placeholder="可选" />
         </el-form-item>
-        <el-form-item label="间隔(分钟)">
+        <el-form-item label="调度类型">
+          <el-select v-model="planForm.schedule_kind" style="width: 140px">
+            <el-option label="每天" value="daily" />
+            <el-option label="每月" value="monthly" />
+            <el-option label="固定间隔" value="interval" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="planForm.schedule_kind === 'daily' || planForm.schedule_kind === 'monthly'" label="执行时间(HH:MM:SS)">
+          <el-input v-model="planForm.daily_time" placeholder="02:00:00" style="width: 140px" />
+        </el-form-item>
+        <el-form-item v-if="planForm.schedule_kind === 'monthly'" label="每月几号">
+          <el-input-number v-model="planForm.monthly_day" :min="1" :max="31" />
+        </el-form-item>
+        <el-form-item v-if="planForm.schedule_kind === 'interval'" label="间隔(分钟)">
           <el-input-number v-model="planForm.interval_minutes" :min="1" :max="10080" />
+        </el-form-item>
+        <el-form-item label="最多保留份数">
+          <el-input-number v-model="planForm.retention_count" :min="1" :max="999" />
         </el-form-item>
       </el-form>
       <el-form-item label="备份范围">
@@ -66,9 +82,10 @@
 
       <el-table :data="plans" row-key="plan_id" style="width: 100%; margin-top: 12px">
         <el-table-column prop="name" label="名称" min-width="180" />
-        <el-table-column prop="interval_minutes" label="间隔" width="100">
-          <template #default="{ row }">{{ row.interval_minutes }} min</template>
+        <el-table-column label="调度" min-width="180">
+          <template #default="{ row }">{{ formatPlanSchedule(row) }}</template>
         </el-table-column>
+        <el-table-column prop="retention_count" label="保留份数" width="100" />
         <el-table-column prop="next_run_at" label="下次执行" min-width="180">
           <template #default="{ row }">{{ formatDateTime(row.next_run_at) }}</template>
         </el-table-column>
@@ -233,7 +250,11 @@ type PlanItem = {
   name: string
   label: string
   scope: string[]
-  interval_minutes: number
+  schedule_kind: 'interval' | 'daily' | 'monthly'
+  daily_time?: string
+  monthly_day?: number
+  interval_minutes?: number
+  retention_count: number
   enabled: boolean
   next_run_at: string
 }
@@ -259,7 +280,11 @@ const planForm = ref({
   name: '',
   label: '',
   scope: ['openclaw_json', 'global_skills'],
-  interval_minutes: 1440
+  schedule_kind: 'daily',
+  daily_time: '02:00:00',
+  monthly_day: 1,
+  interval_minutes: 1440,
+  retention_count: 30
 })
 
 const scopeOptions = [
@@ -304,6 +329,16 @@ function formatDateTime(v: string): string {
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
   return typeof msg === 'string' && msg ? msg : fallback
+}
+
+function formatPlanSchedule(row: PlanItem): string {
+  if (row.schedule_kind === 'daily') {
+    return `每天 ${row.daily_time || '00:00:00'}`
+  }
+  if (row.schedule_kind === 'monthly') {
+    return `每月${row.monthly_day || 1}号 ${row.daily_time || '00:00:00'}`
+  }
+  return `每${row.interval_minutes || 0}分钟`
 }
 
 function asPrettyJSON(v: any): string {
@@ -380,8 +415,22 @@ async function loadPlans() {
 
 async function createPlan() {
   if (!canCreate.value) return
-  if (!planForm.value.name.trim() || planForm.value.scope.length === 0 || planForm.value.interval_minutes <= 0) {
+  const mode = planForm.value.schedule_kind
+  const needTime = mode === 'daily' || mode === 'monthly'
+  if (!planForm.value.name.trim() || planForm.value.scope.length === 0) {
     ElMessage.warning('请填写完整的计划信息')
+    return
+  }
+  if (mode === 'interval' && planForm.value.interval_minutes <= 0) {
+    ElMessage.warning('间隔分钟需要大于 0')
+    return
+  }
+  if (needTime && !/^\d{2}:\d{2}:\d{2}$/.test(planForm.value.daily_time)) {
+    ElMessage.warning('时间格式必须是 HH:MM:SS')
+    return
+  }
+  if (mode === 'monthly' && (planForm.value.monthly_day < 1 || planForm.value.monthly_day > 31)) {
+    ElMessage.warning('每月几号必须在 1..31')
     return
   }
   try {
@@ -389,7 +438,11 @@ async function createPlan() {
       name: planForm.value.name.trim(),
       label: planForm.value.label.trim(),
       scope: planForm.value.scope,
-      interval_minutes: planForm.value.interval_minutes
+      schedule_kind: planForm.value.schedule_kind,
+      daily_time: planForm.value.daily_time,
+      monthly_day: planForm.value.monthly_day,
+      interval_minutes: planForm.value.interval_minutes,
+      retention_count: planForm.value.retention_count
     })
     ElMessage.success('计划创建成功')
     planForm.value.name = ''
