@@ -191,6 +191,7 @@ type GraphEdge = {
   channel: string
   account: string
   peer: string
+  peer_raw?: any
   source: string
 }
 
@@ -429,6 +430,7 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     channel: string
     account: string
     peer?: string
+    peerRaw?: any
     source: string
   }) => {
     const agentID = String(payload.agentID || '').trim()
@@ -449,6 +451,7 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
       channel,
       account,
       peer,
+      peer_raw: payload.peerRaw,
       source: payload.source
     })
   }
@@ -494,10 +497,10 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     }
   }
 
-  const applyBinding = (channel: string, account: string, rawAgent: any, source: string, peer = '') => {
+  const applyBinding = (channel: string, account: string, rawAgent: any, source: string, peer = '', peerRaw: any = undefined) => {
     const agentID = String(rawAgent ?? '').trim()
     if (!agentID) return
-    addEdge({ agentID, channel, account, peer, source })
+    addEdge({ agentID, channel, account, peer, peerRaw, source })
   }
 
   const parseBindingTarget = (channel: string, account: string, target: any, source: string) => {
@@ -522,13 +525,13 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
       const matchAccount = pickString(target.match, ['accountId', 'account', 'bot', 'bot_id']) || directAccount
       const matchPeer = parsePeerText(target.match.peer) || peer
       if (directAgent && matchChannel && matchAccount) {
-        applyBinding(matchChannel, matchAccount, directAgent, source, matchPeer)
+        applyBinding(matchChannel, matchAccount, directAgent, source, matchPeer, target.match.peer)
         return
       }
     }
 
     if (directAgent && directChannel && directAccount) {
-      applyBinding(directChannel, directAccount, directAgent, source, peer)
+      applyBinding(directChannel, directAccount, directAgent, source, peer, target.peer)
       return
     }
 
@@ -549,7 +552,7 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
         const account = pickString(item, ['account', 'accountId', 'bot', 'bot_id'])
         const agentID = pickString(item, ['agent_id', 'agentId', 'agent'])
         if (account && agentID) {
-          applyBinding(channel, account, agentID, `${source}[${index}]`, parsePeerText(item.peer) || pickString(item, ['target', 'to']))
+          applyBinding(channel, account, agentID, `${source}[${index}]`, parsePeerText(item.peer) || pickString(item, ['target', 'to']), item.peer)
           return
         }
         for (const [accountKey, target] of Object.entries(item)) {
@@ -564,7 +567,7 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     const singleAccount = pickString(raw, ['account', 'accountId', 'bot', 'bot_id'])
     const singleAgent = pickString(raw, ['agent_id', 'agentId', 'agent'])
     if (singleAccount && singleAgent) {
-      applyBinding(channel, singleAccount, singleAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']))
+      applyBinding(channel, singleAccount, singleAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']), raw.peer)
       return
     }
 
@@ -589,7 +592,8 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
         const agentID = pickString(item, ['agent_id', 'agentId', 'agent'])
         if (channel && account && agentID) {
           const peer = match ? parsePeerText(match.peer) : parsePeerText(item.peer)
-          applyBinding(channel, account, agentID, `${source}[${index}]`, peer || pickString(item, ['target', 'to']))
+          const peerRaw = match ? match.peer : item.peer
+          applyBinding(channel, account, agentID, `${source}[${index}]`, peer || pickString(item, ['target', 'to']), peerRaw)
           return
         }
         for (const [channelKey, value] of Object.entries(item)) {
@@ -605,7 +609,7 @@ function extractGraphFromConfig(config: any): GraphSnapshot {
     const directAccount = pickString(raw, ['account', 'accountId', 'bot', 'bot_id'])
     const directAgent = pickString(raw, ['agent_id', 'agentId', 'agent'])
     if (directChannel && directAccount && directAgent) {
-      applyBinding(directChannel, directAccount, directAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']))
+      applyBinding(directChannel, directAccount, directAgent, source, parsePeerText(raw.peer) || pickString(raw, ['target', 'to']), raw.peer)
       return
     }
 
@@ -856,22 +860,50 @@ function cancelEdit() {
 }
 
 function buildBindingsPayload(edges: GraphEdge[]) {
-  const bindings: Record<string, Record<string, any>> = {}
-  for (const edge of edges) {
-    if (!bindings[edge.channel]) bindings[edge.channel] = {}
-    const current = bindings[edge.channel][edge.account]
-    const value = edge.peer ? { agent_id: edge.agent_id, peer: edge.peer } : edge.agent_id
-    if (!current) {
-      bindings[edge.channel][edge.account] = value
-      continue
-    }
-    if (Array.isArray(current)) {
-      current.push(value)
-      continue
-    }
-    bindings[edge.channel][edge.account] = [current, value]
+  const oldBindings = Array.isArray(rawConfig.value?.bindings) ? rawConfig.value.bindings : []
+  const byExactKey = new Map<string, AnyRecord>()
+  const byChannel = new Map<string, AnyRecord>()
+
+  for (const item of oldBindings) {
+    if (!isRecord(item) || !isRecord(item.match)) continue
+    const channel = pickString(item.match, ['channel'])
+    const account = pickString(item.match, ['accountId', 'account'])
+    if (!channel || !account) continue
+    const peerText = parsePeerText(item.match.peer)
+    const key = `${channel}|${account}|${peerText}`
+    if (!byExactKey.has(key)) byExactKey.set(key, item)
+    if (!byChannel.has(channel)) byChannel.set(channel, item)
   }
-  return bindings
+
+  const out: AnyRecord[] = []
+  for (const edge of edges) {
+    const exactKey = `${edge.channel}|${edge.account}|${edge.peer || parsePeerText(edge.peer_raw)}`
+    const template = byExactKey.get(exactKey) || byChannel.get(edge.channel)
+
+    const next: AnyRecord = template ? JSON.parse(JSON.stringify(template)) : { agentId: '', match: {} }
+    if (!isRecord(next.match)) next.match = {}
+
+    next.agentId = edge.agent_id
+    next.match.channel = edge.channel
+    next.match.accountId = edge.account
+
+    if (edge.peer_raw !== undefined) {
+      next.match.peer = edge.peer_raw
+    } else if (edge.peer) {
+      const parts = edge.peer.split(':')
+      if (parts.length === 2) {
+        next.match.peer = { kind: parts[0], id: parts[1] }
+      }
+    }
+
+    if (edge.channel === 'qqbot') {
+      delete next.match.peer
+    }
+
+    out.push(next)
+  }
+
+  return out
 }
 
 function removeEdge(edgeID: string) {
