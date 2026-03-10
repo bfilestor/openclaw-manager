@@ -63,7 +63,7 @@
 
     <el-dialog v-model="createVisible" :title="t('agents.create.title')" width="520px">
       <el-form :model="createForm" label-position="top">
-        <el-form-item :label="t('agents.create.agentIdLabel')" :error="agentIdError">
+        <el-form-item :label="t('agents.create.agentIdLabel')" :error="agentIdError" required>
           <el-input v-model="createForm.agent_id" :placeholder="t('agents.create.agentIdPlaceholder')" />
         </el-form-item>
         <el-form-item :label="t('agents.create.templateLabel')">
@@ -76,7 +76,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-alert :title="t('agents.create.workspaceHint')" type="info" :closable="false" />
+        <el-alert :title="workspaceHintText" type="info" :closable="false" />
       </el-form>
       <template #footer>
         <el-space>
@@ -114,6 +114,10 @@ const createForm = ref({
 const totalBindings = computed(() => agents.value.reduce((sum, it) => sum + (it.bindings_count || 0), 0))
 const router = useRouter()
 const { t } = useI18n()
+const workspaceHintText = computed(() => {
+  const agent = createForm.value.agent_id.trim() || '{agent_name}'
+  return t('agents.create.workspaceHint', { agent })
+})
 
 function goBindings() {
   router.push('/bindings')
@@ -143,6 +147,10 @@ function isValidCreateAgentID(agentID: string) {
 async function submitCreateAgent() {
   const agentID = createForm.value.agent_id.trim()
   const templateID = createForm.value.template_agent_id.trim()
+  if (!agentID) {
+    agentIdError.value = t('agents.create.agentIdRequired')
+    return
+  }
   if (!isValidCreateAgentID(agentID)) {
     agentIdError.value = t('agents.create.agentIdError')
     return
