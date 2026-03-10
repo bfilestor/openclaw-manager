@@ -4,7 +4,7 @@ BINARY := bin/managerd
 
 build:
 	mkdir -p bin
-	go build -o $(BINARY) ./cmd/server
+	CGO_ENABLED=0 go build -o $(BINARY) ./cmd/server
 
 run:
 	go run ./cmd/server
