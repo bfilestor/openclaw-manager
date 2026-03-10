@@ -2,7 +2,10 @@
   <div class="agents-page">
     <div class="topbar">
       <h3>{{ t('agents.title') }}</h3>
-      <el-button :loading="loading" @click="loadAgents">{{ t('common.actions.refresh') }}</el-button>
+      <el-space>
+        <el-button type="primary" @click="openCreateDialog">{{ t('agents.create.button') }}</el-button>
+        <el-button :loading="loading" @click="loadAgents">{{ t('common.actions.refresh') }}</el-button>
+      </el-space>
     </div>
 
     <el-alert
@@ -57,6 +60,31 @@
         :description="t('agents.empty')"
       />
     </el-card>
+
+    <el-dialog v-model="createVisible" :title="t('agents.create.title')" width="520px">
+      <el-form :model="createForm" label-position="top">
+        <el-form-item :label="t('agents.create.agentIdLabel')" :error="agentIdError">
+          <el-input v-model="createForm.agent_id" :placeholder="t('agents.create.agentIdPlaceholder')" />
+        </el-form-item>
+        <el-form-item :label="t('agents.create.templateLabel')">
+          <el-select v-model="createForm.template_agent_id" style="width: 100%" :placeholder="t('agents.create.templatePlaceholder')">
+            <el-option
+              v-for="item in agents"
+              :key="item.agent_id"
+              :label="item.agent_id"
+              :value="item.agent_id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-alert :title="t('agents.create.workspaceHint')" type="info" :closable="false" />
+      </el-form>
+      <template #footer>
+        <el-space>
+          <el-button @click="createVisible = false">{{ t('common.actions.cancel') }}</el-button>
+          <el-button type="primary" :loading="createLoading" @click="submitCreateAgent">{{ t('agents.create.submit') }}</el-button>
+        </el-space>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -74,8 +102,15 @@ type AgentItem = {
 }
 
 const loading = ref(false)
+const createLoading = ref(false)
+const createVisible = ref(false)
 const errorMessage = ref('')
+const agentIdError = ref('')
 const agents = ref<AgentItem[]>([])
+const createForm = ref({
+  agent_id: '',
+  template_agent_id: ''
+})
 const totalBindings = computed(() => agents.value.reduce((sum, it) => sum + (it.bindings_count || 0), 0))
 const router = useRouter()
 const { t } = useI18n()
@@ -90,6 +125,47 @@ function goMigrate(row: AgentItem) {
 
 function goDetails(row: AgentItem) {
   router.push(`/agents/${encodeURIComponent(row.agent_id)}/workspace-files`)
+}
+
+function openCreateDialog() {
+  createForm.value = {
+    agent_id: '',
+    template_agent_id: agents.value[0]?.agent_id || ''
+  }
+  agentIdError.value = ''
+  createVisible.value = true
+}
+
+function isValidCreateAgentID(agentID: string) {
+  return /^[A-Za-z0-9_]{1,64}$/.test(agentID)
+}
+
+async function submitCreateAgent() {
+  const agentID = createForm.value.agent_id.trim()
+  const templateID = createForm.value.template_agent_id.trim()
+  if (!isValidCreateAgentID(agentID)) {
+    agentIdError.value = t('agents.create.agentIdError')
+    return
+  }
+  if (!templateID) {
+    ElMessage.error(t('agents.create.templateRequired'))
+    return
+  }
+  agentIdError.value = ''
+  createLoading.value = true
+  try {
+    await axios.post('/api/v1/agents', {
+      agent_id: agentID,
+      template_agent_id: templateID
+    })
+    createVisible.value = false
+    await loadAgents()
+    ElMessage.success(t('agents.create.createdAndBindingHint'))
+  } catch {
+    ElMessage.error(t('agents.create.createFailed'))
+  } finally {
+    createLoading.value = false
+  }
 }
 
 async function loadAgents() {

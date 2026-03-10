@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -28,7 +29,19 @@ type ManageHandler struct {
 }
 
 type createReq struct {
-	AgentID string `json:"agent_id"`
+	AgentID         string `json:"agent_id"`
+	TemplateAgentID string `json:"template_agent_id"`
+}
+
+var templateMarkdownFiles = []string{
+	"AGENTS.md",
+	"BOOTSTRAP.md",
+	"HEARTBEAT.md",
+	"IDENTITY.md",
+	"MEMORY.md",
+	"SOUL.md",
+	"TOOLS.md",
+	"USER.md",
 }
 
 func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
@@ -37,13 +50,38 @@ func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if !validAgentID(req.AgentID) {
+	req.AgentID = strings.TrimSpace(req.AgentID)
+	req.TemplateAgentID = strings.TrimSpace(req.TemplateAgentID)
+	if !validCreateAgentID(req.AgentID) {
 		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"agent_id": "invalid"}))
 		return
 	}
+	if !validAgentID(req.TemplateAgentID) {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"template_agent_id": "invalid"}))
+		return
+	}
+	if req.AgentID == req.TemplateAgentID {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"template_agent_id": "must be different from agent_id"}))
+		return
+	}
+	if h.Workspaces == nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_IMPLEMENTED", Message: "workspace resolver not configured", StatusCode: http.StatusNotImplemented})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
-	_, err := h.Exec.Run(ctx, "openclaw", "agents", "create", req.AgentID)
+	templateWorkspace, err := h.Workspaces.GetWorkspacePath(ctx, req.TemplateAgentID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_FOUND", Message: "template agent not found", StatusCode: http.StatusNotFound})
+			return
+		}
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	_, err = h.Exec.Run(ctx, "openclaw", "agents", "create", req.AgentID)
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok && strings.Contains(strings.ToLower(string(ee.Stderr)), "exist") {
 			middleware.WriteAppError(w, &middleware.AppError{Code: "CONFLICT", Message: "agent exists", StatusCode: http.StatusConflict})
@@ -52,8 +90,29 @@ func (h *ManageHandler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte(`{"task_type":"agent.add","status":"PENDING"}`))
+
+	workspacePath := h.newWorkspacePath(req.AgentID)
+	if err := copyTemplateWorkspaceFiles(templateWorkspace, workspacePath, templateMarkdownFiles); err != nil {
+		_, _ = h.Exec.Run(ctx, "openclaw", "agents", "delete", req.AgentID)
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if err := h.updateOpenClawWorkspace(req.AgentID, workspacePath); err != nil {
+		_, _ = h.Exec.Run(ctx, "openclaw", "agents", "delete", req.AgentID)
+		_ = os.RemoveAll(workspacePath)
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"message":             "agent created",
+		"agent_id":            req.AgentID,
+		"template_agent_id":   req.TemplateAgentID,
+		"workspace_path":      workspacePath,
+		"bindings_suggestion": "go to /bindings",
+	})
 }
 
 func (h *ManageHandler) DeleteAgent(w http.ResponseWriter, r *http.Request) {
@@ -292,4 +351,47 @@ func copyPath(src, dst string) error {
 func asString(v any) string {
 	s, _ := v.(string)
 	return s
+}
+
+func validCreateAgentID(id string) bool {
+	if !validAgentID(id) {
+		return false
+	}
+	for _, ch := range id {
+		if ch == '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *ManageHandler) newWorkspacePath(agentID string) string {
+	jsonPath := strings.TrimSpace(h.OpenClawJSONPath)
+	if jsonPath != "" {
+		return filepath.Join(filepath.Dir(jsonPath), "workspace-"+agentID)
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".openclaw", "workspace-"+agentID)
+}
+
+func copyTemplateWorkspaceFiles(templateWorkspace, targetWorkspace string, files []string) error {
+	templateWorkspace = filepath.Clean(templateWorkspace)
+	targetWorkspace = filepath.Clean(targetWorkspace)
+	if templateWorkspace == "" {
+		return &middleware.AppError{Code: "VALIDATION_ERROR", Message: "template workspace is empty", StatusCode: http.StatusBadRequest}
+	}
+	if _, err := os.Stat(targetWorkspace); err == nil {
+		return &middleware.AppError{Code: "CONFLICT", Message: "target workspace already exists", StatusCode: http.StatusConflict}
+	}
+	if err := os.MkdirAll(targetWorkspace, 0o755); err != nil {
+		return err
+	}
+	for _, name := range files {
+		src := filepath.Join(templateWorkspace, name)
+		dst := filepath.Join(targetWorkspace, name)
+		if err := copyPath(src, dst); err != nil {
+			return fmt.Errorf("copy %s: %w", name, err)
+		}
+	}
+	return nil
 }

@@ -230,6 +230,20 @@ export default {
       loadFailedHint: '加载 Agent 列表失败，请检查服务状态后重试',
       loadFailed: '加载 Agent 列表失败',
     },
+    create: {
+      button: '新增 Agent',
+      title: '新增 Agent',
+      agentIdLabel: 'Agent 名称',
+      agentIdPlaceholder: '仅支持字母、数字、下划线，例如 code_01',
+      agentIdError: 'Agent 名称只能包含字母、数字、下划线，且长度不超过 64',
+      templateLabel: '模板 Agent',
+      templatePlaceholder: '请选择一个已有 Agent 作为模板',
+      templateRequired: '请先选择模板 Agent',
+      workspaceHint: '新工作空间会创建为 ~/.openclaw/workspace-{agent_id}',
+      submit: '创建',
+      createFailed: '创建 Agent 失败',
+      createdAndBindingHint: 'Agent 已创建并刷新列表，可前往 /Bindings 页面进行 bot 绑定',
+    },
   },
   sessions: {
     title: 'Agent 办公室实况',
@@ -534,6 +548,7 @@ export default {
       workspaces: 'agents workspaces',
       user_systemd_unit: 'user systemd unit',
       manager_revisions: 'manager revisions',
+      manager_db: 'manager 数据库 (SQLite)',
     },
     columns: {
       label: '标签',

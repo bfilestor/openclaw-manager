@@ -230,6 +230,20 @@ export default {
       loadFailedHint: 'Failed to load agent list, please check service status and retry',
       loadFailed: 'Failed to load agent list',
     },
+    create: {
+      button: 'Add Agent',
+      title: 'Create Agent',
+      agentIdLabel: 'Agent Name',
+      agentIdPlaceholder: 'Only letters, numbers, underscore, for example code_01',
+      agentIdError: 'Agent name can only contain letters, numbers, underscore (max 64 chars)',
+      templateLabel: 'Template Agent',
+      templatePlaceholder: 'Select an existing agent as template',
+      templateRequired: 'Please select a template agent',
+      workspaceHint: 'New workspace will be created as ~/.openclaw/workspace-{agent_id}',
+      submit: 'Create',
+      createFailed: 'Failed to create agent',
+      createdAndBindingHint: 'Agent created and list refreshed, you can go to /Bindings to bind bot now',
+    },
   },
   sessions: {
     title: 'Agent Office Live',
@@ -534,6 +548,7 @@ export default {
       workspaces: 'agents workspaces',
       user_systemd_unit: 'user systemd unit',
       manager_revisions: 'manager revisions',
+      manager_db: 'manager database (SQLite)',
     },
     columns: {
       label: 'Label',
