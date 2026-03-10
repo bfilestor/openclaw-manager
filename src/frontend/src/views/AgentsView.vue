@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -144,6 +144,25 @@ function isValidCreateAgentID(agentID: string) {
   return /^[A-Za-z0-9_]{1,64}$/.test(agentID)
 }
 
+function extractCreateError(err: unknown) {
+  const fallback = t('agents.create.createFailed')
+  const axiosErr = err as AxiosError<any>
+  const data = axiosErr?.response?.data
+  if (data?.fields && typeof data.fields === 'object') {
+    const fields = Object.values(data.fields).filter((it) => typeof it === 'string') as string[]
+    if (fields.length > 0) {
+      return `${fallback}: ${fields.join(', ')}`
+    }
+  }
+  if (typeof data?.error === 'string' && data.error.trim()) {
+    return `${fallback}: ${data.error}`
+  }
+  if (typeof data?.detail === 'string' && data.detail.trim()) {
+    return `${fallback}: ${data.detail}`
+  }
+  return fallback
+}
+
 async function submitCreateAgent() {
   const agentID = createForm.value.agent_id.trim()
   const templateID = createForm.value.template_agent_id.trim()
@@ -169,8 +188,8 @@ async function submitCreateAgent() {
     createVisible.value = false
     await loadAgents()
     ElMessage.success(t('agents.create.createdAndBindingHint'))
-  } catch {
-    ElMessage.error(t('agents.create.createFailed'))
+  } catch (err) {
+    ElMessage.error(extractCreateError(err))
   } finally {
     createLoading.value = false
   }
