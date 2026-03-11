@@ -161,6 +161,7 @@ const navItems: NavItem[] = [
   { path: '/skills', labelKey: 'app.nav.skills', icon: '🧩' },
   { path: '/config', labelKey: 'app.nav.config', icon: '⚙️' },
   { path: '/qqbot', labelKey: 'app.nav.qqbot', icon: '🐧' },
+  { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐' },
   { path: '/backups', labelKey: 'app.nav.backups', icon: '💾' },
   { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅' },
   { path: '/shell', labelKey: 'app.nav.shell', icon: '🖥️' },

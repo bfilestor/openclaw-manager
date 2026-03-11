@@ -18,6 +18,7 @@ import AgentWorkspaceMigrateView from './views/AgentWorkspaceMigrateView.vue'
 import AgentWorkspaceFilesView from './views/AgentWorkspaceFilesView.vue'
 import AgentWorkspaceFileEditorView from './views/AgentWorkspaceFileEditorView.vue'
 import QQBotManageView from './views/QQBotManageView.vue'
+import ApiProvidersView from './views/ApiProvidersView.vue'
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -33,6 +34,7 @@ const routes = [
   { path: '/skills', component: SkillsView, meta: { auth: true } },
   { path: '/config', component: ConfigView, meta: { auth: true } },
   { path: '/qqbot', component: QQBotManageView, meta: { auth: true } },
+  { path: '/api-providers', component: ApiProvidersView, meta: { auth: true } },
   { path: '/backups', component: BackupsView, meta: { auth: true } },
   { path: '/shell', component: TaskShellView, meta: { auth: true } },
   { path: '/tasks', component: TasksView, meta: { auth: true } },
