@@ -11,9 +11,10 @@ ARCHIVE_NAME="${PACKAGE_NAME}-${TIMESTAMP}.tar.gz"
 ARCHIVE_PATH="$PUBLIC_DIR/$ARCHIVE_NAME"
 
 MANAGERD_SRC="$ROOT_DIR/src/bin/managerd"
-CONFIG_SRC="$ROOT_DIR/src/bin/config.toml"
+CONFIG_SRC="$ROOT_DIR/config/config.toml"
 DIST_SRC="$ROOT_DIR/src/frontend/dist"
 INSTALL_SRC="$ROOT_DIR/scripts/install.sh"
+UNINSTALL_SRC="$ROOT_DIR/scripts/uninstall-service.sh"
 SERVICE_SRC="$ROOT_DIR/service/openclaw-manager.service"
 
 for path in "$MANAGERD_SRC" "$CONFIG_SRC" "$DIST_SRC" "$INSTALL_SRC" "$SERVICE_SRC"; do
@@ -30,8 +31,9 @@ mkdir -p "$PUBLIC_DIR"
 
 install -m 0755 "$MANAGERD_SRC" "$RELEASE_DIR/bin/managerd"
 install -m 0644 "$CONFIG_SRC" "$RELEASE_DIR/config/config.toml"
-cp -a "$DIST_SRC" "$RELEASE_DIR/web"
+cp -a "$DIST_SRC"/.  "$RELEASE_DIR/web"
 install -m 0755 "$INSTALL_SRC" "$RELEASE_DIR/scripts/install.sh"
+install -m 0755 "$UNINSTALL_SRC" "$RELEASE_DIR/scripts/uninstall-service.sh"
 install -m 0644 "$SERVICE_SRC" "$RELEASE_DIR/service/openclaw-manager.service"
 
 cat > "$RELEASE_DIR/README.txt" <<'EOF'
@@ -39,9 +41,10 @@ openclaw-manager release package
 
 Layout:
 - bin/managerd
-- web/
+- web
 - config/config.toml
 - scripts/install.sh
+- scripts/uninstall-service.sh
 - service/openclaw-manager.service
 
 deployment guide:
