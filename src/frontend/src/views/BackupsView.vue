@@ -85,7 +85,9 @@
         <el-table-column label="调度" min-width="180">
           <template #default="{ row }">{{ formatPlanSchedule(row) }}</template>
         </el-table-column>
-        <el-table-column prop="retention_count" label="保留份数" width="100" />
+        <el-table-column label="保留份数" width="100">
+          <template #default="{ row }">{{ Number(row.retention_count) > 0 ? row.retention_count : 30 }}</template>
+        </el-table-column>
         <el-table-column prop="next_run_at" label="下次执行" min-width="180">
           <template #default="{ row }">{{ formatDateTime(row.next_run_at) }}</template>
         </el-table-column>
@@ -407,7 +409,13 @@ async function loadPreference() {
 async function loadPlans() {
   try {
     const { data } = await axios.get('/api/v1/backup-plans')
-    plans.value = Array.isArray(data?.plans) ? data.plans : []
+    const raw = Array.isArray(data?.plans) ? data.plans : []
+    plans.value = raw.map((it: any) => ({
+      ...it,
+      retention_count: Number(it?.retention_count ?? it?.retentionCount ?? 0) > 0
+        ? Number(it?.retention_count ?? it?.retentionCount)
+        : 30
+    }))
   } catch {
     plans.value = []
   }

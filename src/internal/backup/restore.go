@@ -41,7 +41,7 @@ func (s *Service) Restore(backupID string, dryRun bool, restartGateway bool, cre
 		return report, nil
 	}
 	// pre-restore snapshot
-	_, _ = s.Create([]string{"openclaw_json", "global_skills", "workspaces", "manager_revisions"}, "pre-restore-"+backupID, createdBy)
+	_, _ = s.Create([]string{"openclaw_json", "global_skills", "workspaces", "manager_db"}, "pre-restore-"+backupID, createdBy)
 	allowed := s.allowedRestorePrefixes()
 	if err := extractArchiveToRoot(archive, allowed); err != nil { return nil, err }
 	if restartGateway {

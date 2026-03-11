@@ -60,6 +60,30 @@ func TestResolveScopeIncludesCoreConfigFiles(t *testing.T) {
 	}
 }
 
+func TestResolveScopeIncludesManagerDBFiles(t *testing.T) {
+	db := storage.NewTestDB(t)
+	home := t.TempDir()
+	mgr := t.TempDir()
+	s := &Service{DB: db.SQL, OpenclawHome: home, ManagerHome: mgr}
+
+	paths := s.resolveScope([]string{"manager_db"})
+	want := map[string]bool{
+		filepath.Join(mgr, "manager.db"):     false,
+		filepath.Join(mgr, "manager.db-wal"): false,
+		filepath.Join(mgr, "manager.db-shm"): false,
+	}
+	for _, p := range paths {
+		if _, ok := want[p]; ok {
+			want[p] = true
+		}
+	}
+	for p, ok := range want {
+		if !ok {
+			t.Fatalf("missing manager db path in scope: %s, got=%v", p, paths)
+		}
+	}
+}
+
 func TestResolveScopeIncludesMultiAgentWorkspaces(t *testing.T) {
 	db := storage.NewTestDB(t)
 	home := t.TempDir()

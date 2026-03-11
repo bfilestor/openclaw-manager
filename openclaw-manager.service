@@ -3,12 +3,13 @@ Description=OpenClaw Manager Service
 After=network.target
 
 [Service]
+Environment=PATH=${node_bin_dir}:${openclaw_bin_dir}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Type=simple
-ExecStart=%h/.openclaw/projects/manager/src/bin/managerd --config %h/.openclaw-manager/config.toml --static-dir %h/.openclaw/projects/manager/src/frontend/dist
+ExecStart=%h/.openclaw-manager/bin/managerd --config %h/.openclaw-manager/config.toml --static-dir %h/.openclaw-manager/web/dist
 Restart=on-failure
 RestartSec=5
 Environment=OPENCLAW_JWT_SECRET=
-WorkingDirectory=%h/.openclaw/projects/manager/src
+WorkingDirectory=%h/.openclaw-manager
 
 [Install]
 WantedBy=default.target
