@@ -41,6 +41,12 @@ export type BotConversationPage = {
   items: ConversationItem[]
 }
 
+export type SessionMessage = {
+  role: string
+  timestamp: string
+  text: string
+}
+
 export async function getTokenUsageSummary(): Promise<TokenUsageSummary> {
   const { data } = await axios.get('/api/v1/token-usage/summary')
   return {
@@ -92,4 +98,17 @@ export async function getBotConversations(botId: string, page = 1, pageSize = 20
         }))
       : [],
   }
+}
+
+export async function getSessionMessages(sessionId: string, limit = 80): Promise<SessionMessage[]> {
+  const { data } = await axios.get(`/api/v1/token-usage/sessions/${encodeURIComponent(sessionId)}/messages`, {
+    params: { limit },
+  })
+  return Array.isArray(data?.items)
+    ? data.items.map((row: any) => ({
+        role: String(row?.role || 'unknown'),
+        timestamp: String(row?.timestamp || ''),
+        text: String(row?.text || ''),
+      }))
+    : []
 }

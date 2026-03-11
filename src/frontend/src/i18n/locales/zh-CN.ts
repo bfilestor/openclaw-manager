@@ -188,9 +188,12 @@ export default {
     pageTitle: 'Token 消费概览',
     botListTitle: 'Bot 消费明细',
     viewDetail: '查看对话',
+    viewMessages: '查看消息',
     detailTitle: 'Bot 对话详情 - {botId}',
+    messagesTitle: '会话消息 - {sessionId}',
     backToList: '返回列表',
     maxHint: '最多展示最近 100 条对话记录。',
+    emptyMessages: '该会话暂无可展示消息',
     summary: {
       totalTokens: '系统总 Token',
       inputTokens: '总输入 Token',
@@ -210,6 +213,7 @@ export default {
     messages: {
       loadFailed: '加载 Token 消费失败',
       loadDetailFailed: '加载 Bot 对话详情失败',
+      loadMessagesFailed: '加载会话消息失败',
     },
   },
   permission: {

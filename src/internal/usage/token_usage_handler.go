@@ -64,6 +64,12 @@ type conversationRow struct {
 	Preview       string  `json:"preview"`
 }
 
+type sessionMessage struct {
+	Role      string `json:"role"`
+	Timestamp string `json:"timestamp"`
+	Text      string `json:"text"`
+}
+
 func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 	sessions, costs, err := h.loadAllSessionMeta()
 	if err != nil {
@@ -184,6 +190,43 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 		"page":     page,
 		"pageSize": pageSize,
 		"items":    rows,
+	})
+}
+
+func (h *TokenUsageHandler) SessionMessages(w http.ResponseWriter, r *http.Request) {
+	sessionID := strings.TrimSpace(r.PathValue("sessionId"))
+	if sessionID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"sessionId": "required"}))
+		return
+	}
+	limit := parsePositiveInt(r.URL.Query().Get("limit"), 80)
+	if limit > 200 {
+		limit = 200
+	}
+
+	sessions, _, err := h.loadAllSessionMeta()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	targetFile := ""
+	for _, s := range sessions {
+		if s.SessionID == sessionID {
+			targetFile = s.SessionFile
+			break
+		}
+	}
+	if targetFile == "" {
+		middleware.WriteAppError(w, &middleware.AppError{Code: middleware.CodeNotFound, Message: "session not found", StatusCode: http.StatusNotFound})
+		return
+	}
+
+	messages := readSessionMessages(targetFile, limit)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"sessionId": sessionID,
+		"count":     len(messages),
+		"items":     messages,
 	})
 }
 
@@ -394,6 +437,56 @@ func stringifyContent(content any) string {
 	default:
 		return ""
 	}
+}
+
+func readSessionMessages(path string, limit int) []sessionMessage {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return []sessionMessage{}
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return []sessionMessage{}
+	}
+	defer file.Close()
+
+	rows := make([]sessionMessage, 0, limit)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		msg, ok := parseJSONLMessage(line)
+		if !ok {
+			continue
+		}
+		rows = append(rows, msg)
+	}
+	if len(rows) > limit {
+		rows = rows[len(rows)-limit:]
+	}
+	return rows
+}
+
+func parseJSONLMessage(line string) (sessionMessage, bool) {
+	var row struct {
+		Role      string `json:"role"`
+		Timestamp int64  `json:"timestamp"`
+		CreatedAt int64  `json:"createdAt"`
+		Message   string `json:"message"`
+		Text      string `json:"text"`
+		Content   any    `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(line), &row); err != nil {
+		return sessionMessage{}, false
+	}
+	text := firstNonEmpty(row.Message, row.Text, stringifyContent(row.Content))
+	if strings.TrimSpace(text) == "" {
+		return sessionMessage{}, false
+	}
+	ts := row.Timestamp
+	if ts <= 0 {
+		ts = row.CreatedAt
+	}
+	return sessionMessage{Role: firstNonEmpty(row.Role, "unknown"), Timestamp: msToRFC3339(ts), Text: text}, true
 }
 
 func firstNonEmpty(values ...string) string {

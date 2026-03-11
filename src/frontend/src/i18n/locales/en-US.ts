@@ -188,9 +188,12 @@ export default {
     pageTitle: 'Token Usage Overview',
     botListTitle: 'Bot Usage Breakdown',
     viewDetail: 'View Conversations',
+    viewMessages: 'View Messages',
     detailTitle: 'Bot Conversation Details - {botId}',
+    messagesTitle: 'Session Messages - {sessionId}',
     backToList: 'Back to List',
     maxHint: 'At most the latest 100 conversation records are shown.',
+    emptyMessages: 'No message available for this session',
     summary: {
       totalTokens: 'Total Tokens',
       inputTokens: 'Total Input Tokens',
@@ -210,6 +213,7 @@ export default {
     messages: {
       loadFailed: 'Failed to load token usage',
       loadDetailFailed: 'Failed to load bot conversation details',
+      loadMessagesFailed: 'Failed to load session messages',
     },
   },
   permission: {

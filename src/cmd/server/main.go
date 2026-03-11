@@ -197,6 +197,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 
 		mux.HandleFunc("GET /api/v1/token-usage/summary", wrap(tokenUsageAPI.Summary, authMW))
 		mux.HandleFunc("GET /api/v1/token-usage/bots/{botId}/conversations", wrap(tokenUsageAPI.BotConversations, authMW))
+		mux.HandleFunc("GET /api/v1/token-usage/sessions/{sessionId}/messages", wrap(tokenUsageAPI.SessionMessages, authMW))
 
 		mux.HandleFunc("GET /api/v1/config/openclaw", wrap(openclawJSON.GetOpenClawJSON, authMW))
 		mux.HandleFunc("PUT /api/v1/config/openclaw", wrap(openclawJSON.PutOpenClawJSON, authMW))
