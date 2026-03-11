@@ -27,7 +27,7 @@
       </el-col>
     </el-row>
 
-    <el-card shadow="never">
+    <el-card shadow="never" style="display: none;">
       <template #header>{{ t('skills.installTitle') }}</template>
       <el-form label-position="top">
         <el-row :gutter="12">

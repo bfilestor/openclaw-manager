@@ -10,7 +10,7 @@ import TasksView from './views/TasksView.vue'
 import TaskShellView from './views/TaskShellView.vue'
 import SkillsView from './views/SkillsView.vue'
 import AgentsView from './views/AgentsView.vue'
-import AgentSessionsView from './views/AgentSessionsView.vue'
+/*import AgentSessionsView from './views/AgentSessionsView.vue'*/
 import BindingsGraphView from './views/BindingsGraphView.vue'
 import BackupsView from './views/BackupsView.vue'
 import ConfigView from './views/ConfigView.vue'
@@ -25,7 +25,7 @@ const routes = [
   { path: '/dashboard', component: DashboardView, meta: { auth: true } },
   { path: '/gateway', component: GatewayView, meta: { auth: true } },
   { path: '/agents', component: AgentsView, meta: { auth: true } },
-  { path: '/agent-sessions', component: AgentSessionsView, meta: { auth: true } },
+  /*{ path: '/agent-sessions', component: AgentSessionsView, meta: { auth: true } },*/
   { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true } },
   { path: '/agents/:id/workspace-files', component: AgentWorkspaceFilesView, meta: { auth: true } },
   { path: '/agents/:id/workspace-files/edit', component: AgentWorkspaceFileEditorView, meta: { auth: true } },
