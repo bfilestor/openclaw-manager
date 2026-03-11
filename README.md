@@ -49,7 +49,7 @@ systemctl --user status openclaw-manager.service
 
 ```toml
 [server]
-listen = "0.0.0.0:18790"
+listen = "0.0.0.0:18799"
 
 [auth]
 jwt_secret = "replace-with-strong-secret-32bytes-min"
@@ -65,7 +65,7 @@ manager_home = "~/.openclaw-manager"
 
 ## 注意事项
 
-- 尽在linux环境下测试使用，其他环境不适用
+- 只在linux环境下测试使用，其他环境不适用
 - 用户角色三种 admin/operator/viewer,admin全部权限，viewer只有查看权限，无修改权限
 - 第一次运行，注册的第一个用户默认为管理员权限，建议初次运行就将需要的用全部注册好
 - 完成用户设定后一定要关闭注册:public_registration = false，并重启服务
