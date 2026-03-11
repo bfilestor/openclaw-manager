@@ -59,3 +59,4 @@ src/bin/
 # Frontend deps/build
 src/frontend/node_modules/
 src/frontend/dist/
+public/
