@@ -5,16 +5,17 @@
 ## 1) 获取并解压
 
 ```bash
+mkdir ~/.openclaw-manager
 cd /tmp
 # 把 openclaw-manager-*.tar.gz 下载到当前目录后执行
-tar -xzf openclaw-manager-*.tar.gz
-cd openclaw-manager
+tar -xzf openclaw-manager-*.tar.gz -C ~/.openclaw-manager --strip-components=1
+cd ~/.openclaw-manager
 ```
 
 解压后目录结构：
 
 - `bin/managerd`
-- `web/dist/`
+- `web/`
 - `config/config.toml`
 - `scripts/install.sh`
 - `service/openclaw-manager.service`
@@ -35,7 +36,7 @@ listen = "0.0.0.0:18080"
 openclaw_config = "/home/<user>/.openclaw"
 
 # 数据目录（示例）
-data_dir = "/var/lib/openclaw-manager"
+data_dir = "/home/<user>/.openclaw-manager"
 ```
 
 > 说明：字段名以你包内现有 `config.toml` 为准，按实际主机路径与端口改。
@@ -53,15 +54,15 @@ data_dir = "/var/lib/openclaw-manager"
 
 ```bash
 chmod +x scripts/install.sh
-sudo ./scripts/install.sh
+./scripts/install.sh
 ```
 
 若安装脚本包含 systemd 操作，完成后可验证：
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-manager
-sudo systemctl status openclaw-manager --no-pager
+systemctl --user daemon-reload
+systemctl --user enable --now openclaw-manager
+systemctl --user status openclaw-manager --no-pager
 ```
 
 ## 4) 手动部署（备用）
@@ -70,22 +71,27 @@ sudo systemctl status openclaw-manager --no-pager
 
 ```bash
 # 1) 拷贝文件到目标目录
-sudo mkdir -p /opt/openclaw-manager
-sudo cp -r bin web config scripts /opt/openclaw-manager/
+mkdir -p ~/.openclaw-manager
+cp -r bin web config scripts ~/.openclaw-manager
 
 # 2) 安装 systemd service
-sudo cp service/openclaw-manager.service /etc/systemd/system/
+cd ~/.openclaw-manager
+which node  
+which openclaw
+打开openclaw-manager.service，修改 ${node_bin_dir}:${openclaw_bin_dir} 为真实路径
+mkdir -p "/home/<user>/.config/systemd/user"
+cp service/openclaw-manager.service /home/<user>/.config/systemd/user
 
 # 3) 启动
-sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-manager
+systemctl --user daemon-reload
+systemctl --user enable --now openclaw-manager
 ```
 
 ## 5) 验证与排障
 
 ```bash
 # 查看服务状态
-sudo systemctl status openclaw-manager --no-pager
+systemctl --user status openclaw-manager --no-pager
 
 # 查看实时日志
 journalctl -u openclaw-manager -f
@@ -97,6 +103,7 @@ journalctl -u openclaw-manager -f
 2. `config.toml` 路径与权限
 3. 端口是否被占用
 4. 服务运行用户是否有读写权限
+5. 是否已经配置好${node_bin_dir}:${openclaw_bin_dir} 为真实路径
 
 ## 6) 后续重新打包
 
