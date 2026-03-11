@@ -14,7 +14,7 @@ MANAGERD_SRC="$ROOT_DIR/src/bin/managerd"
 CONFIG_SRC="$ROOT_DIR/src/bin/config.toml"
 DIST_SRC="$ROOT_DIR/src/frontend/dist"
 INSTALL_SRC="$ROOT_DIR/scripts/install.sh"
-SERVICE_SRC="$ROOT_DIR/openclaw-manager.service"
+SERVICE_SRC="$ROOT_DIR/service/openclaw-manager.service"
 
 for path in "$MANAGERD_SRC" "$CONFIG_SRC" "$DIST_SRC" "$INSTALL_SRC" "$SERVICE_SRC"; do
   if [[ ! -e "$path" ]]; then
