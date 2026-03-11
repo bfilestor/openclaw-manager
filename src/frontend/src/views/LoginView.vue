@@ -12,7 +12,7 @@
         <el-form-item>
           <el-space>
             <el-button type="primary" @click="login">{{ t('login.login') }}</el-button>
-            <router-link to="/register">{{ t('login.gotoRegister') }}</router-link>
+            <router-link v-if="publicRegistration" to="/register">{{ t('login.gotoRegister') }}</router-link>
           </el-space>
         </el-form-item>
         <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
@@ -21,7 +21,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -33,6 +33,7 @@ const { t } = useI18n()
 const username = ref('')
 const password = ref('')
 const error = ref('')
+const publicRegistration = ref(false)
 
 async function login() {
   error.value = ''
@@ -44,6 +45,15 @@ async function login() {
     error.value = t('login.loginFailed')
   }
 }
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/v1/auth/public-registration')
+    publicRegistration.value = !!res?.data?.public_registration
+  } catch {
+    publicRegistration.value = false
+  }
+})
 </script>
 <style scoped>
 .login-page {

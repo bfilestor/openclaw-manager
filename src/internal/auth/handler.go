@@ -40,6 +40,20 @@ type refreshResp struct {
 	TokenType   string `json:"token_type"`
 }
 
+func (h *Handler) PublicRegistrationStatus(w http.ResponseWriter, _ *http.Request) {
+	enabled := false
+	if h.Config != nil {
+		enabled = h.Config.Auth.PublicRegister
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if enabled {
+		_, _ = w.Write([]byte(`{"public_registration":true}`))
+		return
+	}
+	_, _ = w.Write([]byte(`{"public_registration":false}`))
+}
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if h.Config != nil && !h.Config.Auth.PublicRegister {
 		middleware.WriteAppError(w, &middleware.AppError{Code: "REGISTRATION_DISABLED", Message: "registration disabled", StatusCode: http.StatusForbidden})

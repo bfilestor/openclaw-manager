@@ -138,6 +138,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		identityAPI := &appcfg.IdentityHandler{AgentRepo: agentRepo, Revisions: revRepo, Validator: validator}
 
 		// 公开接口
+		mux.HandleFunc("GET /api/v1/auth/public-registration", authHandler.PublicRegistrationStatus)
 		mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 		mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 		mux.HandleFunc("POST /api/v1/auth/refresh", authHandler.Refresh)
