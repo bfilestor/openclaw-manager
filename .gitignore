@@ -59,4 +59,6 @@ src/bin/
 # Frontend deps/build
 src/frontend/node_modules/
 src/frontend/dist/
-public/
+public/**
+*.tar.gz
+*.tag.gz.sha256
