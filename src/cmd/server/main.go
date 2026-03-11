@@ -17,6 +17,7 @@ import (
 	"openclaw-manager/internal/skills"
 	"openclaw-manager/internal/storage"
 	"openclaw-manager/internal/task"
+	"openclaw-manager/internal/usage"
 	"openclaw-manager/internal/user"
 )
 
@@ -136,6 +137,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 			Revisions: revRepo,
 		}
 		identityAPI := &appcfg.IdentityHandler{AgentRepo: agentRepo, Revisions: revRepo, Validator: validator}
+		tokenUsageAPI := &usage.TokenUsageHandler{OpenClawHome: cfg.Paths.OpenClawHome}
 
 		// 公开接口
 		mux.HandleFunc("GET /api/v1/auth/public-registration", authHandler.PublicRegistrationStatus)
@@ -192,6 +194,9 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("GET /api/v1/skills", wrap(skillList.ListSkills, authMW))
 		mux.HandleFunc("POST /api/v1/skills/install", wrap(skillInstall.InstallSkill, authMW))
 		mux.HandleFunc("DELETE /api/v1/skills/{name}", wrap(skillDelete.DeleteSkill, authMW))
+
+		mux.HandleFunc("GET /api/v1/token-usage/summary", wrap(tokenUsageAPI.Summary, authMW))
+		mux.HandleFunc("GET /api/v1/token-usage/bots/{botId}/conversations", wrap(tokenUsageAPI.BotConversations, authMW))
 
 		mux.HandleFunc("GET /api/v1/config/openclaw", wrap(openclawJSON.GetOpenClawJSON, authMW))
 		mux.HandleFunc("PUT /api/v1/config/openclaw", wrap(openclawJSON.PutOpenClawJSON, authMW))
