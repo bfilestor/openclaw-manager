@@ -63,3 +63,5 @@ public/**
 *.tar.gz
 *.tag.gz.sha256
 AGENT.md
+docs/
+scripts/
