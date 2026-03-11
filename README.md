@@ -72,6 +72,15 @@ manager_home = "~/.openclaw-manager"
 ```
 systemctl --user restart openclaw-manager.service
 ```
+## 截图
+### 主页
+![Main UI](screenshots/main.png)
+
+### 配置页
+![Config Page](screenshots/config-2.png)
+
+### QQBot
+![QQBot](screenshots/QQBot.png)
 
 ## License
 
