@@ -18,6 +18,7 @@ cd src
 make build
 ```
 2. 准备配置：
+
 - `~/.openclaw-manager/config.toml`
 - 设置 `OPENCLAW_JWT_SECRET`（>=32 字节）
 3. 安装 systemd user service：
@@ -47,6 +48,13 @@ openclaw_home = "~/.openclaw"
 manager_home = "~/.openclaw-manager"
 ```
 
-## API 文档（简版 OpenAPI）
+## 核心功能及特色
 
-见：`docs/openapi.yaml`
+- 安全修改openclaw.json，支持历史版本管理，安全回滚
+- Agent快速创建，bot与agent快捷绑定
+- 快速添加多个QQbot
+- openclaw手动与自动备份
+- 通过web方式执行openclaw相关命令
+- 简单的用户体系
+
+可以任意折腾你的小龙虾，主打一个改不死。

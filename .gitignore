@@ -62,3 +62,4 @@ src/frontend/dist/
 public/**
 *.tar.gz
 *.tag.gz.sha256
+AGENT.md
