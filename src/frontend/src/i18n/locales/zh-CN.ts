@@ -194,6 +194,7 @@ export default {
     backToList: '返回列表',
     maxHint: '最多展示最近 100 条对话记录。',
     emptyMessages: '该会话暂无可展示消息',
+    onlyHumanMessages: '仅显示 user/assistant',
     summary: {
       totalTokens: '系统总 Token',
       inputTokens: '总输入 Token',

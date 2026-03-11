@@ -194,6 +194,7 @@ export default {
     backToList: 'Back to List',
     maxHint: 'At most the latest 100 conversation records are shown.',
     emptyMessages: 'No message available for this session',
+    onlyHumanMessages: 'Show user/assistant only',
     summary: {
       totalTokens: 'Total Tokens',
       inputTokens: 'Total Input Tokens',

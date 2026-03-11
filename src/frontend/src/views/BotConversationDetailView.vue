@@ -41,9 +41,12 @@
     </el-card>
 
     <el-drawer v-model="messagesDrawer" :title="t('tokenUsage.messagesTitle', { sessionId: currentSessionId })" size="50%">
-      <el-empty v-if="sessionMessages.length === 0 && !messagesLoading" :description="t('tokenUsage.emptyMessages')" />
+      <div class="drawer-toolbar">
+        <el-switch v-model="onlyHumanMessages" :active-text="t('tokenUsage.onlyHumanMessages')" />
+      </div>
+      <el-empty v-if="visibleMessages.length === 0 && !messagesLoading" :description="t('tokenUsage.emptyMessages')" />
       <el-timeline v-loading="messagesLoading">
-        <el-timeline-item v-for="(msg, idx) in sessionMessages" :key="`${idx}-${msg.timestamp}`" :timestamp="msg.timestamp" placement="top">
+        <el-timeline-item v-for="(msg, idx) in visibleMessages" :key="`${idx}-${msg.timestamp}`" :timestamp="msg.timestamp" placement="top">
           <el-tag size="small">{{ msg.role }}</el-tag>
           <div class="msg-text">{{ msg.text }}</div>
         </el-timeline-item>
@@ -73,6 +76,12 @@ const messagesDrawer = ref(false)
 const messagesLoading = ref(false)
 const currentSessionId = ref('')
 const sessionMessages = ref<SessionMessage[]>([])
+const onlyHumanMessages = ref(true)
+
+const visibleMessages = computed(() => {
+  if (!onlyHumanMessages.value) return sessionMessages.value
+  return sessionMessages.value.filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+})
 
 const botId = computed(() => String(route.params.botId || ''))
 
@@ -144,5 +153,9 @@ onMounted(loadData)
   margin-top: 6px;
   white-space: pre-wrap;
   line-height: 1.5;
+}
+
+.drawer-toolbar {
+  margin-bottom: 10px;
 }
 </style>
