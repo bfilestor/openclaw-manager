@@ -156,7 +156,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', labelKey: 'app.nav.dashboard', icon: '🏠' },
   { path: '/gateway', labelKey: 'app.nav.gateway', icon: '🌐' },
   { path: '/agents', labelKey: 'app.nav.agents', icon: '🤖' },
-  { path: '/agent-sessions', labelKey: 'app.nav.sessions', icon: '🎬' },
+  /*{ path: '/agent-sessions', labelKey: 'app.nav.sessions', icon: '🎬' },*/
   { path: '/bindings', labelKey: 'app.nav.bindings', icon: '🔗' },
   { path: '/skills', labelKey: 'app.nav.skills', icon: '🧩' },
   { path: '/config', labelKey: 'app.nav.config', icon: '⚙️' },
