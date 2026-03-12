@@ -88,6 +88,9 @@ systemctl --user restart openclaw-manager.service
 ### QQBot
 ![QQBot](screenshots/QQBot.png)
 
+### 沟通群
+<img src="screenshots/qq.jpg" width="200"/>
+
 ## License
 
 本项目采用 **非商业许可协议（NCL）**。
