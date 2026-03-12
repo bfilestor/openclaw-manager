@@ -62,10 +62,17 @@
 
     <el-card shadow="never">
       <template #header>{{ t('tokenUsage.botListTitle') }}</template>
-      <el-table v-loading="loading" :data="bots" row-key="botId" style="width: 100%" @row-click="goDetail">
+      <el-table
+        v-loading="loading"
+        :data="bots"
+        row-key="botId"
+        style="width: 100%"
+        :default-sort="{ prop: 'totalTokens', order: 'descending' }"
+        @row-click="goDetail"
+      >
         <el-table-column prop="botId" :label="t('tokenUsage.columns.botId')" min-width="160" />
         <el-table-column prop="sessions" :label="t('tokenUsage.columns.sessions')" width="120" />
-        <el-table-column :label="t('tokenUsage.columns.totalTokens')" min-width="160">
+        <el-table-column prop="totalTokens" :label="t('tokenUsage.columns.totalTokens')" min-width="160" sortable>
           <template #default="{ row }">{{ formatTokenCompact(Number(row.totalTokens || 0)) }}</template>
         </el-table-column>
         <el-table-column prop="estimatedCost" :label="t('tokenUsage.columns.estimatedCost')" min-width="160">
