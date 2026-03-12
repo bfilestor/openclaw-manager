@@ -688,6 +688,7 @@ export default {
       openclaw_json: 'openclaw.json 配置',
       global_skills: '全局 skills',
       workspaces: 'agents workspaces',
+      plugins: '插件目录 (extensions + plugins.installs)',
       user_systemd_unit: 'user systemd unit',
       manager_db: 'manager 数据库 (SQLite)',
     },

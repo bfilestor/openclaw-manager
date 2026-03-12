@@ -84,6 +84,43 @@ func TestResolveScopeIncludesManagerDBFiles(t *testing.T) {
 	}
 }
 
+func TestResolveScopeIncludesPluginPaths(t *testing.T) {
+	db := storage.NewTestDB(t)
+	home := t.TempDir()
+	mgr := t.TempDir()
+
+	cfg := `{
+		"plugins": {
+			"installs": {
+				"qqbot": {"installPath": "` + home + `/extensions/qqbot"},
+				"custom": {"installPath": "` + home + `/extensions/custom-plugin"}
+			}
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(home, "openclaw.json"), []byte(cfg), 0o644); err != nil {
+		t.Fatalf("write openclaw.json: %v", err)
+	}
+
+	s := &Service{DB: db.SQL, OpenclawHome: home, ManagerHome: mgr}
+	paths := s.resolveScope([]string{"plugins"})
+
+	want := map[string]bool{
+		filepath.Join(home, "extensions"):               false,
+		filepath.Join(home, "extensions", "qqbot"):     false,
+		filepath.Join(home, "extensions", "custom-plugin"): false,
+	}
+	for _, p := range paths {
+		if _, ok := want[p]; ok {
+			want[p] = true
+		}
+	}
+	for p, ok := range want {
+		if !ok {
+			t.Fatalf("missing plugin path in scope: %s, got=%v", p, paths)
+		}
+	}
+}
+
 func TestResolveScopeIncludesMultiAgentWorkspaces(t *testing.T) {
 	db := storage.NewTestDB(t)
 	home := t.TempDir()

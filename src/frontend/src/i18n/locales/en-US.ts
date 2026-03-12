@@ -688,6 +688,7 @@ export default {
       openclaw_json: 'openclaw.json config',
       global_skills: 'global skills',
       workspaces: 'agents workspaces',
+      plugins: 'plugin directories (extensions + plugins.installs)',
       user_systemd_unit: 'user systemd unit',
       manager_db: 'manager database (SQLite)',
     },

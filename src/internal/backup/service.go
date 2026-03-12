@@ -81,6 +81,9 @@ func (s *Service) resolveScope(scope []string) []string {
 	if set["workspaces"] {
 		out = append(out, s.resolveWorkspacesFromOpenClawJSON()...)
 	}
+	if set["plugins"] {
+		out = append(out, s.resolvePluginPathsFromOpenClawJSON()...)
+	}
 	if set["user_systemd_unit"] {
 		home, _ := os.UserHomeDir()
 		out = append(out, filepath.Join(home, ".config/systemd/user/openclaw-gateway.service"))
@@ -114,27 +117,39 @@ func (s *Service) resolveOpenclawCoreConfigPaths() []string {
 	})
 }
 
-func (s *Service) resolveWorkspacesFromOpenClawJSON() []string {
-	type agentItem struct {
-		ID        string `json:"id"`
-		Workspace string `json:"workspace"`
-	}
-	type openclawConfig struct {
-		Agents struct {
-			Defaults struct {
-				Workspace string `json:"workspace"`
-			} `json:"defaults"`
-			List []agentItem `json:"list"`
-		} `json:"agents"`
-	}
+type openclawConfig struct {
+	Agents struct {
+		Defaults struct {
+			Workspace string `json:"workspace"`
+		} `json:"defaults"`
+		List []struct {
+			ID        string `json:"id"`
+			Workspace string `json:"workspace"`
+		} `json:"list"`
+	} `json:"agents"`
+	Plugins struct {
+		Installs map[string]struct {
+			InstallPath string `json:"installPath"`
+		} `json:"installs"`
+	} `json:"plugins"`
+}
 
-	defaultWorkspace := filepath.Join(s.OpenclawHome, "workspace")
+func (s *Service) loadOpenclawConfig() (*openclawConfig, error) {
 	raw, err := os.ReadFile(filepath.Join(s.OpenclawHome, "openclaw.json"))
 	if err != nil {
-		return []string{defaultWorkspace}
+		return nil, err
 	}
 	var cfg openclawConfig
 	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+func (s *Service) resolveWorkspacesFromOpenClawJSON() []string {
+	defaultWorkspace := filepath.Join(s.OpenclawHome, "workspace")
+	cfg, err := s.loadOpenclawConfig()
+	if err != nil {
 		return []string{defaultWorkspace}
 	}
 	if ws := strings.TrimSpace(cfg.Agents.Defaults.Workspace); ws != "" {
@@ -159,6 +174,21 @@ func (s *Service) resolveWorkspacesFromOpenClawJSON() []string {
 		workspaces = append(workspaces, filepath.Join(baseDir, "workspace-"+agentID))
 	}
 	return uniqPaths(workspaces)
+}
+
+func (s *Service) resolvePluginPathsFromOpenClawJSON() []string {
+	fallback := filepath.Join(s.OpenclawHome, "extensions")
+	cfg, err := s.loadOpenclawConfig()
+	if err != nil {
+		return []string{fallback}
+	}
+	paths := []string{fallback}
+	for _, install := range cfg.Plugins.Installs {
+		if p := strings.TrimSpace(install.InstallPath); p != "" {
+			paths = append(paths, p)
+		}
+	}
+	return uniqPaths(paths)
 }
 
 func uniqPaths(paths []string) []string {

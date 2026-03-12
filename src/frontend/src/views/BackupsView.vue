@@ -293,6 +293,7 @@ const scopeOptions = [
   { value: 'openclaw_json' },
   { value: 'global_skills' },
   { value: 'workspaces' },
+  { value: 'plugins' },
   { value: 'user_systemd_unit' },
   { value: 'manager_db' }
 ]
