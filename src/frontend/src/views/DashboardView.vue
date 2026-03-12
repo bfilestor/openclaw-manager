@@ -16,6 +16,14 @@
       :closable="false"
     />
 
+    <el-alert
+      v-if="quotaAlert"
+      :title="quotaAlert"
+      :type="quotaAlertType"
+      show-icon
+      :closable="false"
+    />
+
     <el-card shadow="never" class="trend-card">
       <div class="trend-head">
         <span class="trend-icon">📈</span>
@@ -124,6 +132,9 @@ const lastRefreshAt = ref('')
 const statusHint = ref('')
 const previousGatewayState = ref('')
 const { t } = useI18n()
+const quotaStatus = ref<'normal' | 'near' | 'exceeded' | ''>('')
+const quotaUsed = ref(0)
+const quotaLimit = ref(0)
 
 let timer: any = null
 
@@ -145,6 +156,15 @@ const gatewayTagType = computed<'success' | 'warning' | 'info'>(() => {
   if (s === 'active' || s === 'running') return 'success'
   if (s === 'activating' || s === 'reloading') return 'warning'
   return 'info'
+})
+
+const quotaAlertType = computed<'warning' | 'error'>(() => (quotaStatus.value === 'exceeded' ? 'error' : 'warning'))
+const quotaAlert = computed(() => {
+  if (!quotaLimit.value || quotaStatus.value === 'normal' || quotaStatus.value === '') return ''
+  if (quotaStatus.value === 'exceeded') {
+    return t('dashboard.quotaExceeded', { used: quotaUsed.value, limit: quotaLimit.value })
+  }
+  return t('dashboard.quotaNear', { used: quotaUsed.value, limit: quotaLimit.value })
 })
 
 function countBotsFromConfig(cfg: any): number {
@@ -180,6 +200,9 @@ function loadCache() {
     lastRefreshAt.value = String(cached.lastRefreshAt || '')
     statusHint.value = String(cached.statusHint || '')
     previousGatewayState.value = String(cached.previousGatewayState || '')
+    quotaStatus.value = String(cached.quotaStatus || '') as 'normal' | 'near' | 'exceeded' | ''
+    quotaUsed.value = Number(cached.quotaUsed || 0)
+    quotaLimit.value = Number(cached.quotaLimit || 0)
   } catch {
     // ignore cache parse errors
   }
@@ -197,6 +220,9 @@ function saveCache() {
       lastRefreshAt: lastRefreshAt.value,
       statusHint: statusHint.value,
       previousGatewayState: previousGatewayState.value,
+      quotaStatus: quotaStatus.value,
+      quotaUsed: quotaUsed.value,
+      quotaLimit: quotaLimit.value,
     }))
   } catch {
     // ignore cache write errors
@@ -207,12 +233,13 @@ async function refresh() {
   const firstLoad = !lastRefreshAt.value
   if (firstLoad) loading.value = true
   try {
-    const [gatewayRes, skillsRes, agentsRes, configRes, usersRes] = await Promise.all([
+    const [gatewayRes, skillsRes, agentsRes, configRes, usersRes, tokenUsageRes] = await Promise.all([
       axios.get('/api/v1/gateway/status'),
       axios.get('/api/v1/skills', { params: { scope: 'global' } }),
       axios.get('/api/v1/agents'),
       axios.get('/api/v1/config/openclaw'),
       axios.get('/api/v1/users').catch(() => ({ data: { users: [] } })),
+      axios.get('/api/v1/token-usage/summary').catch(() => ({ data: {} })),
     ])
 
     const gd = gatewayRes.data
@@ -249,6 +276,11 @@ async function refresh() {
 
     const users = usersRes.data?.users
     userCount.value = Array.isArray(users) ? users.length : 0
+
+    const quota = tokenUsageRes.data?.quota
+    quotaStatus.value = quota?.status === 'near' || quota?.status === 'exceeded' ? quota.status : 'normal'
+    quotaUsed.value = Number(quota?.usedTokens || 0)
+    quotaLimit.value = Number(quota?.tokenLimit || 0)
 
     lastRefreshAt.value = new Date().toISOString()
     saveCache()

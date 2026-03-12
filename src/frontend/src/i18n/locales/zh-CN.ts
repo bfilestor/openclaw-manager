@@ -219,6 +219,8 @@ export default {
       days7: '最近7天',
       days30: '最近30天',
     },
+    quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',
+    quotaExceeded: 'Token 使用量已超过限额：已用 {used} / 限额 {limit}',
     messages: {
       loadFailed: '加载 Token 消费失败',
       loadDetailFailed: '加载 Bot 对话详情失败',
@@ -426,6 +428,7 @@ export default {
     usernamePlaceholder: '3-32位字母/数字/下划线',
     resetDialogTitle: '修改密码 - {username}',
     accountIdPlaceholder: '绑定 accountId（如 default）',
+    tokenLimitPlaceholder: 'Token限额',
     statusActive: 'active',
     statusDisabled: 'disabled',
     columns: {
@@ -512,6 +515,8 @@ export default {
       bots: { title: 'Bot 数量', sub: '按 channels + accounts 聚合' },
       users: { title: 'Users 数量', sub: '系统用户总数' },
     },
+    quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',
+    quotaExceeded: 'Token 使用量已超过限额：已用 {used} / 限额 {limit}',
   },
   config: {
     title: '配置编辑器',

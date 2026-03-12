@@ -39,7 +39,8 @@ type setUserPasswordReq struct {
 }
 
 type setAccountBindingReq struct {
-	AccountID string `json:"account_id"`
+	AccountID  string `json:"account_id"`
+	TokenLimit int64  `json:"token_limit"`
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
@@ -411,7 +412,7 @@ func (h *Handler) GetMyAccountBinding(w http.ResponseWriter, r *http.Request) {
 	if h.AccountBinds == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"account_id":""}`))
+		_, _ = w.Write([]byte(`{"account_id":"","token_limit":0}`))
 		return
 	}
 	item, err := h.AccountBinds.GetByUserID(uc.UserID)
@@ -419,7 +420,7 @@ func (h *Handler) GetMyAccountBinding(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, ErrAccountBindingNotFound) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"account_id":""}`))
+			_, _ = w.Write([]byte(`{"account_id":"","token_limit":0}`))
 			return
 		}
 		middleware.WriteAppError(w, err)
@@ -428,9 +429,10 @@ func (h *Handler) GetMyAccountBinding(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"user_id":    item.UserID,
-		"account_id": item.AccountID,
-		"updated_at": item.UpdatedAt.Format(time.RFC3339),
+		"user_id":     item.UserID,
+		"account_id":  item.AccountID,
+		"token_limit": item.TokenLimit,
+		"updated_at":  item.UpdatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -447,7 +449,7 @@ func (h *Handler) GetUserAccountBinding(w http.ResponseWriter, r *http.Request) 
 	if h.AccountBinds == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"account_id":""}`))
+		_, _ = w.Write([]byte(`{"account_id":"","token_limit":0}`))
 		return
 	}
 	targetID := extractUserID(r.URL.Path, "account-binding")
@@ -460,7 +462,7 @@ func (h *Handler) GetUserAccountBinding(w http.ResponseWriter, r *http.Request) 
 		if errors.Is(err, ErrAccountBindingNotFound) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"user_id":"` + targetID + `","account_id":""}`))
+			_, _ = w.Write([]byte(`{"user_id":"` + targetID + `","account_id":"","token_limit":0}`))
 			return
 		}
 		middleware.WriteAppError(w, err)
@@ -469,9 +471,10 @@ func (h *Handler) GetUserAccountBinding(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"user_id":    item.UserID,
-		"account_id": item.AccountID,
-		"updated_at": item.UpdatedAt.Format(time.RFC3339),
+		"user_id":     item.UserID,
+		"account_id":  item.AccountID,
+		"token_limit": item.TokenLimit,
+		"updated_at":  item.UpdatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -513,7 +516,7 @@ func (h *Handler) SetUserAccountBinding(w http.ResponseWriter, r *http.Request) 
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if err := h.AccountBinds.Upsert(targetID, accountID); err != nil {
+	if err := h.AccountBinds.Upsert(targetID, accountID, req.TokenLimit); err != nil {
 		middleware.WriteAppError(w, err)
 		return
 	}

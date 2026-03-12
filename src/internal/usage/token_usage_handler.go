@@ -84,12 +84,14 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 	if rangeDays > 0 {
 		sessions = filterSessionsByDays(sessions, rangeDays)
 	}
-	boundAccountID, err := h.resolveScopeAccountID(r)
+	binding, scoped, err := h.resolveScopeBinding(r)
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if boundAccountID != "" {
+	boundAccountID := ""
+	if scoped && binding != nil {
+		boundAccountID = safeBotID(binding.AccountID)
 		sessions = filterSessionsByAccount(sessions, boundAccountID)
 	}
 
@@ -128,7 +130,7 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 		return rows[i].TotalTokens > rows[j].TotalTokens
 	})
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	resp := map[string]any{
 		"days": rangeDays,
 		"total": map[string]any{
 			"inputTokens":   totalInput,
@@ -137,7 +139,27 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 			"estimatedCost": totalCost,
 		},
 		"bots": rows,
-	})
+	}
+	if scoped && binding != nil {
+		quota := map[string]any{
+			"accountId":  boundAccountID,
+			"tokenLimit": binding.TokenLimit,
+			"usedTokens": totalTokens,
+			"ratio":      0.0,
+			"status":     "normal",
+		}
+		if binding.TokenLimit > 0 {
+			ratio := float64(totalTokens) / float64(binding.TokenLimit)
+			quota["ratio"] = ratio
+			if ratio >= 1 {
+				quota["status"] = "exceeded"
+			} else if ratio >= 0.9 {
+				quota["status"] = "near"
+			}
+		}
+		resp["quota"] = quota
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Request) {
@@ -163,12 +185,14 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 	if rangeDays > 0 {
 		sessions = filterSessionsByDays(sessions, rangeDays)
 	}
-	boundAccountID, err := h.resolveScopeAccountID(r)
+	binding, scoped, err := h.resolveScopeBinding(r)
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if boundAccountID != "" {
+	boundAccountID := ""
+	if scoped && binding != nil {
+		boundAccountID = safeBotID(binding.AccountID)
 		if botID != boundAccountID {
 			middleware.WriteAppError(w, middleware.NewForbidden("bound account only"))
 			return
@@ -245,10 +269,14 @@ func (h *TokenUsageHandler) SessionMessages(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	boundAccountID, err := h.resolveScopeAccountID(r)
+	binding, scoped, err := h.resolveScopeBinding(r)
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
+	}
+	boundAccountID := ""
+	if scoped && binding != nil {
+		boundAccountID = safeBotID(binding.AccountID)
 	}
 
 	targetFile := ""
@@ -409,25 +437,25 @@ func safeBotID(botID string) string {
 	return botID
 }
 
-func (h *TokenUsageHandler) resolveScopeAccountID(r *http.Request) (string, error) {
+func (h *TokenUsageHandler) resolveScopeBinding(r *http.Request) (*auth.AccountBinding, bool, error) {
 	uc, ok := auth.GetUserContext(r.Context())
 	if !ok || uc == nil {
-		return "", middleware.NewUnauthorized()
+		return nil, false, middleware.NewUnauthorized()
 	}
 	if uc.Role != user.RoleUser {
-		return "", nil
+		return nil, false, nil
 	}
 	if h.AccountBinds == nil {
-		return "", &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
+		return nil, true, &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
 	}
 	item, err := h.AccountBinds.GetByUserID(uc.UserID)
 	if err != nil {
 		if errors.Is(err, auth.ErrAccountBindingNotFound) {
-			return "", &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
+			return nil, true, &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
 		}
-		return "", err
+		return nil, true, err
 	}
-	return safeBotID(item.AccountID), nil
+	return item, true, nil
 }
 
 func filterSessionsByDays(sessions []sessionMeta, days int) []sessionMeta {

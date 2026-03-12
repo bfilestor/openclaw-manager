@@ -17,6 +17,13 @@ export type TokenUsageSummary = {
     estimatedCost: number
   }
   bots: BotUsageRow[]
+  quota?: {
+    accountId: string
+    tokenLimit: number
+    usedTokens: number
+    ratio: number
+    status: 'normal' | 'near' | 'exceeded'
+  }
 }
 
 export type ConversationItem = {
@@ -68,6 +75,17 @@ export async function getTokenUsageSummary(days = 0): Promise<TokenUsageSummary>
           estimatedCost: Number(row?.estimatedCost || 0),
         }))
       : [],
+    quota: data?.quota
+      ? {
+          accountId: String(data?.quota?.accountId || ''),
+          tokenLimit: Number(data?.quota?.tokenLimit || 0),
+          usedTokens: Number(data?.quota?.usedTokens || 0),
+          ratio: Number(data?.quota?.ratio || 0),
+          status: (['normal', 'near', 'exceeded'].includes(String(data?.quota?.status))
+            ? String(data?.quota?.status)
+            : 'normal') as 'normal' | 'near' | 'exceeded',
+        }
+      : undefined,
   }
 }
 

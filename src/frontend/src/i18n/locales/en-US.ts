@@ -219,6 +219,8 @@ export default {
       days7: 'Last 7 Days',
       days30: 'Last 30 Days',
     },
+    quotaNear: 'Token usage is near limit: used {used} / limit {limit}',
+    quotaExceeded: 'Token usage has exceeded limit: used {used} / limit {limit}',
     messages: {
       loadFailed: 'Failed to load token usage',
       loadDetailFailed: 'Failed to load bot conversation details',
@@ -426,6 +428,7 @@ export default {
     usernamePlaceholder: '3-32 chars: letters/numbers/underscore',
     resetDialogTitle: 'Reset Password - {username}',
     accountIdPlaceholder: 'Bind accountId (for example default)',
+    tokenLimitPlaceholder: 'Token limit',
     statusActive: 'active',
     statusDisabled: 'disabled',
     columns: {
@@ -512,6 +515,8 @@ export default {
       bots: { title: 'Bots Count', sub: 'Aggregated by channels + accounts' },
       users: { title: 'Users Count', sub: 'Total system users' },
     },
+    quotaNear: 'Token usage is near limit: used {used} / limit {limit}',
+    quotaExceeded: 'Token usage has exceeded limit: used {used} / limit {limit}',
   },
   config: {
     title: 'Config Editor',

@@ -26,6 +26,7 @@
         <template #default="{ row }">
           <el-space>
             <el-input v-model="row.account_id" :placeholder="t('adminUsers.accountIdPlaceholder')" clearable />
+            <el-input-number v-model="row.token_limit" :min="0" :step="1000" :placeholder="t('adminUsers.tokenLimitPlaceholder')" />
             <el-button size="small" @click="saveAccountBinding(row)">{{ t('common.actions.confirm') }}</el-button>
           </el-space>
         </template>
@@ -106,6 +107,7 @@ type UserItem = {
   role: Role
   status: 'active' | 'disabled'
   account_id?: string
+  token_limit?: number
 }
 
 const auth = useAuthStore()
@@ -144,13 +146,15 @@ async function load() {
   try {
     const { data } = await axios.get('/api/v1/users')
     const list = Array.isArray(data?.users) ? data.users : []
-    users.value = list.map((u: any) => ({ ...u, account_id: '' }))
+    users.value = list.map((u: any) => ({ ...u, account_id: '', token_limit: 0 }))
     await Promise.all(users.value.map(async (row) => {
       try {
         const { data: bind } = await axios.get(`/api/v1/users/${row.user_id}/account-binding`)
         row.account_id = String(bind?.account_id || '')
+        row.token_limit = Number(bind?.token_limit || 0)
       } catch {
         row.account_id = ''
+        row.token_limit = 0
       }
     }))
   } catch (err) {
@@ -197,7 +201,10 @@ async function changeRole(u: UserItem) {
 
 async function saveAccountBinding(u: UserItem) {
   try {
-    await axios.put(`/api/v1/users/${u.user_id}/account-binding`, { account_id: String(u.account_id || '') })
+    await axios.put(`/api/v1/users/${u.user_id}/account-binding`, {
+      account_id: String(u.account_id || ''),
+      token_limit: Number(u.token_limit || 0),
+    })
     ElMessage.success(t('adminUsers.messages.bindingUpdated'))
   } catch (err) {
     ElMessage.error(parseError(err, t('adminUsers.messages.bindingUpdateFailed')))

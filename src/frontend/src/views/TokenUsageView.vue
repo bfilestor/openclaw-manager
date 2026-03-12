@@ -18,6 +18,13 @@
       </template>
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+      <el-alert
+        v-if="quotaAlert"
+        :title="quotaAlert"
+        :type="quotaAlertType"
+        show-icon
+        :closable="false"
+      />
 
       <el-row :gutter="12" class="summary-row">
         <el-col :xs="24" :md="8">
@@ -54,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
@@ -68,6 +75,20 @@ const errorMessage = ref('')
 const summary = ref({ inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCost: 0 })
 const bots = ref<BotUsageRow[]>([])
 const days = ref(0)
+const quota = ref<{ accountId: string; tokenLimit: number; usedTokens: number; ratio: number; status: 'normal' | 'near' | 'exceeded' } | undefined>()
+
+const quotaAlertType = computed<'warning' | 'error'>(() => (quota.value?.status === 'exceeded' ? 'error' : 'warning'))
+const quotaAlert = computed(() => {
+  const q = quota.value
+  if (!q || q.tokenLimit <= 0) return ''
+  if (q.status === 'exceeded') {
+    return t('tokenUsage.quotaExceeded', { used: q.usedTokens, limit: q.tokenLimit })
+  }
+  if (q.status === 'near') {
+    return t('tokenUsage.quotaNear', { used: q.usedTokens, limit: q.tokenLimit })
+  }
+  return ''
+})
 
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
@@ -81,6 +102,7 @@ async function loadData() {
     const data = await getTokenUsageSummary(days.value)
     summary.value = data.total
     bots.value = data.bots
+    quota.value = data.quota
   } catch (err) {
     errorMessage.value = parseError(err, t('tokenUsage.messages.loadFailed'))
     ElMessage.error(errorMessage.value)
