@@ -63,6 +63,57 @@
   color: var(--oc-accent-contrast);
 }
 
+:root[data-theme='dark'] .el-input__wrapper,
+:root[data-theme='dark'] .el-textarea__inner,
+:root[data-theme='dark'] .el-select__wrapper {
+  background: var(--oc-surface-muted);
+  border-color: var(--oc-border);
+  box-shadow: 0 0 0 1px var(--oc-border) inset;
+}
+
+:root[data-theme='dark'] .el-input__inner,
+:root[data-theme='dark'] .el-textarea__inner {
+  color: var(--oc-text);
+}
+
+:root[data-theme='dark'] .el-input__inner::placeholder,
+:root[data-theme='dark'] .el-textarea__inner::placeholder {
+  color: var(--oc-text-muted);
+}
+
+:root[data-theme='dark'] .el-tag {
+  border-color: var(--oc-border-strong);
+  color: var(--oc-text);
+}
+
+:root[data-theme='dark'] .el-table tr:hover > td.el-table__cell {
+  background: #232323 !important;
+}
+
+:root[data-theme='dark'] .el-alert {
+  border-color: var(--oc-border-strong);
+}
+
+:root[data-theme='dark'] .el-alert--warning {
+  --el-alert-bg-color: rgba(120, 90, 30, 0.28);
+  --el-alert-text-color: #ffe2a8;
+}
+
+:root[data-theme='dark'] .el-alert--error {
+  --el-alert-bg-color: rgba(120, 35, 35, 0.28);
+  --el-alert-text-color: #ffc1c1;
+}
+
+:root[data-theme='dark'] .el-alert--success {
+  --el-alert-bg-color: rgba(30, 90, 60, 0.28);
+  --el-alert-text-color: #b6f2d3;
+}
+
+:root[data-theme='dark'] .el-alert--info {
+  --el-alert-bg-color: rgba(60, 70, 90, 0.28);
+  --el-alert-text-color: #cdd7ee;
+}
+
 html,
 body {
   margin: 0;
