@@ -53,7 +53,7 @@
   --el-color-primary-dark-2: #ffffff;
 }
 
-:root[data-theme='dark'] .el-button:not(.el-button--primary):not(.is-link) {
+:root[data-theme='dark'] .el-button--default:not(.is-link) {
   color: var(--oc-text);
   background: var(--oc-surface-muted);
   border-color: var(--oc-border);
