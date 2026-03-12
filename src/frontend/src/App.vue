@@ -144,6 +144,7 @@ type NavItem = {
   labelKey: string
   icon: string
   adminOnly?: boolean
+  allowedRoles?: Array<'User' | 'Viewer' | 'Operator' | 'Admin'>
 }
 
 const auth = useAuthStore()
@@ -153,25 +154,30 @@ const router = useRouter()
 const { t } = useI18n()
 
 const navItems: NavItem[] = [
-  { path: '/dashboard', labelKey: 'app.nav.dashboard', icon: '🏠' },
-  { path: '/gateway', labelKey: 'app.nav.gateway', icon: '🌐' },
-  { path: '/agents', labelKey: 'app.nav.agents', icon: '🤖' },
+  { path: '/dashboard', labelKey: 'app.nav.dashboard', icon: '🏠', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/gateway', labelKey: 'app.nav.gateway', icon: '🌐', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/agents', labelKey: 'app.nav.agents', icon: '🤖', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   /*{ path: '/agent-sessions', labelKey: 'app.nav.sessions', icon: '🎬' },*/
-  { path: '/bindings', labelKey: 'app.nav.bindings', icon: '🔗' },
-  { path: '/skills', labelKey: 'app.nav.skills', icon: '🧩' },
-  { path: '/config', labelKey: 'app.nav.config', icon: '⚙️' },
-  { path: '/qqbot', labelKey: 'app.nav.qqbot', icon: '🐧' },
-  { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐' },
-  { path: '/token-usage', labelKey: 'app.nav.tokenUsage', icon: '📊' },
-  { path: '/backups', labelKey: 'app.nav.backups', icon: '💾' },
-  { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅' },
-  { path: '/shell', labelKey: 'app.nav.shell', icon: '🖥️' },
-  { path: '/admin/users', labelKey: 'app.nav.users', icon: '👥', adminOnly: true },
+  { path: '/bindings', labelKey: 'app.nav.bindings', icon: '🔗', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/skills', labelKey: 'app.nav.skills', icon: '🧩', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/config', labelKey: 'app.nav.config', icon: '⚙️', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/qqbot', labelKey: 'app.nav.qqbot', icon: '🐧', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/token-usage', labelKey: 'app.nav.tokenUsage', icon: '📊', allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] },
+  { path: '/backups', labelKey: 'app.nav.backups', icon: '💾', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/shell', labelKey: 'app.nav.shell', icon: '🖥️', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/admin/users', labelKey: 'app.nav.users', icon: '👥', adminOnly: true, allowedRoles: ['Admin'] },
 ]
 
 const visibleNavItems = computed(() => {
-  const isAdmin = auth.user?.role === 'Admin'
-  return navItems.filter((item) => !item.adminOnly || isAdmin)
+  const role = (auth.user?.role || 'Viewer') as 'User' | 'Viewer' | 'Operator' | 'Admin'
+  const isAdmin = role === 'Admin'
+  return navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false
+    if (item.allowedRoles && !item.allowedRoles.includes(role)) return false
+    return true
+  })
 })
 
 const activePath = computed(() => {

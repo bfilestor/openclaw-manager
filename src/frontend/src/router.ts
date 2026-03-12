@@ -25,24 +25,24 @@ import BotConversationDetailView from './views/BotConversationDetailView.vue'
 const routes = [
   { path: '/login', component: LoginView },
   { path: '/register', component: RegisterView },
-  { path: '/dashboard', component: DashboardView, meta: { auth: true } },
-  { path: '/gateway', component: GatewayView, meta: { auth: true } },
-  { path: '/agents', component: AgentsView, meta: { auth: true } },
+  { path: '/dashboard', component: DashboardView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/gateway', component: GatewayView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/agents', component: AgentsView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
   /*{ path: '/agent-sessions', component: AgentSessionsView, meta: { auth: true } },*/
-  { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true } },
-  { path: '/agents/:id/workspace-files', component: AgentWorkspaceFilesView, meta: { auth: true } },
-  { path: '/agents/:id/workspace-files/edit', component: AgentWorkspaceFileEditorView, meta: { auth: true } },
-  { path: '/bindings', component: BindingsGraphView, meta: { auth: true } },
-  { path: '/skills', component: SkillsView, meta: { auth: true } },
-  { path: '/config', component: ConfigView, meta: { auth: true } },
-  { path: '/qqbot', component: QQBotManageView, meta: { auth: true } },
-  { path: '/api-providers', component: ApiProvidersView, meta: { auth: true } },
-  { path: '/token-usage', component: TokenUsageView, meta: { auth: true } },
-  { path: '/token-usage/:botId', component: BotConversationDetailView, meta: { auth: true } },
-  { path: '/backups', component: BackupsView, meta: { auth: true } },
-  { path: '/shell', component: TaskShellView, meta: { auth: true } },
-  { path: '/tasks', component: TasksView, meta: { auth: true } },
-  { path: '/admin/users', component: AdminUsersView, meta: { auth: true, admin: true } },
+  { path: '/agents/:id/workspace-migrate', component: AgentWorkspaceMigrateView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/agents/:id/workspace-files', component: AgentWorkspaceFilesView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/agents/:id/workspace-files/edit', component: AgentWorkspaceFileEditorView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/bindings', component: BindingsGraphView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/skills', component: SkillsView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/config', component: ConfigView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/qqbot', component: QQBotManageView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/api-providers', component: ApiProvidersView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/token-usage', component: TokenUsageView, meta: { auth: true, allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] } },
+  { path: '/token-usage/:botId', component: BotConversationDetailView, meta: { auth: true, allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] } },
+  { path: '/backups', component: BackupsView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/shell', component: TaskShellView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/tasks', component: TasksView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/admin/users', component: AdminUsersView, meta: { auth: true, admin: true, allowedRoles: ['Admin'] } },
   { path: '/', redirect: '/dashboard' }
 ]
 
@@ -50,6 +50,11 @@ const router = createRouter({ history: createWebHistory(), routes })
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.auth && !auth.isAuthenticated) return '/login'
+  const role = auth.user?.role || 'Viewer'
+  const allowedRoles = (to.meta as any)?.allowedRoles as string[] | undefined
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return role === 'User' ? '/token-usage' : '/dashboard'
+  }
   if (to.meta.admin && auth.user?.role !== 'Admin') return '/dashboard'
 })
 
