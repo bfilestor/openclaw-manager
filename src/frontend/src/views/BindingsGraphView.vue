@@ -232,9 +232,9 @@ const historyStack = ref<GraphEdge[][]>([])
 const canUndo = computed(() => historyStack.value.length > 0)
 
 const canvasWidth = 1180
-const nodeWidth = 250
-const nodeHeight = 72
-const nodeGap = 92
+const nodeWidth = 160
+const nodeHeight = 44
+const nodeGap = 68
 const topPadding = 52
 const bottomPadding = 36
 const leftX = 80
@@ -1135,29 +1135,30 @@ onBeforeUnmount(() => {
 
 .node {
   position: absolute;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
-  border: 1px solid #dce3ef;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.08);
+  border: 0.5px solid #dce3ef;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 10px 12px;
+  padding: 6px 8px;
   overflow: hidden;
 }
 
 .node-title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  color: #1f2937;
 }
 
 .node-subtitle {
-  font-size: 11px;
-  color: #68707e;
-  margin-top: 4px;
+  font-size: 10px;
+  color: #5f6875;
+  margin-top: 2px;
 }
 
 .node-agent {
@@ -1194,5 +1195,32 @@ onBeforeUnmount(() => {
   line-height: 1.5;
   color: #374151;
   padding: 10px;
+}
+
+:global([data-theme='dark']) .binding-graph-page .edge-label,
+:global([data-theme='dark']) .binding-graph-page .column-label {
+  color: #d7dde8;
+  fill: #d7dde8;
+}
+
+:global([data-theme='dark']) .binding-graph-page .node {
+  border-color: #4a5568;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+:global([data-theme='dark']) .binding-graph-page .node-title {
+  color: #f3f6fb;
+}
+
+:global([data-theme='dark']) .binding-graph-page .node-subtitle {
+  color: #c7d0de;
+}
+
+:global([data-theme='dark']) .binding-graph-page .node-agent {
+  background: linear-gradient(135deg, #1f2937, #253346);
+}
+
+:global([data-theme='dark']) .binding-graph-page .node-bot {
+  background: linear-gradient(135deg, #3a2a1f, #443122);
 }
 </style>
