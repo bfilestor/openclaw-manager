@@ -236,6 +236,8 @@ export default {
   tokenInsights: {
     pageTitle: 'Token Cost Insights',
     backToOverview: 'Back to Token Overview',
+    botFilter: 'Bot Filter',
+    botAll: 'All Bots',
     outputShareTitle: 'Net New Output Share',
     outputShareDesc: 'output / (input + output)',
     totalBilledTitle: 'Billed Total Tokens',

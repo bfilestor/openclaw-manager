@@ -5,6 +5,11 @@
         <div class="card-title-row">
           <span>{{ t('tokenInsights.pageTitle') }}</span>
           <el-space>
+            <el-text type="info">{{ t('tokenInsights.botFilter') }}</el-text>
+            <el-select v-model="selectedBot" class="bot-select">
+              <el-option value="ALL" :label="t('tokenInsights.botAll')" />
+              <el-option v-for="id in botOptions" :key="id" :label="id" :value="id" />
+            </el-select>
             <el-button @click="goBack">{{ t('tokenInsights.backToOverview') }}</el-button>
             <el-button :loading="loading" @click="loadData">{{ t('common.actions.refresh') }}</el-button>
           </el-space>
@@ -62,6 +67,7 @@ import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 type SessionRow = {
+  botId: string
   inputTokens: number
   outputTokens: number
   totalTokens: number
@@ -70,11 +76,18 @@ type SessionRow = {
 const loading = ref(false)
 const errorMessage = ref('')
 const sessions = ref<SessionRow[]>([])
+const botOptions = ref<string[]>([])
+const selectedBot = ref('ALL')
 const router = useRouter()
 const { t } = useI18n()
 
-const totalInput = computed(() => sessions.value.reduce((sum, s) => sum + Number(s.inputTokens || 0), 0))
-const totalOutput = computed(() => sessions.value.reduce((sum, s) => sum + Number(s.outputTokens || 0), 0))
+const filteredSessions = computed(() => {
+  if (selectedBot.value === 'ALL') return sessions.value
+  return sessions.value.filter((s) => s.botId === selectedBot.value)
+})
+
+const totalInput = computed(() => filteredSessions.value.reduce((sum, s) => sum + Number(s.inputTokens || 0), 0))
+const totalOutput = computed(() => filteredSessions.value.reduce((sum, s) => sum + Number(s.outputTokens || 0), 0))
 const totalBilled = computed(() => totalInput.value + totalOutput.value)
 const outputSharePct = computed(() => {
   if (totalBilled.value <= 0) return '0.0'
@@ -86,7 +99,7 @@ const bucketRows = computed(() => {
     short: { sessions: 0, inputTokens: 0, outputTokens: 0 },
     long: { sessions: 0, inputTokens: 0, outputTokens: 0 },
   }
-  sessions.value.forEach((s) => {
+  filteredSessions.value.forEach((s) => {
     const input = Number(s.inputTokens || 0)
     const output = Number(s.outputTokens || 0)
     const target = input <= 10000 ? acc.short : acc.long
@@ -131,6 +144,7 @@ async function loadData() {
   try {
     const botsRes = await axios.get('/api/v1/token-usage/summary')
     const bots = Array.isArray(botsRes?.data?.bots) ? botsRes.data.bots : []
+    botOptions.value = bots.map((b: any) => String(b?.botId || '')).filter(Boolean)
     const allSessions: SessionRow[] = []
     for (const bot of bots) {
       const botId = String(bot?.botId || '')
@@ -141,6 +155,7 @@ async function loadData() {
       const items = Array.isArray(detailRes?.data?.items) ? detailRes.data.items : []
       items.forEach((it: any) => {
         allSessions.push({
+          botId,
           inputTokens: Number(it?.inputTokens || 0),
           outputTokens: Number(it?.outputTokens || 0),
           totalTokens: Number(it?.totalTokens || 0),
@@ -173,6 +188,10 @@ onMounted(loadData)
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.bot-select {
+  width: 180px;
 }
 
 .metric-card {

@@ -236,6 +236,8 @@ export default {
   tokenInsights: {
     pageTitle: 'Token 成本洞察',
     backToOverview: '返回Token概览',
+    botFilter: 'Bot筛选',
+    botAll: '全部Bot',
     outputShareTitle: '净新增输出占比',
     outputShareDesc: 'output / (input + output)',
     totalBilledTitle: '计费总Token',
