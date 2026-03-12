@@ -88,6 +88,10 @@ systemctl --user restart openclaw-manager.service
 ### QQBot
 ![QQBot](screenshots/QQBot.png)
 
+### 多用户和token 预估
+![token](screenshots/token.png)
+![普通用户界面](screenshots/ordinal-user.png)
+
 ### 沟通群
 <img src="screenshots/qq.jpg" width="200"/>
 
