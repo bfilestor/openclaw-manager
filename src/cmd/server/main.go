@@ -56,12 +56,14 @@ func main() {
 		RefreshTokenTTL:  cfg.Auth.RefreshTokenTTL,
 		BlacklistChecker: tokenRepo,
 	}
+	accountBindRepo := auth.NewAccountBindingRepository(db.SQL)
 	authHandler := &auth.Handler{
-		Repo:      user.NewRepository(db.SQL),
-		Pass:      passSvc,
-		Config:    cfg,
-		JWT:       jwtSvc,
-		TokenRepo: tokenRepo,
+		Repo:         user.NewRepository(db.SQL),
+		Pass:         passSvc,
+		Config:       cfg,
+		JWT:          jwtSvc,
+		TokenRepo:    tokenRepo,
+		AccountBinds: accountBindRepo,
 	}
 
 	dist := resolveStaticDir(*staticDir)
@@ -97,6 +99,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		revRepo := appcfg.NewRevisionRepository(sqlDB)
 		agentRepo := agent.NewRepository(execer, validator)
 		taskRepo := task.NewRepository(sqlDB)
+		accountBindRepo := auth.NewAccountBindingRepository(sqlDB)
 
 		// 各功能 handler
 		gatewaySvc := gateway.NewSystemctlService(execer)
@@ -137,7 +140,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 			Revisions: revRepo,
 		}
 		identityAPI := &appcfg.IdentityHandler{AgentRepo: agentRepo, Revisions: revRepo, Validator: validator}
-		tokenUsageAPI := &usage.TokenUsageHandler{OpenClawHome: cfg.Paths.OpenClawHome}
+		tokenUsageAPI := &usage.TokenUsageHandler{OpenClawHome: cfg.Paths.OpenClawHome, AccountBinds: accountBindRepo}
 
 		// 公开接口
 		mux.HandleFunc("GET /api/v1/auth/public-registration", authHandler.PublicRegistrationStatus)
@@ -153,6 +156,9 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("POST /api/v1/users", wrap(authHandler.CreateUser, authMW))
 		mux.HandleFunc("PUT /api/v1/users/{id}/role", wrap(authHandler.UpdateUserRole, authMW))
 		mux.HandleFunc("PUT /api/v1/users/{id}/password", wrap(authHandler.UpdateUserPassword, authMW))
+		mux.HandleFunc("GET /api/v1/users/me/account-binding", wrap(authHandler.GetMyAccountBinding, authMW))
+		mux.HandleFunc("GET /api/v1/users/{id}/account-binding", wrap(authHandler.GetUserAccountBinding, authMW))
+		mux.HandleFunc("PUT /api/v1/users/{id}/account-binding", wrap(authHandler.SetUserAccountBinding, authMW))
 		mux.HandleFunc("POST /api/v1/users/{id}/disable", wrap(authHandler.DisableUser, authMW))
 		mux.HandleFunc("DELETE /api/v1/users/{id}", wrap(authHandler.DeleteUser, authMW))
 

@@ -17,11 +17,12 @@ import (
 var usernameRe = regexp.MustCompile(`^[a-zA-Z0-9_]{3,32}$`)
 
 type Handler struct {
-	Repo      *user.Repository
-	Pass      *PasswordService
-	Config    *config.Config
-	JWT       *JWTService
-	TokenRepo *TokenRepository
+	Repo         *user.Repository
+	Pass         *PasswordService
+	Config       *config.Config
+	JWT          *JWTService
+	TokenRepo    *TokenRepository
+	AccountBinds *AccountBindingRepository
 }
 
 type registerReq struct {

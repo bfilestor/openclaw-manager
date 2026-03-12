@@ -38,6 +38,10 @@ type setUserPasswordReq struct {
 	NewPassword string `json:"new_password"`
 }
 
+type setAccountBindingReq struct {
+	AccountID string `json:"account_id"`
+}
+
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	uc, ok := GetUserContext(r.Context())
 	if !ok {
@@ -175,7 +179,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	role := user.RoleViewer
 	if strings.TrimSpace(req.Role) != "" {
 		role = user.Role(req.Role)
-		if role != user.RoleViewer && role != user.RoleOperator && role != user.RoleAdmin {
+		if role != user.RoleUser && role != user.RoleViewer && role != user.RoleOperator && role != user.RoleAdmin {
 			middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"role": "invalid role"}))
 			return
 		}
@@ -227,7 +231,7 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newRole := user.Role(req.Role)
-	if newRole != user.RoleViewer && newRole != user.RoleOperator && newRole != user.RoleAdmin {
+	if newRole != user.RoleUser && newRole != user.RoleViewer && newRole != user.RoleOperator && newRole != user.RoleAdmin {
 		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"role": "invalid role"}))
 		return
 	}
@@ -396,6 +400,125 @@ func (h *Handler) DisableUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeUserJSON(w, http.StatusOK, target)
+}
+
+func (h *Handler) GetMyAccountBinding(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if h.AccountBinds == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"account_id":""}`))
+		return
+	}
+	item, err := h.AccountBinds.GetByUserID(uc.UserID)
+	if err != nil {
+		if errors.Is(err, ErrAccountBindingNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"account_id":""}`))
+			return
+		}
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"user_id":    item.UserID,
+		"account_id": item.AccountID,
+		"updated_at": item.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+func (h *Handler) GetUserAccountBinding(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if roleWeight(uc.Role) < roleWeight(user.RoleAdmin) {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+	if h.AccountBinds == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"account_id":""}`))
+		return
+	}
+	targetID := extractUserID(r.URL.Path, "account-binding")
+	if targetID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"user_id": "required"}))
+		return
+	}
+	item, err := h.AccountBinds.GetByUserID(targetID)
+	if err != nil {
+		if errors.Is(err, ErrAccountBindingNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"user_id":"` + targetID + `","account_id":""}`))
+			return
+		}
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"user_id":    item.UserID,
+		"account_id": item.AccountID,
+		"updated_at": item.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+func (h *Handler) SetUserAccountBinding(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if roleWeight(uc.Role) < roleWeight(user.RoleAdmin) {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+	if h.AccountBinds == nil {
+		middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_IMPLEMENTED", Message: "account binding disabled", StatusCode: http.StatusNotImplemented})
+		return
+	}
+	targetID := extractUserID(r.URL.Path, "account-binding")
+	if targetID == "" {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"user_id": "required"}))
+		return
+	}
+	var req setAccountBindingReq
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	accountID := strings.TrimSpace(req.AccountID)
+	if accountID == "" {
+		if err := h.AccountBinds.Delete(targetID); err != nil {
+			middleware.WriteAppError(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"message":"cleared"}`))
+		return
+	}
+	if _, err := h.Repo.FindByID(targetID); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if err := h.AccountBinds.Upsert(targetID, accountID); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"message":"ok"}`))
 }
 
 func writeUserJSON(w http.ResponseWriter, status int, u *user.User) {

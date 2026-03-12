@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
-export type Role = 'Viewer' | 'Operator' | 'Admin'
+export type Role = 'User' | 'Viewer' | 'Operator' | 'Admin'
 
 type SessionUser = { user_id: string; username: string; role: Role }
 

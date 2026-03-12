@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"openclaw-manager/internal/auth"
 	"openclaw-manager/internal/middleware"
+	"openclaw-manager/internal/user"
 )
 
 const (
@@ -23,6 +25,7 @@ const (
 
 type TokenUsageHandler struct {
 	OpenClawHome string
+	AccountBinds *auth.AccountBindingRepository
 }
 
 type providerCostIndex map[string]float64
@@ -80,6 +83,14 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 
 	if rangeDays > 0 {
 		sessions = filterSessionsByDays(sessions, rangeDays)
+	}
+	boundAccountID, err := h.resolveScopeAccountID(r)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if boundAccountID != "" {
+		sessions = filterSessionsByAccount(sessions, boundAccountID)
 	}
 
 	botMap := map[string]*botSummary{}
@@ -152,6 +163,18 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 	if rangeDays > 0 {
 		sessions = filterSessionsByDays(sessions, rangeDays)
 	}
+	boundAccountID, err := h.resolveScopeAccountID(r)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if boundAccountID != "" {
+		if botID != boundAccountID {
+			middleware.WriteAppError(w, middleware.NewForbidden("bound account only"))
+			return
+		}
+		sessions = filterSessionsByAccount(sessions, boundAccountID)
+	}
 
 	filtered := make([]sessionMeta, 0)
 	for _, s := range sessions {
@@ -222,12 +245,24 @@ func (h *TokenUsageHandler) SessionMessages(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	boundAccountID, err := h.resolveScopeAccountID(r)
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+
 	targetFile := ""
+	targetAccountID := ""
 	for _, s := range sessions {
 		if s.SessionID == sessionID {
 			targetFile = s.SessionFile
+			targetAccountID = safeBotID(s.AccountID)
 			break
 		}
+	}
+	if boundAccountID != "" && boundAccountID != targetAccountID {
+		middleware.WriteAppError(w, middleware.NewForbidden("bound account only"))
+		return
 	}
 	if targetFile == "" {
 		middleware.WriteAppError(w, &middleware.AppError{Code: middleware.CodeNotFound, Message: "session not found", StatusCode: http.StatusNotFound})
@@ -374,6 +409,27 @@ func safeBotID(botID string) string {
 	return botID
 }
 
+func (h *TokenUsageHandler) resolveScopeAccountID(r *http.Request) (string, error) {
+	uc, ok := auth.GetUserContext(r.Context())
+	if !ok || uc == nil {
+		return "", middleware.NewUnauthorized()
+	}
+	if uc.Role != user.RoleUser {
+		return "", nil
+	}
+	if h.AccountBinds == nil {
+		return "", &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
+	}
+	item, err := h.AccountBinds.GetByUserID(uc.UserID)
+	if err != nil {
+		if errors.Is(err, auth.ErrAccountBindingNotFound) {
+			return "", &middleware.AppError{Code: middleware.CodePermissionDenied, Message: "user role requires account binding", StatusCode: http.StatusForbidden}
+		}
+		return "", err
+	}
+	return safeBotID(item.AccountID), nil
+}
+
 func filterSessionsByDays(sessions []sessionMeta, days int) []sessionMeta {
 	if days <= 0 {
 		return sessions
@@ -386,6 +442,17 @@ func filterSessionsByDays(sessions []sessionMeta, days int) []sessionMeta {
 		}
 	}
 	return filtered
+}
+
+func filterSessionsByAccount(sessions []sessionMeta, accountID string) []sessionMeta {
+	accountID = safeBotID(accountID)
+	out := make([]sessionMeta, 0, len(sessions))
+	for _, s := range sessions {
+		if safeBotID(s.AccountID) == accountID {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func estimateCost(totalTokens int64, costPer1k float64) float64 {

@@ -84,6 +84,10 @@ func roleWeight(r user.Role) int {
 		return 3
 	case user.RoleOperator:
 		return 2
+	case user.RoleViewer:
+		return 1
+	case user.RoleUser:
+		return 1
 	default:
 		return 1
 	}

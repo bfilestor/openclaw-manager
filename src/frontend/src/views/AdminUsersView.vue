@@ -15,10 +15,19 @@
       <el-table-column :label="t('adminUsers.columns.role')" min-width="180">
         <template #default="{ row }">
           <el-select v-model="row.role" :disabled="row.user_id === meId" @change="changeRole(row)">
+            <el-option :label="t('roles.User')" value="User" />
             <el-option :label="t('roles.Viewer')" value="Viewer" />
             <el-option :label="t('roles.Operator')" value="Operator" />
             <el-option :label="t('roles.Admin')" value="Admin" />
           </el-select>
+        </template>
+      </el-table-column>
+      <el-table-column :label="t('adminUsers.columns.accountBinding')" min-width="240">
+        <template #default="{ row }">
+          <el-space>
+            <el-input v-model="row.account_id" :placeholder="t('adminUsers.accountIdPlaceholder')" clearable />
+            <el-button size="small" @click="saveAccountBinding(row)">{{ t('common.actions.confirm') }}</el-button>
+          </el-space>
         </template>
       </el-table-column>
       <el-table-column :label="t('adminUsers.columns.status')" min-width="100">
@@ -33,12 +42,7 @@
             <el-button size="small" :disabled="row.user_id === meId" @click="toggleDisable(row)">
               {{ row.status === 'disabled' ? t('adminUsers.enable') : t('adminUsers.disable') }}
             </el-button>
-            <el-button
-              size="small"
-              type="danger"
-              :disabled="deleteDisabled(row)"
-              @click="del(row)"
-            >
+            <el-button size="small" type="danger" :disabled="deleteDisabled(row)" @click="del(row)">
               {{ t('common.actions.delete') }}
             </el-button>
           </el-space>
@@ -56,6 +60,7 @@
         </el-form-item>
         <el-form-item :label="t('adminUsers.columns.role')">
           <el-select v-model="createForm.role" style="width: 100%">
+            <el-option :label="t('roles.User')" value="User" />
             <el-option :label="t('roles.Viewer')" value="Viewer" />
             <el-option :label="t('roles.Operator')" value="Operator" />
             <el-option :label="t('roles.Admin')" value="Admin" />
@@ -93,11 +98,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
+type Role = 'User' | 'Viewer' | 'Operator' | 'Admin'
+
 type UserItem = {
   user_id: string
   username: string
-  role: 'Viewer' | 'Operator' | 'Admin'
+  role: Role
   status: 'active' | 'disabled'
+  account_id?: string
 }
 
 const auth = useAuthStore()
@@ -113,7 +121,7 @@ const createDialogVisible = ref(false)
 const createForm = ref({
   username: '',
   password: '',
-  role: 'Viewer' as 'Viewer' | 'Operator' | 'Admin',
+  role: 'Viewer' as Role,
 })
 
 const resetDialogVisible = ref(false)
@@ -135,7 +143,16 @@ async function load() {
   loading.value = true
   try {
     const { data } = await axios.get('/api/v1/users')
-    users.value = Array.isArray(data?.users) ? data.users : []
+    const list = Array.isArray(data?.users) ? data.users : []
+    users.value = list.map((u: any) => ({ ...u, account_id: '' }))
+    await Promise.all(users.value.map(async (row) => {
+      try {
+        const { data: bind } = await axios.get(`/api/v1/users/${row.user_id}/account-binding`)
+        row.account_id = String(bind?.account_id || '')
+      } catch {
+        row.account_id = ''
+      }
+    }))
   } catch (err) {
     ElMessage.error(parseError(err, t('adminUsers.messages.loadFailed')))
     users.value = []
@@ -175,6 +192,15 @@ async function changeRole(u: UserItem) {
   } catch (err) {
     ElMessage.error(parseError(err, t('adminUsers.messages.roleUpdateFailed')))
     await load()
+  }
+}
+
+async function saveAccountBinding(u: UserItem) {
+  try {
+    await axios.put(`/api/v1/users/${u.user_id}/account-binding`, { account_id: String(u.account_id || '') })
+    ElMessage.success(t('adminUsers.messages.bindingUpdated'))
+  } catch (err) {
+    ElMessage.error(parseError(err, t('adminUsers.messages.bindingUpdateFailed')))
   }
 }
 
