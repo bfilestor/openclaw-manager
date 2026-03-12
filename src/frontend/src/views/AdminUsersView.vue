@@ -25,7 +25,9 @@
       <el-table-column :label="t('adminUsers.columns.accountBinding')" min-width="240">
         <template #default="{ row }">
           <el-space>
-            <el-input v-model="row.account_id" :placeholder="t('adminUsers.accountIdPlaceholder')" clearable />
+            <el-select v-model="row.account_id" :placeholder="t('adminUsers.accountIdPlaceholder')" clearable filterable class="account-select">
+              <el-option v-for="id in accountIdOptions" :key="id" :label="id" :value="id" />
+            </el-select>
             <el-input-number v-model="row.token_limit" :min="0" :step="1000" :placeholder="t('adminUsers.tokenLimitPlaceholder')" />
             <el-button size="small" @click="saveAccountBinding(row)">{{ t('common.actions.confirm') }}</el-button>
           </el-space>
@@ -118,6 +120,7 @@ const loading = ref(false)
 const creating = ref(false)
 const resetting = ref(false)
 const users = ref<UserItem[]>([])
+const accountIdOptions = ref<string[]>([])
 
 const createDialogVisible = ref(false)
 const createForm = ref({
@@ -141,17 +144,58 @@ function parseError(err: any, fallback: string): string {
   return typeof msg === 'string' && msg ? msg : fallback
 }
 
+function extractAccountIdsFromConfig(cfg: any): string[] {
+  const set = new Set<string>()
+
+  const bindings = Array.isArray(cfg?.bindings) ? cfg.bindings : []
+  bindings.forEach((item: any) => {
+    const id = String(item?.match?.accountId || '').trim()
+    if (id) set.add(id)
+  })
+
+  const channels = cfg?.channels
+  if (channels && typeof channels === 'object') {
+    Object.values(channels).forEach((ch: any) => {
+      if (!ch || typeof ch !== 'object') return
+      const accounts = ch.accounts
+      if (accounts && typeof accounts === 'object') {
+        Object.keys(accounts).forEach((id) => {
+          const normalized = String(id || '').trim()
+          if (normalized) set.add(normalized)
+        })
+      }
+    })
+  }
+
+  return Array.from(set).sort((a, b) => a.localeCompare(b))
+}
+
 async function load() {
   loading.value = true
   try {
-    const { data } = await axios.get('/api/v1/users')
+    const [{ data }, configRes] = await Promise.all([
+      axios.get('/api/v1/users'),
+      axios.get('/api/v1/config/openclaw').catch(() => ({ data: { content: '{}' } })),
+    ])
+
     const list = Array.isArray(data?.users) ? data.users : []
     users.value = list.map((u: any) => ({ ...u, account_id: '', token_limit: 0 }))
+
+    try {
+      const cfg = JSON.parse(String(configRes?.data?.content || '{}'))
+      accountIdOptions.value = extractAccountIdsFromConfig(cfg)
+    } catch {
+      accountIdOptions.value = []
+    }
     await Promise.all(users.value.map(async (row) => {
       try {
         const { data: bind } = await axios.get(`/api/v1/users/${row.user_id}/account-binding`)
         row.account_id = String(bind?.account_id || '')
         row.token_limit = Number(bind?.token_limit || 0)
+        if (row.account_id && !accountIdOptions.value.includes(row.account_id)) {
+          accountIdOptions.value.push(row.account_id)
+          accountIdOptions.value.sort((a, b) => a.localeCompare(b))
+        }
       } catch {
         row.account_id = ''
         row.token_limit = 0
@@ -200,9 +244,14 @@ async function changeRole(u: UserItem) {
 }
 
 async function saveAccountBinding(u: UserItem) {
+  const accountID = String(u.account_id || '').trim()
+  if (accountID && !accountIdOptions.value.includes(accountID)) {
+    ElMessage.warning(t('adminUsers.messages.invalidAccountId'))
+    return
+  }
   try {
     await axios.put(`/api/v1/users/${u.user_id}/account-binding`, {
-      account_id: String(u.account_id || ''),
+      account_id: accountID,
       token_limit: Number(u.token_limit || 0),
     })
     ElMessage.success(t('adminUsers.messages.bindingUpdated'))
@@ -296,5 +345,9 @@ onMounted(load)
 
 .topbar h3 {
   margin: 0;
+}
+
+.account-select {
+  width: 200px;
 }
 </style>

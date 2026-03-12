@@ -451,6 +451,7 @@ export default {
       roleUpdateFailed: 'Failed to update role',
       bindingUpdated: 'Account binding updated',
       bindingUpdateFailed: 'Failed to update account binding',
+      invalidAccountId: 'Please select an existing accountId from system list',
       statusUpdated: 'Status updated',
       statusUpdateFailed: 'Failed to update status',
       lastAdminProtected: 'Only one Admin left, cannot delete',

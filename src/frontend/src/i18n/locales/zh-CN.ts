@@ -451,6 +451,7 @@ export default {
       roleUpdateFailed: '角色更新失败',
       bindingUpdated: '账号绑定更新成功',
       bindingUpdateFailed: '账号绑定更新失败',
+      invalidAccountId: '请选择系统中已存在的 accountId',
       statusUpdated: '状态更新成功',
       statusUpdateFailed: '状态更新失败',
       lastAdminProtected: '系统仅剩一个 Admin，不能删除',
