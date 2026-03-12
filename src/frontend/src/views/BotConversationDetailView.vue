@@ -24,7 +24,7 @@
         <el-table-column prop="preview" :label="t('tokenUsage.columns.preview')" min-width="280" show-overflow-tooltip />
         <el-table-column :label="t('tokenUsage.columns.actions')" width="120">
           <template #default="{ row }">
-            <el-button type="success" link @click="openMessages(row.sessionId)">{{ t('tokenUsage.viewMessages') }}</el-button>
+            <el-button type="primary" link @click="openMessages(row.sessionId)">{{ t('tokenUsage.viewMessages') }}</el-button>
           </template>
         </el-table-column>
       </el-table>

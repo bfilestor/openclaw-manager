@@ -5,7 +5,7 @@
       <el-space>
         <el-button @click="goBack">{{ t('workspaceEditor.backToFiles') }}</el-button>
         <el-button :loading="loading" @click="loadAll">{{ t('common.actions.refresh') }}</el-button>
-        <el-button type="success" :loading="saving" :disabled="!canEdit" @click="saveFile">
+        <el-button type="primary" :loading="saving" :disabled="!canEdit" @click="saveFile">
           {{ t('workspaceEditor.save') }}
         </el-button>
       </el-space>
@@ -71,7 +71,7 @@
               <template #default="{ row }">
                 <el-space>
                   <el-button type="info" link @click="previewRevision(row)">{{ t('workspaceEditor.revisions.view') }}</el-button>
-                  <el-button type="success" link @click="compareWithCurrent(row)">{{ t('workspaceEditor.revisions.compareCurrent') }}</el-button>
+                  <el-button type="primary" link @click="compareWithCurrent(row)">{{ t('workspaceEditor.revisions.compareCurrent') }}</el-button>
                   <el-button
                     type="warning"
                     link

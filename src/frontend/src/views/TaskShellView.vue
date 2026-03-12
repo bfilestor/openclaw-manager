@@ -27,7 +27,7 @@
             <el-table-column prop="command" :label="t('shell.stashedCommands')" min-width="280" show-overflow-tooltip />
             <el-table-column :label="t('shell.columns.actions')" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button type="success" link @click="fillCommand(row.command)">{{ t('shell.fill') }}</el-button>
+                <el-button type="primary" link @click="fillCommand(row.command)">{{ t('shell.fill') }}</el-button>
                 <el-button type="danger" link @click="removeStash(row.id)">{{ t('common.actions.delete') }}</el-button>
               </template>
             </el-table-column>
@@ -55,7 +55,7 @@
               :placeholder="t('shell.commandPlaceholder')"
               @keyup.enter="executeCommand"
             />
-            <el-button type="success" :loading="executing" :disabled="!canExecute" @click="executeCommand">
+            <el-button type="primary" :loading="executing" :disabled="!canExecute" @click="executeCommand">
               {{ t('shell.execute') }}
             </el-button>
             <el-button :disabled="!logText" @click="clearLog">{{ t('shell.clearLogs') }}</el-button>

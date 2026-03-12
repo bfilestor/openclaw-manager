@@ -88,7 +88,7 @@
         <div class="cmd-box">
           <div class="cmd-title-row">
             <div class="cmd-title">{{ t('qqbot.firstAccessCommandTitle') }}</div>
-            <el-button type="success" :disabled="!canEdit || !canExecuteFirstAccess" @click="goExecuteFirstAccessCommands">
+            <el-button type="primary" :disabled="!canEdit || !canExecuteFirstAccess" @click="goExecuteFirstAccessCommands">
               {{ t('common.actions.goExecute') }}
             </el-button>
           </div>
@@ -139,7 +139,7 @@
 
       <el-space>
         <el-button :disabled="!canEdit" @click="addRow">{{ t('common.actions.addRow') }}</el-button>
-        <el-button type="success" :disabled="!canEdit" @click="appendRowsToConfig">
+        <el-button type="primary" :disabled="!canEdit" @click="appendRowsToConfig">
           {{ t('common.actions.appendDraft') }}
         </el-button>
       </el-space>

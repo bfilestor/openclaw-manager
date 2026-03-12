@@ -109,7 +109,7 @@
           />
         </el-col>
         <el-col :xs="24" :md="2" class="row-op">
-          <el-button type="success" :disabled="!canEdit" @click="addProvider">{{ t('common.actions.addRow') }}</el-button>
+          <el-button type="primary" :disabled="!canEdit" @click="addProvider">{{ t('common.actions.addRow') }}</el-button>
         </el-col>
       </el-row>
     </el-card>

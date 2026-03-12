@@ -36,7 +36,7 @@
           <template #default="{ row }">
             <el-space>
               <el-button type="info" link @click="viewFile(row.path)">{{ t('workspaceFiles.actions.view') }}</el-button>
-              <el-button type="success" link @click="goEdit(row.path)">{{ t('workspaceFiles.actions.edit') }}</el-button>
+              <el-button type="primary" link @click="goEdit(row.path)">{{ t('workspaceFiles.actions.edit') }}</el-button>
             </el-space>
           </template>
         </el-table-column>
@@ -52,7 +52,7 @@
       <template #footer>
         <el-space>
           <el-button @click="previewVisible = false">{{ t('common.actions.close') }}</el-button>
-          <el-button type="success" @click="goEdit(previewPath)">{{ t('workspaceFiles.actions.goEdit') }}</el-button>
+          <el-button type="primary" @click="goEdit(previewPath)">{{ t('workspaceFiles.actions.goEdit') }}</el-button>
         </el-space>
       </template>
     </el-dialog>

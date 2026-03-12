@@ -32,7 +32,7 @@
           </el-checkbox-group>
         </el-form-item>
         <el-button
-          type="success"
+          type="primary"
           :loading="creating"
           :disabled="!canCreate || createForm.scope.length === 0"
           @click="createBackup"
@@ -78,7 +78,7 @@
           </el-checkbox>
         </el-checkbox-group>
       </el-form-item>
-      <el-button type="success" :disabled="!canCreate" @click="createPlan">新增计划</el-button>
+      <el-button type="primary" :disabled="!canCreate" @click="createPlan">新增计划</el-button>
 
       <el-table :data="plans" row-key="plan_id" style="width: 100%; margin-top: 12px">
         <el-table-column prop="name" label="名称" min-width="180" />
@@ -96,7 +96,7 @@
         </el-table-column>
         <el-table-column label="操作" width="220">
           <template #default="{ row }">
-            <el-button link type="success" @click="runPlanNow(row.plan_id)">立即执行</el-button>
+            <el-button link type="primary" @click="runPlanNow(row.plan_id)">立即执行</el-button>
             <el-button link :type="row.enabled ? 'warning' : 'success'" @click="togglePlan(row)">{{ row.enabled ? '停用' : '启用' }}</el-button>
             <el-button link type="danger" @click="deletePlan(row.plan_id)">删除</el-button>
           </template>
@@ -131,7 +131,7 @@
                 {{ t('backups.actions.download') }}
               </el-button>
               <el-button
-                type="success"
+                type="primary"
                 link
                 :disabled="!canRestore"
                 @click="previewRestore(row.backup_id)"
@@ -178,7 +178,7 @@
       <template #footer>
         <el-space>
           <el-button @click="restoreDialogVisible = false">{{ t('common.actions.cancel') }}</el-button>
-          <el-button type="success" :loading="restoring" @click="confirmRestore">
+          <el-button type="primary" :loading="restoring" @click="confirmRestore">
             {{ t('backups.confirmRestore') }}
           </el-button>
         </el-space>
