@@ -29,7 +29,7 @@ export default {
     },
   },
   roles: {
-    User: '用户',
+    User: '普通用户',
     Viewer: '查看者',
     Operator: '操作员',
     Admin: '管理员',

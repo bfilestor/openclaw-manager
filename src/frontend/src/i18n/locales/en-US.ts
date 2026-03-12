@@ -29,7 +29,7 @@ export default {
     },
   },
   roles: {
-    User: 'User',
+    User: 'OdUser',
     Viewer: 'Viewer',
     Operator: 'Operator',
     Admin: 'Admin',
