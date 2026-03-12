@@ -57,6 +57,7 @@ func main() {
 		BlacklistChecker: tokenRepo,
 	}
 	accountBindRepo := auth.NewAccountBindingRepository(db.SQL)
+	systemSettingsRepo := auth.NewSystemSettingsRepository(db.SQL)
 	authHandler := &auth.Handler{
 		Repo:         user.NewRepository(db.SQL),
 		Pass:         passSvc,
@@ -64,6 +65,7 @@ func main() {
 		JWT:          jwtSvc,
 		TokenRepo:    tokenRepo,
 		AccountBinds: accountBindRepo,
+		Settings:     systemSettingsRepo,
 	}
 
 	dist := resolveStaticDir(*staticDir)
@@ -152,6 +154,8 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("POST /api/v1/auth/logout", wrap(authHandler.Logout, authMW))
 		mux.HandleFunc("GET /api/v1/users/me", wrap(authHandler.Me, authMW))
 		mux.HandleFunc("PUT /api/v1/users/me/password", wrap(authHandler.ChangeMyPassword, authMW))
+		mux.HandleFunc("GET /api/v1/system/settings", wrap(authHandler.GetSystemSettings, authMW))
+		mux.HandleFunc("PUT /api/v1/system/settings", wrap(authHandler.PutSystemSettings, authMW))
 		mux.HandleFunc("GET /api/v1/users", wrap(authHandler.ListUsers, authMW))
 		mux.HandleFunc("POST /api/v1/users", wrap(authHandler.CreateUser, authMW))
 		mux.HandleFunc("PUT /api/v1/users/{id}/role", wrap(authHandler.UpdateUserRole, authMW))

@@ -163,6 +163,7 @@ const navItems: NavItem[] = [
   { path: '/config', labelKey: 'app.nav.config', icon: '⚙️', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/qqbot', labelKey: 'app.nav.qqbot', icon: '🐧', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
+  { path: '/system-settings', labelKey: 'app.nav.systemSettings', icon: '🛠️', allowedRoles: ['Admin'] },
   { path: '/token-usage', labelKey: 'app.nav.tokenUsage', icon: '📊', allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] },
   { path: '/backups', labelKey: 'app.nav.backups', icon: '💾', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅', allowedRoles: ['Viewer', 'Operator', 'Admin'] },

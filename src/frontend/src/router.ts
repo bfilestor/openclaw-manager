@@ -19,6 +19,7 @@ import AgentWorkspaceFilesView from './views/AgentWorkspaceFilesView.vue'
 import AgentWorkspaceFileEditorView from './views/AgentWorkspaceFileEditorView.vue'
 import QQBotManageView from './views/QQBotManageView.vue'
 import ApiProvidersView from './views/ApiProvidersView.vue'
+import SystemSettingsView from './views/SystemSettingsView.vue'
 import TokenUsageView from './views/TokenUsageView.vue'
 import BotConversationDetailView from './views/BotConversationDetailView.vue'
 import TokenInsightsView from './views/TokenInsightsView.vue'
@@ -38,6 +39,7 @@ const routes = [
   { path: '/config', component: ConfigView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
   { path: '/qqbot', component: QQBotManageView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
   { path: '/api-providers', component: ApiProvidersView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
+  { path: '/system-settings', component: SystemSettingsView, meta: { auth: true, allowedRoles: ['Admin'] } },
   { path: '/token-usage', component: TokenUsageView, meta: { auth: true, allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] } },
   { path: '/token-usage/insights', component: TokenInsightsView, meta: { auth: true, allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] } },
   { path: '/token-usage/:botId', component: BotConversationDetailView, meta: { auth: true, allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] } },

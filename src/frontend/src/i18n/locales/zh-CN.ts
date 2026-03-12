@@ -45,6 +45,7 @@ export default {
       config: '配置',
       qqbot: 'QQBot',
       apiProviders: 'API接入',
+      systemSettings: '系统管理',
       tokenUsage: 'Token消费',
       backups: '备份',
       tasks: '任务',
@@ -256,6 +257,18 @@ export default {
     },
     messages: {
       loadFailed: '加载 Token 洞察失败',
+    },
+  },
+  systemSettings: {
+    title: '系统管理',
+    publicRegistration: '自主注册开关',
+    enabled: '开启',
+    disabled: '关闭',
+    tip: '关闭后，/register 页面将提示系统已关闭注册并隐藏注册输入表单。',
+    messages: {
+      loadFailed: '加载系统设置失败',
+      saveSuccess: '系统设置保存成功',
+      saveFailed: '系统设置保存失败',
     },
   },
   permission: {

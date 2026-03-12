@@ -23,6 +23,7 @@ type Handler struct {
 	JWT          *JWTService
 	TokenRepo    *TokenRepository
 	AccountBinds *AccountBindingRepository
+	Settings     *SystemSettingsRepository
 }
 
 type registerReq struct {
@@ -42,10 +43,7 @@ type refreshResp struct {
 }
 
 func (h *Handler) PublicRegistrationStatus(w http.ResponseWriter, _ *http.Request) {
-	enabled := false
-	if h.Config != nil {
-		enabled = h.Config.Auth.PublicRegister
-	}
+	enabled, _ := h.publicRegistrationEnabled()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if enabled {
@@ -55,8 +53,65 @@ func (h *Handler) PublicRegistrationStatus(w http.ResponseWriter, _ *http.Reques
 	_, _ = w.Write([]byte(`{"public_registration":false}`))
 }
 
+func (h *Handler) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if roleWeight(uc.Role) < roleWeight(user.RoleAdmin) {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+	enabled, err := h.publicRegistrationEnabled()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(enabled) + `}`))
+}
+
+func (h *Handler) PutSystemSettings(w http.ResponseWriter, r *http.Request) {
+	uc, ok := GetUserContext(r.Context())
+	if !ok {
+		middleware.WriteAppError(w, middleware.NewUnauthorized())
+		return
+	}
+	if roleWeight(uc.Role) < roleWeight(user.RoleAdmin) {
+		middleware.WriteAppError(w, middleware.NewForbidden(string(user.RoleAdmin)))
+		return
+	}
+	var req struct {
+		PublicRegistration *bool `json:"public_registration"`
+	}
+	if err := middleware.BindJSON(r, &req); err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if req.PublicRegistration == nil {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"public_registration": "required"}))
+		return
+	}
+	if h.Settings != nil {
+		if err := h.Settings.SetPublicRegistrationEnabled(*req.PublicRegistration); err != nil {
+			middleware.WriteAppError(w, err)
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(*req.PublicRegistration) + `}`))
+}
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	if h.Config != nil && !h.Config.Auth.PublicRegister {
+	enabled, err := h.publicRegistrationEnabled()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	if !enabled {
 		middleware.WriteAppError(w, &middleware.AppError{Code: "REGISTRATION_DISABLED", Message: "registration disabled", StatusCode: http.StatusForbidden})
 		return
 	}
@@ -258,4 +313,22 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"message":"logged out"}`))
+}
+
+func (h *Handler) publicRegistrationEnabled() (bool, error) {
+	if h.Settings != nil {
+		return h.Settings.IsPublicRegistrationEnabled()
+	}
+	enabled := true
+	if h.Config != nil {
+		enabled = h.Config.Auth.PublicRegister
+	}
+	return enabled, nil
+}
+
+func boolToJSON(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
 }

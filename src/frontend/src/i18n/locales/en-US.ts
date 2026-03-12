@@ -45,6 +45,7 @@ export default {
       config: 'Config',
       qqbot: 'QQBot',
       apiProviders: 'API Access',
+      systemSettings: 'System Settings',
       tokenUsage: 'Token Usage',
       backups: 'Backups',
       tasks: 'Tasks',
@@ -256,6 +257,18 @@ export default {
     },
     messages: {
       loadFailed: 'Failed to load token insights',
+    },
+  },
+  systemSettings: {
+    title: 'System Settings',
+    publicRegistration: 'Public Registration',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    tip: 'When disabled, /register shows a disabled notice and hides the registration form.',
+    messages: {
+      loadFailed: 'Failed to load system settings',
+      saveSuccess: 'System settings saved',
+      saveFailed: 'Failed to save system settings',
     },
   },
   permission: {
