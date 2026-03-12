@@ -24,6 +24,19 @@
       :closable="false"
     />
 
+    <el-card v-if="quotaLimit > 0" shadow="never" class="quota-card">
+      <div class="quota-head">
+        <span>{{ t('dashboard.quotaProgress') }}</span>
+        <el-tag :type="quotaAlertType">{{ Math.round(quotaRatio * 100) }}%</el-tag>
+      </div>
+      <el-progress :percentage="Math.min(100, Math.round(quotaRatio * 100))" :status="quotaStatus === 'exceeded' ? 'exception' : undefined" />
+      <div class="quota-meta">
+        <span>{{ t('dashboard.quotaUsed', { used: quotaUsed }) }}</span>
+        <span>{{ t('dashboard.quotaRemaining', { remaining: quotaRemaining }) }}</span>
+        <span>{{ t('dashboard.quotaLimit', { limit: quotaLimit }) }}</span>
+      </div>
+    </el-card>
+
     <el-card shadow="never" class="trend-card">
       <div class="trend-head">
         <span class="trend-icon">📈</span>
@@ -159,6 +172,11 @@ const gatewayTagType = computed<'success' | 'warning' | 'info'>(() => {
 })
 
 const quotaAlertType = computed<'warning' | 'error'>(() => (quotaStatus.value === 'exceeded' ? 'error' : 'warning'))
+const quotaRatio = computed(() => {
+  if (!quotaLimit.value) return 0
+  return quotaUsed.value / quotaLimit.value
+})
+const quotaRemaining = computed(() => Math.max(0, quotaLimit.value - quotaUsed.value))
 const quotaAlert = computed(() => {
   if (!quotaLimit.value || quotaStatus.value === 'normal' || quotaStatus.value === '') return ''
   if (quotaStatus.value === 'exceeded') {
@@ -326,9 +344,25 @@ onUnmounted(() => clearInterval(timer))
   opacity: 0.92;
 }
 
+.quota-card,
 .trend-card {
   border-radius: 12px;
   background: linear-gradient(145deg, #f8fafc, #eef2ff);
+}
+
+.quota-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quota-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 14px;
+  color: #4b5563;
+  font-size: 12px;
 }
 .trend-head {
   display: flex;

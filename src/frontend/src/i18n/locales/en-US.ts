@@ -221,6 +221,10 @@ export default {
     },
     quotaNear: 'Token usage is near limit: used {used} / limit {limit}',
     quotaExceeded: 'Token usage has exceeded limit: used {used} / limit {limit}',
+    quotaProgress: 'Quota Progress',
+    quotaUsed: 'Used: {used}',
+    quotaRemaining: 'Remaining: {remaining}',
+    quotaLimit: 'Limit: {limit}',
     messages: {
       loadFailed: 'Failed to load token usage',
       loadDetailFailed: 'Failed to load bot conversation details',
@@ -517,6 +521,10 @@ export default {
     },
     quotaNear: 'Token usage is near limit: used {used} / limit {limit}',
     quotaExceeded: 'Token usage has exceeded limit: used {used} / limit {limit}',
+    quotaProgress: 'Quota Progress',
+    quotaUsed: 'Used: {used}',
+    quotaRemaining: 'Remaining: {remaining}',
+    quotaLimit: 'Limit: {limit}',
   },
   config: {
     title: 'Config Editor',

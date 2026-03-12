@@ -221,6 +221,10 @@ export default {
     },
     quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',
     quotaExceeded: 'Token 使用量已超过限额：已用 {used} / 限额 {limit}',
+    quotaProgress: '限额使用进度',
+    quotaUsed: '已用: {used}',
+    quotaRemaining: '剩余: {remaining}',
+    quotaLimit: '限额: {limit}',
     messages: {
       loadFailed: '加载 Token 消费失败',
       loadDetailFailed: '加载 Bot 对话详情失败',
@@ -517,6 +521,10 @@ export default {
     },
     quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',
     quotaExceeded: 'Token 使用量已超过限额：已用 {used} / 限额 {limit}',
+    quotaProgress: '限额使用进度',
+    quotaUsed: '已用: {used}',
+    quotaRemaining: '剩余: {remaining}',
+    quotaLimit: '限额: {limit}',
   },
   config: {
     title: '配置编辑器',

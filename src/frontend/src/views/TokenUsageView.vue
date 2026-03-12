@@ -26,6 +26,19 @@
         :closable="false"
       />
 
+      <el-card v-if="quota" shadow="never" class="quota-card">
+        <div class="quota-head">
+          <span>{{ t('tokenUsage.quotaProgress') }}</span>
+          <el-tag :type="quotaAlertType">{{ Math.round(quotaRatio * 100) }}%</el-tag>
+        </div>
+        <el-progress :percentage="Math.min(100, Math.round(quotaRatio * 100))" :status="quota.status === 'exceeded' ? 'exception' : undefined" />
+        <div class="quota-meta">
+          <span>{{ t('tokenUsage.quotaUsed', { used: quota.usedTokens }) }}</span>
+          <span>{{ t('tokenUsage.quotaRemaining', { remaining: quotaRemaining }) }}</span>
+          <span>{{ t('tokenUsage.quotaLimit', { limit: quota.tokenLimit }) }}</span>
+        </div>
+      </el-card>
+
       <el-row :gutter="12" class="summary-row">
         <el-col :xs="24" :md="8">
           <el-statistic :title="t('tokenUsage.summary.totalTokens')" :value="summary.totalTokens" />
@@ -78,6 +91,16 @@ const days = ref(0)
 const quota = ref<{ accountId: string; tokenLimit: number; usedTokens: number; ratio: number; status: 'normal' | 'near' | 'exceeded' } | undefined>()
 
 const quotaAlertType = computed<'warning' | 'error'>(() => (quota.value?.status === 'exceeded' ? 'error' : 'warning'))
+const quotaRatio = computed(() => {
+  const q = quota.value
+  if (!q || q.tokenLimit <= 0) return 0
+  return q.usedTokens / q.tokenLimit
+})
+const quotaRemaining = computed(() => {
+  const q = quota.value
+  if (!q || q.tokenLimit <= 0) return 0
+  return Math.max(0, q.tokenLimit - q.usedTokens)
+})
 const quotaAlert = computed(() => {
   const q = quota.value
   if (!q || q.tokenLimit <= 0) return ''
@@ -169,6 +192,25 @@ onMounted(() => {
 
 .days-select {
   width: 140px;
+}
+
+.quota-card {
+  margin-top: 10px;
+}
+
+.quota-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quota-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 14px;
+  color: var(--oc-text-muted);
+  font-size: 12px;
 }
 
 .summary-row {
