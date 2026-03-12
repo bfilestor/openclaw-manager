@@ -679,4 +679,19 @@ onMounted(async () => {
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* Improve button readability in dark theme for this page. */
+.backups-page :deep(.el-button:not(.el-button--primary)) {
+  color: var(--oc-text);
+  background: var(--oc-surface-muted);
+  border-color: var(--oc-border);
+}
+
+.backups-page :deep(.el-button--primary) {
+  color: var(--oc-accent-contrast);
+}
+
+.backups-page :deep(.el-button.is-link:not(.el-button--primary)) {
+  background: transparent;
+}
 </style>
