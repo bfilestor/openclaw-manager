@@ -14,7 +14,9 @@
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
       <el-table v-loading="loading" :data="items" row-key="sessionKey" style="width: 100%">
-        <el-table-column prop="updatedAt" :label="t('tokenUsage.columns.updatedAt')" min-width="180" />
+        <el-table-column :label="t('tokenUsage.columns.updatedAt')" min-width="180">
+          <template #default="{ row }">{{ formatShanghaiDateTime(row.updatedAt) }}</template>
+        </el-table-column>
         <el-table-column prop="agentId" :label="t('tokenUsage.columns.agentId')" width="120" />
         <el-table-column prop="modelProvider" :label="t('tokenUsage.columns.provider')" min-width="140" />
         <el-table-column prop="totalTokens" :label="t('tokenUsage.columns.totalTokens')" width="130" />
@@ -95,6 +97,24 @@ const days = computed(() => {
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
   return typeof msg === 'string' && msg ? msg : fallback
+}
+
+function formatShanghaiDateTime(raw: string): string {
+  if (!raw) return ''
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return raw
+  const parts = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date)
+  const pick = (type: string) => parts.find((p) => p.type === type)?.value || '00'
+  return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`
 }
 
 async function loadData() {
