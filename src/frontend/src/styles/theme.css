@@ -39,6 +39,7 @@
   --oc-border: #2c2c2c;
   --oc-border-strong: #444444;
   --oc-text: #f2f2f2;
+  --oc-text-worning: #e6a23c;
   --oc-text-secondary: #d9d9d9;
   --oc-text-muted: #bfbfbf;
   --oc-accent: #f2f2f2;
@@ -83,7 +84,7 @@
 
 :root[data-theme='dark'] .el-tag {
   border-color: var(--oc-border-strong);
-  color: var(--oc-text);
+  color: var(--oc-text-worning);
 }
 
 :root[data-theme='dark'] .el-table tr:hover > td.el-table__cell {
