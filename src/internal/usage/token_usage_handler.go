@@ -106,16 +106,17 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 			item = &botSummary{BotID: botID}
 			botMap[botID] = item
 		}
+		usageTotal := s.InputTokens + s.OutputTokens
 		item.Sessions++
 		item.InputTokens += s.InputTokens
 		item.OutputTokens += s.OutputTokens
-		item.TotalTokens += s.TotalTokens
-		cost := estimateCost(s.TotalTokens, costs[s.ModelProvider])
+		item.TotalTokens += usageTotal
+		cost := estimateCost(usageTotal, costs[s.ModelProvider])
 		item.EstimatedCost += cost
 
 		totalInput += s.InputTokens
 		totalOutput += s.OutputTokens
-		totalTokens += s.TotalTokens
+		totalTokens += usageTotal
 		totalCost += cost
 	}
 
@@ -227,6 +228,7 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 
 	rows := make([]conversationRow, 0, end-start)
 	for _, s := range filtered[start:end] {
+		usageTotal := s.InputTokens + s.OutputTokens
 		rows = append(rows, conversationRow{
 			SessionKey:    s.SessionKey,
 			SessionID:     s.SessionID,
@@ -236,8 +238,8 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 			Model:         s.Model,
 			InputTokens:   s.InputTokens,
 			OutputTokens:  s.OutputTokens,
-			TotalTokens:   s.TotalTokens,
-			EstimatedCost: estimateCost(s.TotalTokens, costs[s.ModelProvider]),
+			TotalTokens:   usageTotal,
+			EstimatedCost: estimateCost(usageTotal, costs[s.ModelProvider]),
 			Preview:       readSessionPreview(s.SessionFile),
 		})
 	}
