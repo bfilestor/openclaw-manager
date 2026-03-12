@@ -40,13 +40,19 @@
       </el-card>
 
       <el-row :gutter="12" class="summary-row">
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="6">
           <el-statistic :title="t('tokenUsage.summary.totalTokens')" :value="summary.totalTokens" :formatter="formatTokenCompact" />
+          <el-text type="info">{{ formatTokenExact(summary.totalTokens) }}</el-text>
         </el-col>
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="6">
           <el-statistic :title="t('tokenUsage.summary.inputTokens')" :value="summary.inputTokens" :formatter="formatTokenCompact" />
+          <el-text type="info">{{ formatTokenExact(summary.inputTokens) }}</el-text>
         </el-col>
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="6">
+          <el-statistic :title="t('tokenUsage.summary.outputTokens')" :value="summary.outputTokens" :formatter="formatTokenCompact" />
+          <el-text type="info">{{ formatTokenExact(summary.outputTokens) }}</el-text>
+        </el-col>
+        <el-col :xs="24" :md="6">
           <el-statistic :title="t('tokenUsage.summary.estimatedCost')" :value="summary.estimatedCost" :precision="4">
             <template #prefix>$</template>
           </el-statistic>
@@ -118,9 +124,14 @@ const quotaAlert = computed(() => {
 function formatTokenCompact(value: number): string {
   if (!Number.isFinite(value)) return '0'
   const abs = Math.abs(value)
-  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`
-  if (abs >= 1_000) return `${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(abs >= 10_000 ? 1 : 2)}K`
   return String(Math.round(value))
+}
+
+function formatTokenExact(value: number): string {
+  if (!Number.isFinite(value)) return '0'
+  return Math.round(value).toLocaleString('en-US')
 }
 
 function parseError(err: any, fallback: string): string {

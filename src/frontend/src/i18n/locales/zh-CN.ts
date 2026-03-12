@@ -197,8 +197,9 @@ export default {
     emptyMessages: '该会话暂无可展示消息',
     onlyHumanMessages: '仅显示 user/assistant',
     summary: {
-      totalTokens: '系统总 Token',
+      totalTokens: '计费总 Token(输入+输出)',
       inputTokens: '总输入 Token',
+      outputTokens: '总输出 Token',
       estimatedCost: '预估费用',
     },
     columns: {

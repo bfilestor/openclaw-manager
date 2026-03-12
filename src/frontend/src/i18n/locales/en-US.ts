@@ -197,8 +197,9 @@ export default {
     emptyMessages: 'No message available for this session',
     onlyHumanMessages: 'Show user/assistant only',
     summary: {
-      totalTokens: 'Total Tokens',
+      totalTokens: 'Billed Total Tokens (Input + Output)',
       inputTokens: 'Total Input Tokens',
+      outputTokens: 'Total Output Tokens',
       estimatedCost: 'Estimated Cost',
     },
     columns: {
