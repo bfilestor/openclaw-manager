@@ -214,6 +214,7 @@ export default {
       preview: 'Conversation Preview',
     },
     exportCsv: 'Export CSV',
+    moreInsights: 'More Insights',
     range: {
       all: 'All Time',
       today: 'Last 1 Day',
@@ -230,6 +231,28 @@ export default {
       loadFailed: 'Failed to load token usage',
       loadDetailFailed: 'Failed to load bot conversation details',
       loadMessagesFailed: 'Failed to load session messages',
+    },
+  },
+  tokenInsights: {
+    pageTitle: 'Token Cost Insights',
+    backToOverview: 'Back to Token Overview',
+    outputShareTitle: 'Net New Output Share',
+    outputShareDesc: 'output / (input + output)',
+    totalBilledTitle: 'Billed Total Tokens',
+    bucketTitle: 'Session-Length Buckets (input inflation view)',
+    bucketShort: 'Short Sessions (input <= 10K)',
+    bucketLong: 'Long Sessions (input > 10K)',
+    billingTipTitle: 'How to get closer to provider billing',
+    billingTipDesc: 'Add cache read/write counters and split cost by model/provider. This page currently estimates by input+output, which is suitable for cost trend control.',
+    columns: {
+      bucket: 'Bucket',
+      sessions: 'Sessions',
+      inputTokens: 'Input Tokens',
+      outputTokens: 'Output Tokens',
+      outputShare: 'Output Share',
+    },
+    messages: {
+      loadFailed: 'Failed to load token insights',
     },
   },
   permission: {

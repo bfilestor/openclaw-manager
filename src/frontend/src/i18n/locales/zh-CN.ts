@@ -214,6 +214,7 @@ export default {
       preview: '对话预览',
     },
     exportCsv: '导出CSV',
+    moreInsights: '更多视角',
     range: {
       all: '全部时间',
       today: '最近1天',
@@ -230,6 +231,28 @@ export default {
       loadFailed: '加载 Token 消费失败',
       loadDetailFailed: '加载 Bot 对话详情失败',
       loadMessagesFailed: '加载会话消息失败',
+    },
+  },
+  tokenInsights: {
+    pageTitle: 'Token 成本洞察',
+    backToOverview: '返回Token概览',
+    outputShareTitle: '净新增输出占比',
+    outputShareDesc: 'output / (input + output)',
+    totalBilledTitle: '计费总Token',
+    bucketTitle: '按会话长度分桶（查看输入膨胀）',
+    bucketShort: '短会话（input <= 10K）',
+    bucketLong: '长会话（input > 10K）',
+    billingTipTitle: '如何更贴近供应商账单',
+    billingTipDesc: '建议补充 cache read/write 统计，并按模型与provider分开计算费用。当前页面基于 input+output 做估算，适合成本趋势控制。',
+    columns: {
+      bucket: '分桶',
+      sessions: '会话数',
+      inputTokens: '输入Token',
+      outputTokens: '输出Token',
+      outputShare: '输出占比',
+    },
+    messages: {
+      loadFailed: '加载 Token 洞察失败',
     },
   },
   permission: {

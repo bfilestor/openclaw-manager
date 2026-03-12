@@ -13,6 +13,7 @@
             </el-select>
             <el-button @click="exportCsv">{{ t('tokenUsage.exportCsv') }}</el-button>
             <el-button :loading="loading" @click="loadData">{{ t('common.actions.refresh') }}</el-button>
+            <el-button @click="goInsights">{{ t('tokenUsage.moreInsights') }}</el-button>
           </div>
         </div>
       </template>
@@ -167,6 +168,10 @@ function goDetail(row: BotUsageRow) {
     path: `/token-usage/${encodeURIComponent(row.botId)}`,
     query: days.value > 0 ? { days: String(days.value) } : undefined,
   })
+}
+
+function goInsights() {
+  router.push('/token-usage/insights')
 }
 
 function exportCsv() {
