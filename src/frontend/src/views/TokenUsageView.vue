@@ -65,7 +65,7 @@
         </el-table-column>
         <el-table-column :label="t('tokenUsage.columns.actions')" width="120">
           <template #default="{ row }">
-            <el-button type="primary" link @click.stop="goDetail(row)">{{ t('tokenUsage.viewDetail') }}</el-button>
+            <el-button type="success" link @click.stop="goDetail(row)">{{ t('tokenUsage.viewDetail') }}</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -5,7 +5,7 @@
       <el-space>
         <el-tag type="info">{{ t('adminUsers.totalUsers', { count: users.length }) }}</el-tag>
         <el-tag type="warning">{{ t('adminUsers.adminCount', { count: adminCount }) }}</el-tag>
-        <el-button type="primary" @click="openCreateDialog">{{ t('adminUsers.createUser') }}</el-button>
+        <el-button type="success" @click="openCreateDialog">{{ t('adminUsers.createUser') }}</el-button>
         <el-button :loading="loading" @click="load">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
@@ -71,7 +71,7 @@
       <template #footer>
         <el-space>
           <el-button @click="createDialogVisible = false">{{ t('common.actions.cancel') }}</el-button>
-          <el-button type="primary" :loading="creating" @click="createUser">{{ t('adminUsers.create') }}</el-button>
+          <el-button type="success" :loading="creating" @click="createUser">{{ t('adminUsers.create') }}</el-button>
         </el-space>
       </template>
     </el-dialog>
@@ -85,7 +85,7 @@
       <template #footer>
         <el-space>
           <el-button @click="resetDialogVisible = false">{{ t('common.actions.cancel') }}</el-button>
-          <el-button type="primary" :loading="resetting" @click="resetPassword">{{ t('adminUsers.confirmReset') }}</el-button>
+          <el-button type="success" :loading="resetting" @click="resetPassword">{{ t('adminUsers.confirmReset') }}</el-button>
         </el-space>
       </template>
     </el-dialog>

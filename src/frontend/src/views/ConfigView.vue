@@ -46,7 +46,7 @@
               <span>{{ t('config.revisions.title') }}</span>
               <el-space wrap>
                 <el-text type="info">{{ t('config.revisions.selectedCount', { count: selectedRevisions.length }) }}</el-text>
-                <el-button type="primary" size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
+                <el-button type="success" size="small" :disabled="selectedRevisions.length !== 2" @click="compareSelectedRevisions">
                   {{ t('config.revisions.compare') }}
                 </el-button>
               </el-space>
@@ -73,7 +73,7 @@
               <template #default="{ row }">
                 <el-space>
                   <el-button type="info" link @click="previewRevision(row)">{{ t('config.revisions.view') }}</el-button>
-                  <el-button type="primary" link @click="compareWithCurrent(row)">{{ t('config.revisions.compareCurrent') }}</el-button>
+                  <el-button type="success" link @click="compareWithCurrent(row)">{{ t('config.revisions.compareCurrent') }}</el-button>
                   <el-button
                     type="warning"
                     link

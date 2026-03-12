@@ -11,11 +11,11 @@
         <el-tag type="success">{{ t('bindings.edgeCount', { count: relationEdges.length }) }}</el-tag>
         <el-tag v-if="isEditMode" type="warning">{{ t('bindings.editing') }}</el-tag>
         <el-button :loading="loading" @click="loadGraph">{{ t('common.actions.refresh') }}</el-button>
-        <el-button v-if="!isEditMode" type="primary" @click="startEdit">{{ t('bindings.editMode') }}</el-button>
+        <el-button v-if="!isEditMode" type="success" @click="startEdit">{{ t('bindings.editMode') }}</el-button>
         <template v-else>
           <el-button :disabled="!canUndo" @click="undoLast">{{ t('bindings.undo') }}</el-button>
           <el-button @click="cancelEdit">{{ t('bindings.cancelEdit') }}</el-button>
-          <el-button type="primary" :loading="saving" @click="saveBindings">{{ t('bindings.saveBindings') }}</el-button>
+          <el-button type="success" :loading="saving" @click="saveBindings">{{ t('bindings.saveBindings') }}</el-button>
         </template>
       </el-space>
     </div>
@@ -163,7 +163,7 @@
       <template #footer>
         <el-space>
           <el-button @click="previewVisible = false">{{ t('common.actions.cancel') }}</el-button>
-          <el-button type="primary" :loading="saving" @click="confirmSaveBindings">{{ t('bindings.confirmSave') }}</el-button>
+          <el-button type="success" :loading="saving" @click="confirmSaveBindings">{{ t('bindings.confirmSave') }}</el-button>
         </el-space>
       </template>
     </el-dialog>

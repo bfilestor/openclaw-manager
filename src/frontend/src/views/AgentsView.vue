@@ -3,7 +3,7 @@
     <div class="topbar">
       <h3>{{ t('agents.title') }}</h3>
       <el-space>
-        <el-button type="primary" @click="openCreateDialog">{{ t('agents.create.button') }}</el-button>
+        <el-button type="success" @click="openCreateDialog">{{ t('agents.create.button') }}</el-button>
         <el-button :loading="loading" @click="loadAgents">{{ t('common.actions.refresh') }}</el-button>
       </el-space>
     </div>
@@ -24,7 +24,7 @@
         <el-card shadow="never" class="clickable-card" @click="goBindings">
           <div class="binding-card-content">
             <span>{{ t('agents.totalBindings', { count: totalBindings }) }}</span>
-            <el-text type="primary">{{ t('agents.viewTopology') }}</el-text>
+            <el-text type="success">{{ t('agents.viewTopology') }}</el-text>
           </div>
         </el-card>
       </el-col>
@@ -48,7 +48,7 @@
         <el-table-column :label="t('agents.columns.actions')" width="180">
           <template #default="{ row }">
             <el-space>
-              <el-button type="primary" link @click="goDetails(row)">{{ t('agents.viewDetails') }}</el-button>
+              <el-button type="success" link @click="goDetails(row)">{{ t('agents.viewDetails') }}</el-button>
               <el-button type="warning" link @click="goMigrate(row)">{{ t('agents.migrate') }}</el-button>
             </el-space>
           </template>
@@ -81,7 +81,7 @@
       <template #footer>
         <el-space>
           <el-button @click="createVisible = false">{{ t('common.actions.cancel') }}</el-button>
-          <el-button type="primary" :loading="createLoading" @click="submitCreateAgent">{{ t('agents.create.submit') }}</el-button>
+          <el-button type="success" :loading="createLoading" @click="submitCreateAgent">{{ t('agents.create.submit') }}</el-button>
         </el-space>
       </template>
     </el-dialog>
