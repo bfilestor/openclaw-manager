@@ -166,7 +166,6 @@ const navItems: NavItem[] = [
   { path: '/tasks', labelKey: 'app.nav.tasks', icon: '✅', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/shell', labelKey: 'app.nav.shell', icon: '🖥️', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/admin/users', labelKey: 'app.nav.users', icon: '👥', adminOnly: true, allowedRoles: ['Admin'] },
-  { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/token-usage', labelKey: 'app.nav.tokenUsage', icon: '📊', allowedRoles: ['User', 'Viewer', 'Operator', 'Admin'] },
   { path: '/api-providers', labelKey: 'app.nav.apiProviders', icon: '🔐', allowedRoles: ['Viewer', 'Operator', 'Admin'] },
   { path: '/system-settings', labelKey: 'app.nav.systemSettings', icon: '🛠️', allowedRoles: ['Admin'] },
