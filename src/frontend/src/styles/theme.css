@@ -48,10 +48,12 @@
   --oc-overlay: rgba(0, 0, 0, 0.65);
 
   --el-border-color-lighter: #333333;
-  --el-color-primary-light-3: #d9d9d9;
-  --el-color-primary-light-5: #bfbfbf;
-  --el-color-primary-light-7: #999999;
-  --el-color-primary-dark-2: #ffffff;
+  /* Dark mode: map primary actions to success-like green for better contrast. */
+  --el-color-primary: #67c23a;
+  --el-color-primary-light-3: #85ce61;
+  --el-color-primary-light-5: #95d475;
+  --el-color-primary-light-7: #b3e19d;
+  --el-color-primary-dark-2: #529b2e;
 }
 
 :root[data-theme='dark'] .el-button--default:not(.is-link) {
