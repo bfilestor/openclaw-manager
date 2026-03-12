@@ -31,9 +31,9 @@
       </div>
       <el-progress :percentage="Math.min(100, Math.round(quotaRatio * 100))" :status="quotaStatus === 'exceeded' ? 'exception' : undefined" />
       <div class="quota-meta">
-        <span>{{ t('dashboard.quotaUsed', { used: quotaUsed }) }}</span>
-        <span>{{ t('dashboard.quotaRemaining', { remaining: quotaRemaining }) }}</span>
-        <span>{{ t('dashboard.quotaLimit', { limit: quotaLimit }) }}</span>
+        <span>{{ t('dashboard.quotaUsed', { used: formatTokenCompact(quotaUsed) }) }}</span>
+        <span>{{ t('dashboard.quotaRemaining', { remaining: formatTokenCompact(quotaRemaining) }) }}</span>
+        <span>{{ t('dashboard.quotaLimit', { limit: formatTokenCompact(quotaLimit) }) }}</span>
       </div>
     </el-card>
 
@@ -180,10 +180,18 @@ const quotaRemaining = computed(() => Math.max(0, quotaLimit.value - quotaUsed.v
 const quotaAlert = computed(() => {
   if (!quotaLimit.value || quotaStatus.value === 'normal' || quotaStatus.value === '') return ''
   if (quotaStatus.value === 'exceeded') {
-    return t('dashboard.quotaExceeded', { used: quotaUsed.value, limit: quotaLimit.value })
+    return t('dashboard.quotaExceeded', { used: formatTokenCompact(quotaUsed.value), limit: formatTokenCompact(quotaLimit.value) })
   }
-  return t('dashboard.quotaNear', { used: quotaUsed.value, limit: quotaLimit.value })
+  return t('dashboard.quotaNear', { used: formatTokenCompact(quotaUsed.value), limit: formatTokenCompact(quotaLimit.value) })
 })
+
+function formatTokenCompact(value: number): string {
+  if (!Number.isFinite(value)) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`
+  return String(Math.round(value))
+}
 
 function countBotsFromConfig(cfg: any): number {
   const channels = cfg?.channels

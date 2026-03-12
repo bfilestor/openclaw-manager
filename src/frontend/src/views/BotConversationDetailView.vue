@@ -19,7 +19,9 @@
         </el-table-column>
         <el-table-column prop="agentId" :label="t('tokenUsage.columns.agentId')" width="120" />
         <el-table-column prop="modelProvider" :label="t('tokenUsage.columns.provider')" min-width="140" />
-        <el-table-column prop="totalTokens" :label="t('tokenUsage.columns.totalTokens')" width="130" />
+        <el-table-column :label="t('tokenUsage.columns.totalTokens')" width="130">
+          <template #default="{ row }">{{ formatTokenCompact(Number(row.totalTokens || 0)) }}</template>
+        </el-table-column>
         <el-table-column prop="estimatedCost" :label="t('tokenUsage.columns.estimatedCost')" width="130">
           <template #default="{ row }">${{ Number(row.estimatedCost || 0).toFixed(4) }}</template>
         </el-table-column>
@@ -97,6 +99,14 @@ const days = computed(() => {
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
   return typeof msg === 'string' && msg ? msg : fallback
+}
+
+function formatTokenCompact(value: number): string {
+  if (!Number.isFinite(value)) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`
+  return String(Math.round(value))
 }
 
 function formatShanghaiDateTime(raw: string): string {

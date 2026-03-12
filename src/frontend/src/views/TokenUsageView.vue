@@ -33,18 +33,18 @@
         </div>
         <el-progress :percentage="Math.min(100, Math.round(quotaRatio * 100))" :status="quota.status === 'exceeded' ? 'exception' : undefined" />
         <div class="quota-meta">
-          <span>{{ t('tokenUsage.quotaUsed', { used: quota.usedTokens }) }}</span>
-          <span>{{ t('tokenUsage.quotaRemaining', { remaining: quotaRemaining }) }}</span>
-          <span>{{ t('tokenUsage.quotaLimit', { limit: quota.tokenLimit }) }}</span>
+          <span>{{ t('tokenUsage.quotaUsed', { used: formatTokenCompact(quota.usedTokens) }) }}</span>
+          <span>{{ t('tokenUsage.quotaRemaining', { remaining: formatTokenCompact(quotaRemaining) }) }}</span>
+          <span>{{ t('tokenUsage.quotaLimit', { limit: formatTokenCompact(quota.tokenLimit) }) }}</span>
         </div>
       </el-card>
 
       <el-row :gutter="12" class="summary-row">
         <el-col :xs="24" :md="8">
-          <el-statistic :title="t('tokenUsage.summary.totalTokens')" :value="summary.totalTokens" />
+          <el-statistic :title="t('tokenUsage.summary.totalTokens')" :value="summary.totalTokens" :formatter="formatTokenCompact" />
         </el-col>
         <el-col :xs="24" :md="8">
-          <el-statistic :title="t('tokenUsage.summary.inputTokens')" :value="summary.inputTokens" />
+          <el-statistic :title="t('tokenUsage.summary.inputTokens')" :value="summary.inputTokens" :formatter="formatTokenCompact" />
         </el-col>
         <el-col :xs="24" :md="8">
           <el-statistic :title="t('tokenUsage.summary.estimatedCost')" :value="summary.estimatedCost" :precision="4">
@@ -59,7 +59,9 @@
       <el-table v-loading="loading" :data="bots" row-key="botId" style="width: 100%" @row-click="goDetail">
         <el-table-column prop="botId" :label="t('tokenUsage.columns.botId')" min-width="160" />
         <el-table-column prop="sessions" :label="t('tokenUsage.columns.sessions')" width="120" />
-        <el-table-column prop="totalTokens" :label="t('tokenUsage.columns.totalTokens')" min-width="160" />
+        <el-table-column :label="t('tokenUsage.columns.totalTokens')" min-width="160">
+          <template #default="{ row }">{{ formatTokenCompact(Number(row.totalTokens || 0)) }}</template>
+        </el-table-column>
         <el-table-column prop="estimatedCost" :label="t('tokenUsage.columns.estimatedCost')" min-width="160">
           <template #default="{ row }">${{ Number(row.estimatedCost || 0).toFixed(4) }}</template>
         </el-table-column>
@@ -105,13 +107,21 @@ const quotaAlert = computed(() => {
   const q = quota.value
   if (!q || q.tokenLimit <= 0) return ''
   if (q.status === 'exceeded') {
-    return t('tokenUsage.quotaExceeded', { used: q.usedTokens, limit: q.tokenLimit })
+    return t('tokenUsage.quotaExceeded', { used: formatTokenCompact(q.usedTokens), limit: formatTokenCompact(q.tokenLimit) })
   }
   if (q.status === 'near') {
-    return t('tokenUsage.quotaNear', { used: q.usedTokens, limit: q.tokenLimit })
+    return t('tokenUsage.quotaNear', { used: formatTokenCompact(q.usedTokens), limit: formatTokenCompact(q.tokenLimit) })
   }
   return ''
 })
+
+function formatTokenCompact(value: number): string {
+  if (!Number.isFinite(value)) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`
+  return String(Math.round(value))
+}
 
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
