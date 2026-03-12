@@ -211,6 +211,13 @@ export default {
       provider: 'Provider',
       preview: '对话预览',
     },
+    exportCsv: '导出CSV',
+    range: {
+      all: '全部时间',
+      today: '最近1天',
+      days7: '最近7天',
+      days30: '最近30天',
+    },
     messages: {
       loadFailed: '加载 Token 消费失败',
       loadDetailFailed: '加载 Bot 对话详情失败',

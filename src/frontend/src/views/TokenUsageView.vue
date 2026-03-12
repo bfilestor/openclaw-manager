@@ -4,7 +4,16 @@
       <template #header>
         <div class="card-title-row">
           <span>{{ t('tokenUsage.pageTitle') }}</span>
-          <el-button :loading="loading" @click="loadData">{{ t('common.actions.refresh') }}</el-button>
+          <div class="header-tools">
+            <el-select v-model="days" class="days-select" @change="loadData">
+              <el-option :label="t('tokenUsage.range.all')" :value="0" />
+              <el-option :label="t('tokenUsage.range.today')" :value="1" />
+              <el-option :label="t('tokenUsage.range.days7')" :value="7" />
+              <el-option :label="t('tokenUsage.range.days30')" :value="30" />
+            </el-select>
+            <el-button @click="exportCsv">{{ t('tokenUsage.exportCsv') }}</el-button>
+            <el-button :loading="loading" @click="loadData">{{ t('common.actions.refresh') }}</el-button>
+          </div>
         </div>
       </template>
 
@@ -46,17 +55,19 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getTokenUsageSummary, type BotUsageRow } from '../services/tokenUsage'
 
+const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const loading = ref(false)
 const errorMessage = ref('')
 const summary = ref({ inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCost: 0 })
 const bots = ref<BotUsageRow[]>([])
+const days = ref(0)
 
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
@@ -67,7 +78,7 @@ async function loadData() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const data = await getTokenUsageSummary()
+    const data = await getTokenUsageSummary(days.value)
     summary.value = data.total
     bots.value = data.bots
   } catch (err) {
@@ -79,10 +90,41 @@ async function loadData() {
 }
 
 function goDetail(row: BotUsageRow) {
-  router.push({ path: `/token-usage/${encodeURIComponent(row.botId)}` })
+  router.push({
+    path: `/token-usage/${encodeURIComponent(row.botId)}`,
+    query: days.value > 0 ? { days: String(days.value) } : undefined,
+  })
 }
 
-onMounted(loadData)
+function exportCsv() {
+  const header = ['botId', 'sessions', 'inputTokens', 'outputTokens', 'totalTokens', 'estimatedCost']
+  const rows = bots.value.map((row) => [
+    row.botId,
+    String(row.sessions),
+    String(row.inputTokens),
+    String(row.outputTokens),
+    String(row.totalTokens),
+    Number(row.estimatedCost || 0).toFixed(6),
+  ])
+  const csv = [header, ...rows].map((line) => line.map((x) => `"${String(x).replaceAll('"', '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `token-usage-${days.value || 'all'}d.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+onMounted(() => {
+  const queryDays = Number(route.query.days || 0)
+  if (Number.isFinite(queryDays) && [0, 1, 7, 30].includes(queryDays)) {
+    days.value = queryDays
+  }
+  loadData()
+})
 </script>
 
 <style scoped>
@@ -95,6 +137,16 @@ onMounted(loadData)
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.days-select {
+  width: 140px;
 }
 
 .summary-row {

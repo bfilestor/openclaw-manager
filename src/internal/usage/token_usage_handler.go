@@ -71,10 +71,15 @@ type sessionMessage struct {
 }
 
 func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
+	rangeDays := parsePositiveInt(r.URL.Query().Get("days"), 0)
 	sessions, costs, err := h.loadAllSessionMeta()
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
+	}
+
+	if rangeDays > 0 {
+		sessions = filterSessionsByDays(sessions, rangeDays)
 	}
 
 	botMap := map[string]*botSummary{}
@@ -113,6 +118,7 @@ func (h *TokenUsageHandler) Summary(w http.ResponseWriter, r *http.Request) {
 	})
 
 	writeJSON(w, http.StatusOK, map[string]any{
+		"days": rangeDays,
 		"total": map[string]any{
 			"inputTokens":   totalInput,
 			"outputTokens":  totalOutput,
@@ -132,6 +138,7 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 
 	page := parsePositiveInt(r.URL.Query().Get("page"), 1)
 	pageSize := parsePositiveInt(r.URL.Query().Get("page_size"), defaultPageSize)
+	rangeDays := parsePositiveInt(r.URL.Query().Get("days"), 0)
 	if pageSize > maxPageSize {
 		pageSize = maxPageSize
 	}
@@ -140,6 +147,10 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		middleware.WriteAppError(w, err)
 		return
+	}
+
+	if rangeDays > 0 {
+		sessions = filterSessionsByDays(sessions, rangeDays)
 	}
 
 	filtered := make([]sessionMeta, 0)
@@ -186,6 +197,7 @@ func (h *TokenUsageHandler) BotConversations(w http.ResponseWriter, r *http.Requ
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"botId":    botID,
+		"days":     rangeDays,
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
@@ -360,6 +372,20 @@ func safeBotID(botID string) string {
 		return "default"
 	}
 	return botID
+}
+
+func filterSessionsByDays(sessions []sessionMeta, days int) []sessionMeta {
+	if days <= 0 {
+		return sessions
+	}
+	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour).UnixMilli()
+	filtered := make([]sessionMeta, 0, len(sessions))
+	for _, s := range sessions {
+		if s.UpdatedAt >= cutoff {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
 }
 
 func estimateCost(totalTokens int64, costPer1k float64) float64 {

@@ -47,8 +47,10 @@ export type SessionMessage = {
   text: string
 }
 
-export async function getTokenUsageSummary(): Promise<TokenUsageSummary> {
-  const { data } = await axios.get('/api/v1/token-usage/summary')
+export async function getTokenUsageSummary(days = 0): Promise<TokenUsageSummary> {
+  const { data } = await axios.get('/api/v1/token-usage/summary', {
+    params: { days },
+  })
   return {
     total: {
       inputTokens: Number(data?.total?.inputTokens || 0),
@@ -69,11 +71,12 @@ export async function getTokenUsageSummary(): Promise<TokenUsageSummary> {
   }
 }
 
-export async function getBotConversations(botId: string, page = 1, pageSize = 20): Promise<BotConversationPage> {
+export async function getBotConversations(botId: string, page = 1, pageSize = 20, days = 0): Promise<BotConversationPage> {
   const { data } = await axios.get(`/api/v1/token-usage/bots/${encodeURIComponent(botId)}/conversations`, {
     params: {
       page,
       page_size: pageSize,
+      days,
     },
   })
 

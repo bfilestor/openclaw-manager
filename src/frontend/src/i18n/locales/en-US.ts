@@ -211,6 +211,13 @@ export default {
       provider: 'Provider',
       preview: 'Conversation Preview',
     },
+    exportCsv: 'Export CSV',
+    range: {
+      all: 'All Time',
+      today: 'Last 1 Day',
+      days7: 'Last 7 Days',
+      days30: 'Last 30 Days',
+    },
     messages: {
       loadFailed: 'Failed to load token usage',
       loadDetailFailed: 'Failed to load bot conversation details',

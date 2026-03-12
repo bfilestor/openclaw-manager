@@ -4,7 +4,10 @@
       <template #header>
         <div class="card-title-row">
           <span>{{ t('tokenUsage.detailTitle', { botId }) }}</span>
-          <el-button @click="goBack">{{ t('tokenUsage.backToList') }}</el-button>
+          <div class="header-tools">
+            <el-button @click="exportCsv">{{ t('tokenUsage.exportCsv') }}</el-button>
+            <el-button @click="goBack">{{ t('tokenUsage.backToList') }}</el-button>
+          </div>
         </div>
       </template>
 
@@ -84,6 +87,10 @@ const visibleMessages = computed(() => {
 })
 
 const botId = computed(() => String(route.params.botId || ''))
+const days = computed(() => {
+  const raw = Number(route.query.days || 0)
+  return Number.isFinite(raw) && raw > 0 ? raw : 0
+})
 
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
@@ -95,7 +102,7 @@ async function loadData() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const data = await getBotConversations(botId.value, page.value, pageSize)
+    const data = await getBotConversations(botId.value, page.value, pageSize, days.value)
     items.value = data.items
     total.value = data.total
   } catch (err) {
@@ -125,8 +132,35 @@ async function openMessages(sessionId: string) {
   }
 }
 
+function exportCsv() {
+  const header = ['sessionId', 'sessionKey', 'agentId', 'updatedAt', 'modelProvider', 'model', 'inputTokens', 'outputTokens', 'totalTokens', 'estimatedCost', 'preview']
+  const rows = items.value.map((row) => [
+    row.sessionId,
+    row.sessionKey,
+    row.agentId,
+    row.updatedAt,
+    row.modelProvider,
+    row.model,
+    String(row.inputTokens),
+    String(row.outputTokens),
+    String(row.totalTokens),
+    Number(row.estimatedCost || 0).toFixed(6),
+    row.preview,
+  ])
+  const csv = [header, ...rows].map((line) => line.map((x) => `"${String(x).replaceAll('"', '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `bot-${botId.value}-conversations.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 function goBack() {
-  router.push('/token-usage')
+  router.push({ path: '/token-usage', query: days.value > 0 ? { days: String(days.value) } : undefined })
 }
 
 onMounted(loadData)
