@@ -1,7 +1,14 @@
 <template>
   <div class="register-page">
     <h3>{{ t('register.title') }}</h3>
-    <el-form label-position="top" class="register-form">
+    <el-alert
+      v-if="registrationDisabled"
+      :title="t('register.messages.disabled')"
+      type="warning"
+      show-icon
+      :closable="false"
+    />
+    <el-form v-else label-position="top" class="register-form">
       <el-form-item :label="t('register.username')">
         <el-input v-model="username" :placeholder="t('register.username')" />
       </el-form-item>
@@ -24,7 +31,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -36,6 +43,7 @@ const password = ref('')
 const confirm = ref('')
 const msg = ref('')
 const msgType = ref<'success' | 'error'>('success')
+const registrationDisabled = ref(false)
 
 const strength = computed(() => {
   const p = password.value
@@ -60,6 +68,15 @@ async function register() {
     msgType.value = 'error'
   }
 }
+
+onMounted(async () => {
+  try {
+    const { data } = await axios.get('/api/v1/auth/public-registration')
+    registrationDisabled.value = !Boolean(data?.public_registration)
+  } catch {
+    registrationDisabled.value = true
+  }
+})
 </script>
 <style scoped>
 .register-page {

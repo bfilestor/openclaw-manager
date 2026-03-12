@@ -28,7 +28,7 @@ func doRegister(h *Handler, body string) *httptest.ResponseRecorder {
 	return w
 }
 
-func TestRegisterFirstAdminThenViewer(t *testing.T) {
+func TestRegisterFirstAdminThenUser(t *testing.T) {
 	h := setupRegisterHandler(t, true)
 	w1 := doRegister(h, `{"username":"alice","password":"Pass1234"}`)
 	if w1.Code != http.StatusCreated {
@@ -38,8 +38,8 @@ func TestRegisterFirstAdminThenViewer(t *testing.T) {
 		t.Fatalf("first user should be admin: %s", w1.Body.String())
 	}
 	w2 := doRegister(h, `{"username":"bob","password":"Pass1234"}`)
-	if !strings.Contains(w2.Body.String(), `"role":"Viewer"`) {
-		t.Fatalf("second user should be viewer: %s", w2.Body.String())
+	if !strings.Contains(w2.Body.String(), `"role":"User"`) {
+		t.Fatalf("second user should be user: %s", w2.Body.String())
 	}
 }
 

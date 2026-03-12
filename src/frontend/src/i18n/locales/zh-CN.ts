@@ -95,6 +95,7 @@ export default {
     messages: {
       success: '注册成功，请登录',
       failed: '注册失败',
+      disabled: '系统已关闭注册功能，请联系管理员开通或由管理员创建账号。',
     },
   },
   qqbot: {

@@ -91,7 +91,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := user.RoleViewer
+	role := user.RoleUser
 	cnt, err := h.Repo.Count()
 	if err != nil {
 		middleware.WriteAppError(w, err)

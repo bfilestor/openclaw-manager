@@ -95,6 +95,7 @@ export default {
     messages: {
       success: 'Registration successful. Please sign in',
       failed: 'Registration failed',
+      disabled: 'Public registration is disabled. Please contact an administrator to create your account.',
     },
   },
   qqbot: {
