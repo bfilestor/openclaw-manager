@@ -40,9 +40,31 @@ sed -i \
 
 
 SERVICE_DST="$HOME/.config/systemd/user/openclaw-manager.service"
+CONFIG_FILE="$ROOT_DIR/config/config.toml"
+
+rand32() {
+  LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32
+}
 
 mkdir -p "$HOME/.config/systemd/user"
 cp "$SERVICE_TEMPLATE" "$SERVICE_DST"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  jwt_secret="$(rand32)"
+  reset_super_token="$(rand32)"
+  while [[ "$reset_super_token" == "$jwt_secret" ]]; do
+    reset_super_token="$(rand32)"
+  done
+
+  sed -i \
+    -e "s|replace-with-strong-secret-32bytes-min|$jwt_secret|g" \
+    -e "s|replace-with-another-strong-secret-32bytes-min|$reset_super_token|g" \
+    "$CONFIG_FILE"
+
+  echo "[OK] config secrets initialized: $CONFIG_FILE"
+else
+  echo "[WARN] config file not found, skip secret initialization: $CONFIG_FILE"
+fi
 
 systemctl --user daemon-reload
 systemctl --user enable openclaw-manager.service
