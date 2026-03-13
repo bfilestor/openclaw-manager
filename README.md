@@ -14,6 +14,12 @@
 - token使用统计，总体费用预估，单用户费用预估
 - 自主注册开关，用户与bot关联
 
+## 20260313更新
+- 新增多用户支持：支持用户和bot绑定，一只龙虾多人食用
+- token使用统计：支持总体token统计，分用户token用量统计
+- 支持插件备份
+- 管理员重设密码，入口 /resetpwd,使用reset_super_token作为超级
+
 ## TODO
 - LLM API接入新增与修改
 - 更多bot快速接入
@@ -40,7 +46,7 @@ cd ~/.openclaw-manager
 2. 准备配置：
 
 - `~/.openclaw-manager/config.toml`
-- 设置 `OPENCLAW_JWT_SECRET`（>=32 字节）
+- 设置 `jwt_secret`,`reset_super_token`（>=32 字节）
 3. 安装 systemd user service：
 
 ```bash
@@ -49,6 +55,10 @@ cd ~/.openclaw-manager
 4. 查看状态：
 ```bash
 systemctl --user status openclaw-manager.service
+```
+5. 重启服务
+```
+systemctl --user restart openclaw-manager.service
 ```
 
 ## config.toml 关键配置
@@ -71,14 +81,11 @@ manager_home = "~/.openclaw-manager"
 ```
 
 ## 注意事项
-
+- reset_super_token是重设管理员密码的重要凭证，请妥善保管。一旦泄露，危害巨大，请定期修改！
 - 只在linux环境下测试使用，其他环境不适用
-- 用户角色三种 admin/operator/viewer,admin全部权限，viewer只有查看权限，无修改权限
-- 第一次运行，注册的第一个用户默认为管理员权限，建议初次运行就将需要的用全部注册好
-- 完成用户设定后一定要关闭注册:public_registration = false，并重启服务
-```
-systemctl --user restart openclaw-manager.service
-```
+- 用户角色四种 admin/operator/viewer/user,admin全部权限，viewer只有查看权限，无修改权限,user普通使用者，只用户统计token使用情况
+- 第一次运行，注册的第一个用户默认为管理员权限。后续注册用户默认为普通使用者
+
 ## 截图
 ### 主页
 ![Main UI](screenshots/main.png)
