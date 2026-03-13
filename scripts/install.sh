@@ -43,9 +43,18 @@ SERVICE_DST="$HOME/.config/systemd/user/openclaw-manager.service"
 CONFIG_FILE="$ROOT_DIR/config/config.toml"
 
 rand32() {
-  LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32
-}
+  local pf_was_on=0
+  if set -o | grep -q '^pipefail[[:space:]]*on$'; then
+    pf_was_on=1
+    set +o pipefail
+  fi
 
+  LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32
+
+  if [[ $pf_was_on -eq 1 ]]; then
+    set -o pipefail
+  fi
+}
 mkdir -p "$HOME/.config/systemd/user"
 cp "$SERVICE_TEMPLATE" "$SERVICE_DST"
 
