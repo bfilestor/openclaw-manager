@@ -104,6 +104,22 @@ func (r *Repository) CountByRole(role Role) (int, error) {
 	return c, err
 }
 
+func (r *Repository) FindFirstRegistered() (*User, error) {
+	row := r.db.QueryRow(`
+SELECT user_id, username, password_hash, role, status, created_at, last_login_at, updated_at
+FROM users
+ORDER BY created_at ASC, user_id ASC
+LIMIT 1`)
+	u, err := scanUser(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return u, nil
+}
+
 func (r *Repository) findOne(q string, arg any) (*User, error) {
 	row := r.db.QueryRow(q, arg)
 	u, err := scanUser(row)

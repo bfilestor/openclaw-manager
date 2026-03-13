@@ -149,6 +149,8 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 		mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 		mux.HandleFunc("POST /api/v1/auth/refresh", authHandler.Refresh)
+		mux.HandleFunc("GET /api/v1/auth/resetpwd/admin", authHandler.GetResetPasswordAdmin)
+		mux.HandleFunc("POST /api/v1/auth/resetpwd", authHandler.ResetFirstAdminPassword)
 
 		// 需要认证的接口
 		mux.HandleFunc("POST /api/v1/auth/logout", wrap(authHandler.Logout, authMW))

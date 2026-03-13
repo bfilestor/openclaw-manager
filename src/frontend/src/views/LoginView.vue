@@ -13,6 +13,7 @@
           <el-space>
             <el-button type="primary" @click="login">{{ t('login.login') }}</el-button>
             <router-link v-if="publicRegistration" to="/register">{{ t('login.gotoRegister') }}</router-link>
+            <router-link to="/resetpwd">{{ t('login.gotoResetPwd') }}</router-link>
           </el-space>
         </el-form-item>
         <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />

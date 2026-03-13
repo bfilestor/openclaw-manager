@@ -3,6 +3,7 @@ import { useAuthStore } from './stores/auth'
 
 import LoginView from './views/LoginView.vue'
 import RegisterView from './views/RegisterView.vue'
+import ResetPwdView from './views/ResetPwdView.vue'
 import DashboardView from './views/DashboardView.vue'
 import GatewayView from './views/GatewayView.vue'
 import AdminUsersView from './views/AdminUsersView.vue'
@@ -27,6 +28,7 @@ import TokenInsightsView from './views/TokenInsightsView.vue'
 const routes = [
   { path: '/login', component: LoginView },
   { path: '/register', component: RegisterView },
+  { path: '/resetpwd', component: ResetPwdView },
   { path: '/dashboard', component: DashboardView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
   { path: '/gateway', component: GatewayView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
   { path: '/agents', component: AgentsView, meta: { auth: true, allowedRoles: ['Viewer', 'Operator', 'Admin'] } },
