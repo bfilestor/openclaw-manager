@@ -27,6 +27,7 @@ type ServerConfig struct {
 
 type AuthConfig struct {
 	JWTSecret       string        `toml:"jwt_secret"`
+	ResetSuperToken string        `toml:"reset_super_token"`
 	AccessTokenTTL  time.Duration `toml:"access_token_ttl"`
 	RefreshTokenTTL time.Duration `toml:"refresh_token_ttl"`
 	PublicRegister  bool          `toml:"public_registration"`
@@ -74,17 +75,28 @@ func applyDefaults(cfg *Config) {
 	if cfg.Auth.PasswordMinLen == 0 {
 		cfg.Auth.PasswordMinLen = 8
 	}
+	if strings.TrimSpace(cfg.Auth.ResetSuperToken) == "" {
+		// 向后兼容：未配置 reset_super_token 时，临时回退到 jwt_secret
+		cfg.Auth.ResetSuperToken = cfg.Auth.JWTSecret
+	}
 }
 
 func applyEnv(cfg *Config) {
 	if v := strings.TrimSpace(os.Getenv("OPENCLAW_JWT_SECRET")); v != "" {
+		oldJWT := cfg.Auth.JWTSecret
 		cfg.Auth.JWTSecret = v
+		if strings.TrimSpace(cfg.Auth.ResetSuperToken) == "" || cfg.Auth.ResetSuperToken == oldJWT {
+			cfg.Auth.ResetSuperToken = v
+		}
 	}
 }
 
 func validate(cfg *Config) error {
 	if len(cfg.Auth.JWTSecret) < 32 {
 		return fmt.Errorf("%w: jwt_secret must be at least 32 bytes", ErrConfigInvalid)
+	}
+	if len(cfg.Auth.ResetSuperToken) < 32 {
+		return fmt.Errorf("%w: reset_super_token must be at least 32 bytes", ErrConfigInvalid)
 	}
 
 	host, port, err := net.SplitHostPort(cfg.Server.Listen)

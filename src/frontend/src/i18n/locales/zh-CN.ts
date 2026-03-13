@@ -85,7 +85,7 @@ export default {
   resetpwd: {
     title: '超级令牌重置管理员密码',
     superToken: '超级 Token',
-    superTokenPlaceholder: '请输入超级 Token（即 config.toml 的 jwt_secret）',
+    superTokenPlaceholder: '请输入超级 Token（即 config.toml 的 reset_super_token）',
     fetchAdmin: '查询管理员账号',
     adminUser: '管理员账号：{username}',
     newPassword: '新密码',

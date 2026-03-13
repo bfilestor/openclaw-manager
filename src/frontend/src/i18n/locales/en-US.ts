@@ -85,7 +85,7 @@ export default {
   resetpwd: {
     title: 'Reset admin password with super token',
     superToken: 'Super Token',
-    superTokenPlaceholder: 'Enter super token (config.toml jwt_secret)',
+    superTokenPlaceholder: 'Enter super token (config.toml reset_super_token)',
     fetchAdmin: 'Show Admin Username',
     adminUser: 'Admin account: {username}',
     newPassword: 'New Password',

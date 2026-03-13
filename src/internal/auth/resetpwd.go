@@ -91,7 +91,7 @@ func (h *Handler) validSuperToken(token string) bool {
 	if h == nil || h.Config == nil {
 		return false
 	}
-	expect := h.Config.Auth.JWTSecret
+	expect := h.Config.Auth.ResetSuperToken
 	if expect == "" || token == "" {
 		return false
 	}

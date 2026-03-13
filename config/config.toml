@@ -3,6 +3,7 @@ listen = "0.0.0.0:18799"
 
 [auth]
 jwt_secret = "replace-with-strong-secret-32bytes-min"
+reset_super_token = "replace-with-another-strong-secret-32bytes-min"
 access_token_ttl = "15m"
 refresh_token_ttl = "168h"
 public_registration = true
