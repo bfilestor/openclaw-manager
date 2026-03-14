@@ -19,14 +19,14 @@ const (
 )
 
 type LobsterGuardian struct {
-	Settings       *auth.SystemSettingsRepository
-	Revisions      *config.RevisionRepository
-	Service        *SystemctlService
-	ServiceName    string
-	OpenClawJSON   string
-	MaxAttempts    int
-	TickInterval   time.Duration
-	RetryWait      time.Duration
+	Settings     *auth.SystemSettingsRepository
+	Revisions    *config.RevisionRepository
+	Service      *SystemctlService
+	ServiceName  string
+	OpenClawJSON string
+	MaxAttempts  int
+	TickInterval time.Duration
+	RetryWait    time.Duration
 }
 
 func (g *LobsterGuardian) Run(ctx context.Context) {

@@ -90,7 +90,7 @@ func (h *Handler) PutSystemSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		PublicRegistration *bool `json:"public_registration"`
-		LobsterGuardian   *bool `json:"lobster_guardian"`
+		LobsterGuardian    *bool `json:"lobster_guardian"`
 	}
 	if err := middleware.BindJSON(r, &req); err != nil {
 		middleware.WriteAppError(w, err)
