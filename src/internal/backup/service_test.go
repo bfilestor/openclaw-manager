@@ -166,3 +166,23 @@ func TestResolveScopeIncludesMultiAgentWorkspaces(t *testing.T) {
 		}
 	}
 }
+
+func TestShouldExcludeBackupPath(t *testing.T) {
+	cases := []struct {
+		path    string
+		isDir   bool
+		exclude bool
+	}{
+		{path: "/x/node_modules", isDir: true, exclude: true},
+		{path: "/x/.git", isDir: true, exclude: true},
+		{path: "/x/dist", isDir: true, exclude: true},
+		{path: "/x/plugin/src", isDir: true, exclude: false},
+		{path: "/x/.DS_Store", isDir: false, exclude: true},
+		{path: "/x/plugin/index.js", isDir: false, exclude: false},
+	}
+	for _, tc := range cases {
+		if got := shouldExcludeBackupPath(tc.path, tc.isDir); got != tc.exclude {
+			t.Fatalf("shouldExcludeBackupPath(%q, %v)=%v want=%v", tc.path, tc.isDir, got, tc.exclude)
+		}
+	}
+}

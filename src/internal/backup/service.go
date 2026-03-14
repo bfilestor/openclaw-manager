@@ -248,12 +248,24 @@ func makeTarGz(dst string, paths []string) error {
 		}
 		if st.IsDir() {
 			_ = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-				if err != nil || info.IsDir() {
+				if err != nil {
+					return nil
+				}
+				if shouldExcludeBackupPath(path, info.IsDir()) {
+					if info.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+				if info.IsDir() {
 					return nil
 				}
 				return addFileToTar(tw, path)
 			})
 		} else {
+			if shouldExcludeBackupPath(p, false) {
+				continue
+			}
 			if err := addFileToTar(tw, p); err != nil {
 				return err
 			}
@@ -293,6 +305,24 @@ func fileSHA256AndSize(path string) (string, int64, error) {
 		return "", 0, err
 	}
 	return hex.EncodeToString(h.Sum(nil)), n, nil
+}
+
+func shouldExcludeBackupPath(path string, isDir bool) bool {
+	name := strings.ToLower(strings.TrimSpace(filepath.Base(path)))
+	if name == "" || name == "." {
+		return false
+	}
+	if isDir {
+		switch name {
+		case ".git", "node_modules", "dist", "build", ".cache", "tmp", "temp", "__pycache__", ".next", ".nuxt":
+			return true
+		}
+	}
+	switch name {
+	case ".ds_store", "thumbs.db":
+		return true
+	}
+	return false
 }
 
 func nullIfEmpty(v string) any {
