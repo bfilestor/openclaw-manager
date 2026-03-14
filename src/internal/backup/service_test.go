@@ -93,7 +93,8 @@ func TestResolveScopeIncludesPluginPaths(t *testing.T) {
 		"plugins": {
 			"installs": {
 				"qqbot": {"installPath": "` + home + `/extensions/qqbot"},
-				"custom": {"installPath": "` + home + `/extensions/custom-plugin"}
+				"custom": {"installPath": "` + home + `/extensions/custom-plugin"},
+				"external": {"installPath": "` + home + `/vendor/plugins/ext-a"}
 			}
 		}
 	}`
@@ -105,9 +106,8 @@ func TestResolveScopeIncludesPluginPaths(t *testing.T) {
 	paths := s.resolveScope([]string{"plugins"})
 
 	want := map[string]bool{
-		filepath.Join(home, "extensions"):               false,
-		filepath.Join(home, "extensions", "qqbot"):     false,
-		filepath.Join(home, "extensions", "custom-plugin"): false,
+		filepath.Join(home, "extensions"):            false,
+		filepath.Join(home, "vendor", "plugins", "ext-a"): false,
 	}
 	for _, p := range paths {
 		if _, ok := want[p]; ok {
@@ -117,6 +117,11 @@ func TestResolveScopeIncludesPluginPaths(t *testing.T) {
 	for p, ok := range want {
 		if !ok {
 			t.Fatalf("missing plugin path in scope: %s, got=%v", p, paths)
+		}
+	}
+	for _, p := range paths {
+		if p == filepath.Join(home, "extensions", "qqbot") || p == filepath.Join(home, "extensions", "custom-plugin") {
+			t.Fatalf("nested plugin path should be deduped when extensions root exists: got=%v", paths)
 		}
 	}
 }

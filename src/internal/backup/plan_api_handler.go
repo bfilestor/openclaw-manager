@@ -141,7 +141,7 @@ func (h *APIHandler) RunPlanNow(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"plan_id": "required"}))
 		return
 	}
-	backupID, err := h.PlanSvc.ExecuteNow(planID, currentUserID(r))
+	plan, err := h.PlanSvc.GetPlan(planID)
 	if err == sql.ErrNoRows {
 		middleware.WriteAppError(w, &middleware.AppError{Code: middleware.CodeNotFound, Message: "plan not found", StatusCode: http.StatusNotFound})
 		return
@@ -150,8 +150,10 @@ func (h *APIHandler) RunPlanNow(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
+	taskID := h.startBackupTask(plan.Label, plan.Scope, currentUserID(r), planID)
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{"backup_id": backupID, "status": "DONE"})
+	w.WriteHeader(http.StatusAccepted)
+	_ = json.NewEncoder(w).Encode(map[string]any{"task_id": taskID, "status": "PENDING"})
 }
 
 func (h *APIHandler) GetMyPreference(w http.ResponseWriter, r *http.Request) {

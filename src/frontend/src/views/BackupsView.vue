@@ -482,7 +482,13 @@ async function deletePlan(planID: string) {
 async function runPlanNow(planID: string) {
   try {
     const { data } = await axios.post(`/api/v1/backup-plans/${planID}/run`)
-    ElMessage.success(`执行成功，backup_id=${data?.backup_id || ''}`)
+    const taskID = String(data?.task_id || '').trim()
+    if (taskID) {
+      ElMessage.success(t('backups.messages.createTaskSubmitted', { taskId: taskID }))
+      await router.push({ path: '/tasks', query: { task_id: taskID } })
+      return
+    }
+    ElMessage.success('计划执行请求已提交')
     await Promise.all([loadPlans(), loadBackups()])
   } catch (err) {
     ElMessage.error(parseError(err, '执行失败'))

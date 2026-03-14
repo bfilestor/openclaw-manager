@@ -39,37 +39,11 @@ func (h *APIHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createdBy := currentUserID(r)
-	taskRepo := task.NewRepository(h.DB)
-	taskID := "backup-create-" + uuid.NewString()
-	reqJSON := fmt.Sprintf(`{"label":%q,"scope":%s}`, req.Label, mustJSON(req.Scope))
-	now := time.Now().UTC()
-	_ = taskRepo.Create(&task.Task{
-		TaskID:      taskID,
-		TaskType:    "backup.create",
-		Status:      task.StatusRunning,
-		RequestJSON: reqJSON,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		StartedAt:   &now,
-	})
-
-	id, err := h.Service.Create(req.Scope, req.Label, createdBy)
-	if err != nil {
-		exitCode := 1
-		_ = taskRepo.UpdateResult(taskID, &exitCode, "", err.Error(), "")
-		_ = taskRepo.UpdateStatus(taskID, task.StatusFailed)
-		middleware.WriteAppError(w, err)
-		return
-	}
-	_ = taskRepo.UpdateResult(taskID, nil, fmt.Sprintf("backup_id=%s", id), "", "")
-	_ = taskRepo.UpdateStatus(taskID, task.StatusSucceeded)
-	if h.PlanSvc != nil {
-		_ = h.PlanSvc.SavePreference(createdBy, req.Label, req.Scope)
-	}
+	taskID := h.startBackupTask(req.Label, req.Scope, createdBy, "")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte(`{"task_id":"` + taskID + `","backup_id":"` + id + `","status":"PENDING"}`))
+	_, _ = w.Write([]byte(`{"task_id":"` + taskID + `","status":"PENDING"}`))
 }
 
 func (h *APIHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
@@ -227,6 +201,40 @@ func currentUserID(r *http.Request) string {
 		return ""
 	}
 	return uc.UserID
+}
+
+func (h *APIHandler) startBackupTask(label string, scope []string, createdBy, planID string) string {
+	taskRepo := task.NewRepository(h.DB)
+	taskID := "backup-create-" + uuid.NewString()
+	scopeCopy := append([]string(nil), scope...)
+	reqJSON := fmt.Sprintf(`{"label":%q,"scope":%s,"plan_id":%q}`, label, mustJSON(scopeCopy), planID)
+	now := time.Now().UTC()
+	_ = taskRepo.Create(&task.Task{
+		TaskID:      taskID,
+		TaskType:    "backup.create",
+		Status:      task.StatusRunning,
+		RequestJSON: reqJSON,
+		CreatedBy:   createdBy,
+		CreatedAt:   now,
+		StartedAt:   &now,
+	})
+
+	go func(taskID string, scope []string) {
+		id, err := h.Service.Create(scope, label, createdBy, planID)
+		if err != nil {
+			exitCode := 1
+			_ = taskRepo.UpdateResult(taskID, &exitCode, "", err.Error(), "")
+			_ = taskRepo.UpdateStatus(taskID, task.StatusFailed)
+			return
+		}
+		_ = taskRepo.UpdateResult(taskID, nil, fmt.Sprintf("backup_id=%s", id), "", "")
+		_ = taskRepo.UpdateStatus(taskID, task.StatusSucceeded)
+		if planID == "" && h.PlanSvc != nil {
+			_ = h.PlanSvc.SavePreference(createdBy, label, scope)
+		}
+	}(taskID, scopeCopy)
+
+	return taskID
 }
 
 func mustJSON(v any) string {

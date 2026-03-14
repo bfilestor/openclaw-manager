@@ -188,7 +188,7 @@ func (s *Service) resolvePluginPathsFromOpenClawJSON() []string {
 			paths = append(paths, p)
 		}
 	}
-	return uniqPaths(paths)
+	return dropNestedPaths(paths)
 }
 
 func uniqPaths(paths []string) []string {
@@ -206,6 +206,28 @@ func uniqPaths(paths []string) []string {
 		out = append(out, clean)
 	}
 	sort.Strings(out)
+	return out
+}
+
+func dropNestedPaths(paths []string) []string {
+	uniq := uniqPaths(paths)
+	out := make([]string, 0, len(uniq))
+	for _, path := range uniq {
+		nested := false
+		for _, parent := range out {
+			rel, err := filepath.Rel(parent, path)
+			if err != nil {
+				continue
+			}
+			if rel == "." || (!strings.HasPrefix(rel, "..") && rel != "") {
+				nested = true
+				break
+			}
+		}
+		if !nested {
+			out = append(out, path)
+		}
+	}
 	return out
 }
 
