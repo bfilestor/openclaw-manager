@@ -200,13 +200,26 @@ func (s *PlanService) SetPlanEnabled(planID string, enabled bool) error {
 }
 
 func (s *PlanService) DeletePlan(planID string) error {
-	res, err := s.DB.Exec(`DELETE FROM backup_plans WHERE plan_id=?`, planID)
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Keep historical backups, but break FK references before removing the plan.
+	if _, err := tx.Exec(`UPDATE backups SET plan_id=NULL WHERE plan_id=?`, planID); err != nil {
+		return err
+	}
+	res, err := tx.Exec(`DELETE FROM backup_plans WHERE plan_id=?`, planID)
 	if err != nil {
 		return err
 	}
 	aff, _ := res.RowsAffected()
 	if aff == 0 {
 		return sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 	return nil
 }
