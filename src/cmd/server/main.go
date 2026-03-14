@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -70,6 +71,16 @@ func main() {
 
 	dist := resolveStaticDir(*staticDir)
 	s := server.New(cfg.Server.Listen, dist, registerAllRoutes(cfg, db.SQL, authHandler, jwtSvc))
+	guardianCtx, guardianCancel := context.WithCancel(context.Background())
+	defer guardianCancel()
+	go (&gateway.LobsterGuardian{
+		Settings:     systemSettingsRepo,
+		Revisions:    appcfg.NewRevisionRepository(db.SQL),
+		Service:      gateway.NewSystemctlService(gateway.OSExecutor{}),
+		ServiceName:  "openclaw-gateway.service",
+		OpenClawJSON: gateway.DefaultOpenClawJSONPath(cfg.Paths.OpenClawHome),
+	}).Run(guardianCtx)
+
 	fmt.Printf("manager server starting, listen=%s, static_dir=%s, db=%s\n", cfg.Server.Listen, dist, dbPath)
 
 	if err := server.RunWithSignals(s); err != nil {

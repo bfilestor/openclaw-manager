@@ -279,9 +279,10 @@ export default {
   systemSettings: {
     title: '系统管理',
     publicRegistration: '自主注册开关',
+    lobsterGuardian: '龙虾守护开关',
     enabled: '开启',
     disabled: '关闭',
-    tip: '关闭后，/register 页面将提示系统已关闭注册并隐藏注册输入表单。',
+    tip: '关闭自主注册后，/register 页面将提示系统已关闭注册并隐藏输入表单；开启龙虾守护后，会每 10 秒检查 Gateway，若 inactive 将按最近 5 个 openclaw.json 修订依次回滚并重启尝试恢复。',
     messages: {
       loadFailed: '加载系统设置失败',
       saveSuccess: '系统设置保存成功',

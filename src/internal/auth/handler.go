@@ -68,9 +68,14 @@ func (h *Handler) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteAppError(w, err)
 		return
 	}
+	lobsterEnabled, err := h.lobsterGuardianEnabled()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(enabled) + `}`))
+	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(enabled) + `,"lobster_guardian":` + boolToJSON(lobsterEnabled) + `}`))
 }
 
 func (h *Handler) PutSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -85,24 +90,43 @@ func (h *Handler) PutSystemSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		PublicRegistration *bool `json:"public_registration"`
+		LobsterGuardian   *bool `json:"lobster_guardian"`
 	}
 	if err := middleware.BindJSON(r, &req); err != nil {
 		middleware.WriteAppError(w, err)
 		return
 	}
-	if req.PublicRegistration == nil {
-		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"public_registration": "required"}))
+	if req.PublicRegistration == nil && req.LobsterGuardian == nil {
+		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"public_registration": "required", "lobster_guardian": "required"}))
 		return
 	}
 	if h.Settings != nil {
-		if err := h.Settings.SetPublicRegistrationEnabled(*req.PublicRegistration); err != nil {
-			middleware.WriteAppError(w, err)
-			return
+		if req.PublicRegistration != nil {
+			if err := h.Settings.SetPublicRegistrationEnabled(*req.PublicRegistration); err != nil {
+				middleware.WriteAppError(w, err)
+				return
+			}
 		}
+		if req.LobsterGuardian != nil {
+			if err := h.Settings.SetLobsterGuardianEnabled(*req.LobsterGuardian); err != nil {
+				middleware.WriteAppError(w, err)
+				return
+			}
+		}
+	}
+	publicEnabled, err := h.publicRegistrationEnabled()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	lobsterEnabled, err := h.lobsterGuardianEnabled()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(*req.PublicRegistration) + `}`))
+	_, _ = w.Write([]byte(`{"public_registration":` + boolToJSON(publicEnabled) + `,"lobster_guardian":` + boolToJSON(lobsterEnabled) + `}`))
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -324,6 +348,13 @@ func (h *Handler) publicRegistrationEnabled() (bool, error) {
 		enabled = h.Config.Auth.PublicRegister
 	}
 	return enabled, nil
+}
+
+func (h *Handler) lobsterGuardianEnabled() (bool, error) {
+	if h.Settings != nil {
+		return h.Settings.IsLobsterGuardianEnabled()
+	}
+	return false, nil
 }
 
 func boolToJSON(v bool) string {

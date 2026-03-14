@@ -279,9 +279,10 @@ export default {
   systemSettings: {
     title: 'System Settings',
     publicRegistration: 'Public Registration',
+    lobsterGuardian: 'Lobster Guardian',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    tip: 'When disabled, /register shows a disabled notice and hides the registration form.',
+    tip: 'When public registration is disabled, /register shows a disabled notice and hides the registration form. When lobster guardian is enabled, it checks Gateway every 10s; if inactive, it rolls back openclaw.json revisions (up to 5) and restarts Gateway to recover.',
     messages: {
       loadFailed: 'Failed to load system settings',
       saveSuccess: 'System settings saved',

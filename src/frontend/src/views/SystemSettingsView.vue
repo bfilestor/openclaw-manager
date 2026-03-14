@@ -12,6 +12,9 @@
         <el-form-item :label="t('systemSettings.publicRegistration')">
           <el-switch v-model="publicRegistration" :active-text="t('systemSettings.enabled')" :inactive-text="t('systemSettings.disabled')" />
         </el-form-item>
+        <el-form-item :label="t('systemSettings.lobsterGuardian')">
+          <el-switch v-model="lobsterGuardian" :active-text="t('systemSettings.enabled')" :inactive-text="t('systemSettings.disabled')" />
+        </el-form-item>
         <el-alert type="info" :closable="false" show-icon :title="t('systemSettings.tip')" />
         <div class="actions">
           <el-button type="primary" :loading="saving" @click="save">{{ t('common.actions.saveConfig') }}</el-button>
@@ -31,6 +34,7 @@ const { t } = useI18n()
 const loading = ref(false)
 const saving = ref(false)
 const publicRegistration = ref(true)
+const lobsterGuardian = ref(false)
 
 function parseError(err: any, fallback: string): string {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message
@@ -42,6 +46,7 @@ async function load() {
   try {
     const { data } = await axios.get('/api/v1/system/settings')
     publicRegistration.value = Boolean(data?.public_registration)
+    lobsterGuardian.value = Boolean(data?.lobster_guardian)
   } catch (err) {
     ElMessage.error(parseError(err, t('systemSettings.messages.loadFailed')))
   } finally {
@@ -52,7 +57,10 @@ async function load() {
 async function save() {
   saving.value = true
   try {
-    await axios.put('/api/v1/system/settings', { public_registration: publicRegistration.value })
+    await axios.put('/api/v1/system/settings', {
+      public_registration: publicRegistration.value,
+      lobster_guardian: lobsterGuardian.value,
+    })
     ElMessage.success(t('systemSettings.messages.saveSuccess'))
   } catch (err) {
     ElMessage.error(parseError(err, t('systemSettings.messages.saveFailed')))

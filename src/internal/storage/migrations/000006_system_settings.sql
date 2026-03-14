@@ -6,3 +6,6 @@ CREATE TABLE IF NOT EXISTS system_settings (
 
 INSERT OR IGNORE INTO system_settings(key, value, updated_at)
 VALUES('public_registration', 'true', datetime('now'));
+
+INSERT OR IGNORE INTO system_settings(key, value, updated_at)
+VALUES('lobster_guardian', 'false', datetime('now'));
