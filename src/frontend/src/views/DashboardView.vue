@@ -235,12 +235,8 @@ async function runRollback() {
   upgradeLogText.value = t('dashboard.cards.version.rollbackRunning', { version: rollbackVersion.value })
   try {
     const { data } = await axios.post('/api/v1/gateway/rollback', { version: rollbackVersion.value })
-    const result = data?.result ?? data
-    const restoredRevisionID = String(data?.openclaw_json_restored_revision_id || '')
-    const logBody = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
-    upgradeLogText.value = restoredRevisionID
-      ? `[openclaw.json restored revision] ${restoredRevisionID}\n\n${logBody}`
-      : logBody
+    rollbackTaskID.value = String(data?.task_id || '')
+    await monitorTask(rollbackTaskID.value, false)
     rollbackReady.value = false
     ElMessage.success(t('dashboard.cards.version.rollbackSuccess', { version: rollbackVersion.value }))
     await refresh()
@@ -295,6 +291,27 @@ async function runUpgrade() {
   } finally {
     upgrading.value = false
   }
+}
+
+async function monitorTask(taskID: string, enableRollbackOnFail: boolean) {
+  if (!taskID) return
+  const started = Date.now()
+  while (Date.now() - started < 30 * 60 * 1000) {
+    const { data } = await axios.get(`/api/v1/tasks/${encodeURIComponent(taskID)}`)
+    const stdout = String(data?.stdout_tail || '')
+    const stderr = String(data?.stderr_tail || '')
+    const status = String(data?.status || '')
+    const header = [`[task] ${taskID}`, `[status] ${status || 'UNKNOWN'}`]
+    upgradeLogText.value = [header.join('\n'), stdout, stderr ? `\n[stderr]\n${stderr}` : ''].filter(Boolean).join('\n\n')
+
+    if (status === 'SUCCEEDED') return
+    if (status === 'FAILED' || status === 'CANCELED') {
+      if (enableRollbackOnFail && rollbackVersion.value) rollbackReady.value = true
+      throw new Error(stderr || status || 'task failed')
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+  }
+  throw new Error('task monitor timeout')
 }
 
 function formatTokenCompact(value: number): string {

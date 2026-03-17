@@ -121,6 +121,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 			Service:          gatewaySvc,
 			UpdateService:    gatewayUpdateSvc,
 			Revisions:        revRepo,
+			TaskRepo:         taskRepo,
 			OpenClawJSONPath: filepath.Join(cfg.Paths.OpenClawHome, "openclaw.json"),
 			ServiceName:      "openclaw-gateway.service",
 		}
