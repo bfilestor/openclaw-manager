@@ -147,6 +147,7 @@ export function setupMockApi() {
       url === '/api/v1/gateway/status' ||
       url === '/api/v1/gateway/version' ||
       url === '/api/v1/gateway/upgrade' ||
+      url === '/api/v1/gateway/rollback' ||
       url === '/api/v1/gateway/start' ||
       url === '/api/v1/gateway/stop' ||
       url === '/api/v1/gateway/restart' ||
@@ -191,6 +192,10 @@ export function setupMockApi() {
       }
       if (url === '/api/v1/gateway/upgrade' && method === 'post') {
         return jsonResponse(config, { task_id: 'upgrade-task', status: 'SUCCEEDED', result: { ok: true } }) as any
+      }
+      if (url === '/api/v1/gateway/rollback' && method === 'post') {
+        const body = parseRequestData(config.data)
+        return jsonResponse(config, { task_id: 'rollback-task', status: 'SUCCEEDED', result: { ok: true, version: String(body?.version || '') } }) as any
       }
       if (url === '/api/v1/gateway/start' && method === 'post') {
         gatewayState.service.active_state = 'active'

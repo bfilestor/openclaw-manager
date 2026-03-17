@@ -147,6 +147,14 @@
     <el-dialog v-model="upgradeLogVisible" :title="t('dashboard.cards.version.logTitle')" width="680px">
       <pre class="upgrade-log">{{ upgradeLogText }}</pre>
       <template #footer>
+        <el-button
+          v-if="rollbackReady"
+          type="danger"
+          :loading="rollbacking"
+          @click="runRollback"
+        >
+          {{ t('dashboard.cards.version.rollback', { version: rollbackVersion }) }}
+        </el-button>
         <el-button @click="upgradeLogVisible = false">{{ t('common.actions.close') }}</el-button>
       </template>
     </el-dialog>
@@ -179,6 +187,9 @@ const latestVersion = ref('-')
 const updateAvailable = ref(false)
 const updateChannel = ref('stable')
 const upgrading = ref(false)
+const rollbacking = ref(false)
+const rollbackVersion = ref('')
+const rollbackReady = ref(false)
 const upgradeLogVisible = ref(false)
 const upgradeLogText = ref('')
 
@@ -218,6 +229,27 @@ const quotaAlert = computed(() => {
   return t('dashboard.quotaNear', { used: formatTokenCompact(quotaUsed.value), limit: formatTokenCompact(quotaLimit.value) })
 })
 
+async function runRollback() {
+  if (!rollbackReady.value || rollbacking.value || !rollbackVersion.value) return
+  rollbacking.value = true
+  upgradeLogText.value = t('dashboard.cards.version.rollbackRunning', { version: rollbackVersion.value })
+  try {
+    const { data } = await axios.post('/api/v1/gateway/rollback', { version: rollbackVersion.value })
+    const result = data?.result ?? data
+    upgradeLogText.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    rollbackReady.value = false
+    ElMessage.success(t('dashboard.cards.version.rollbackSuccess', { version: rollbackVersion.value }))
+    await refresh()
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || t('dashboard.cards.version.rollbackFailed')
+    const detail = err?.response?.data || msg
+    upgradeLogText.value = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2)
+    ElMessage.error(String(msg))
+  } finally {
+    rollbacking.value = false
+  }
+}
+
 async function runUpgrade() {
   if (!updateAvailable.value || upgrading.value) return
 
@@ -236,6 +268,8 @@ async function runUpgrade() {
   }
 
   upgrading.value = true
+  rollbackReady.value = false
+  rollbackVersion.value = currentVersion.value
   upgradeLogText.value = t('dashboard.cards.version.logRunning')
   upgradeLogVisible.value = true
   try {
@@ -248,6 +282,7 @@ async function runUpgrade() {
     const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || t('dashboard.cards.version.upgradeFailed')
     const detail = err?.response?.data || msg
     upgradeLogText.value = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2)
+    rollbackReady.value = !!rollbackVersion.value
     ElMessage.error(String(msg))
   } finally {
     upgrading.value = false

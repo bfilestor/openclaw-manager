@@ -589,7 +589,11 @@ export default {
         confirmTitle: '确认升级 OpenClaw',
         confirmContent: '当前版本：{current}\n最新版本：{latest}\n\n确认现在执行升级吗？升级过程可能会重启服务。',
         logTitle: '升级日志',
-        logRunning: '升级执行中，请稍候...'
+        logRunning: '升级执行中，请稍候...',
+        rollback: '回滚到 {version}',
+        rollbackRunning: '正在回滚到 {version}，请稍候...',
+        rollbackSuccess: '已回滚到 {version}',
+        rollbackFailed: '回滚失败'
       },
     },
     quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',

@@ -589,7 +589,11 @@ export default {
         confirmTitle: 'Confirm OpenClaw Upgrade',
         confirmContent: 'Current version: {current}\nLatest version: {latest}\n\nUpgrade now? The service may restart during the process.',
         logTitle: 'Upgrade Logs',
-        logRunning: 'Upgrade is running, please wait...'
+        logRunning: 'Upgrade is running, please wait...',
+        rollback: 'Rollback to {version}',
+        rollbackRunning: 'Rolling back to {version}, please wait...',
+        rollbackSuccess: 'Rolled back to {version}',
+        rollbackFailed: 'Rollback failed'
       },
     },
     quotaNear: 'Token usage is near limit: used {used} / limit {limit}',

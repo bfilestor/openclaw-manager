@@ -191,6 +191,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("GET /api/v1/gateway/status", wrap(gatewayAPI.Status, authMW))
 		mux.HandleFunc("GET /api/v1/gateway/version", wrap(gatewayAPI.VersionStatus, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/upgrade", wrap(gatewayAPI.Upgrade, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/rollback", wrap(gatewayAPI.Rollback, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/start", wrap(gatewayAPI.Start, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/stop", wrap(gatewayAPI.Stop, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/restart", wrap(gatewayAPI.Restart, authMW))

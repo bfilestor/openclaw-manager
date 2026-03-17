@@ -92,10 +92,28 @@ func (s *UpdateService) Upgrade() (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("openclaw update failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
+	return parseJSONOutput(out), nil
+}
 
+func (s *UpdateService) RollbackTo(version string) (map[string]any, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return nil, fmt.Errorf("rollback version required")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+
+	out, err := s.exec.Run(ctx, "openclaw", "update", "--tag", version, "--yes", "--json")
+	if err != nil {
+		return nil, fmt.Errorf("openclaw rollback failed: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return parseJSONOutput(out), nil
+}
+
+func parseJSONOutput(out []byte) map[string]any {
 	result := map[string]any{}
 	if uErr := json.Unmarshal(out, &result); uErr != nil {
 		result["raw"] = strings.TrimSpace(string(out))
 	}
-	return result, nil
+	return result
 }

@@ -80,6 +80,50 @@ func (h *APIHandler) Upgrade(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"task_id": taskID, "status": "SUCCEEDED", "result": result})
 }
 
+func (h *APIHandler) Rollback(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	if h.runningTaskID != "" {
+		rid := h.runningTaskID
+		h.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": "TASK_CONFLICT", "running_task_id": rid})
+		return
+	}
+	taskID := "rollback-task"
+	h.runningTaskID = taskID
+	h.mu.Unlock()
+
+	var req struct {
+		Version string `json:"version"`
+	}
+	if err := middleware.BindJSON(r, &req); err != nil {
+		h.mu.Lock()
+		h.runningTaskID = ""
+		h.mu.Unlock()
+		middleware.WriteAppError(w, err)
+		return
+	}
+
+	svc := h.UpdateService
+	if svc == nil {
+		svc = NewUpdateService(OSExecutor{})
+	}
+	result, err := svc.RollbackTo(req.Version)
+
+	h.mu.Lock()
+	h.runningTaskID = ""
+	h.mu.Unlock()
+
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"task_id": taskID, "status": "SUCCEEDED", "result": result})
+}
+
 func (h *APIHandler) doAction(w http.ResponseWriter, action string) {
 	h.mu.Lock()
 	if h.runningTaskID != "" {
