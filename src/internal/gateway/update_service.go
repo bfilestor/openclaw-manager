@@ -44,6 +44,7 @@ func (s *UpdateService) VersionStatus() (*VersionStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("openclaw update status --json failed: %w", err)
 	}
+	statusOut = stripNonJSONPrefix(statusOut)
 
 	var payload struct {
 		Availability struct {
@@ -112,8 +113,23 @@ func (s *UpdateService) RollbackTo(version string) (map[string]any, error) {
 
 func parseJSONOutput(out []byte) map[string]any {
 	result := map[string]any{}
-	if uErr := json.Unmarshal(out, &result); uErr != nil {
+	clean := stripNonJSONPrefix(out)
+	if uErr := json.Unmarshal(clean, &result); uErr != nil {
 		result["raw"] = strings.TrimSpace(string(out))
 	}
 	return result
+}
+
+func stripNonJSONPrefix(raw []byte) []byte {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return raw
+	}
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		return []byte(trimmed)
+	}
+	if idx := strings.IndexAny(trimmed, "{["); idx >= 0 {
+		return []byte(strings.TrimSpace(trimmed[idx:]))
+	}
+	return []byte(trimmed)
 }
