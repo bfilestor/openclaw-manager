@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -44,7 +45,7 @@ func (s *UpdateService) VersionStatus() (*VersionStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("openclaw update status --json failed: %w", err)
 	}
-	statusOut = stripNonJSONPrefix(statusOut)
+	statusOut = extractFirstJSONValue(statusOut)
 
 	var payload struct {
 		Availability struct {
@@ -113,23 +114,27 @@ func (s *UpdateService) RollbackTo(version string) (map[string]any, error) {
 
 func parseJSONOutput(out []byte) map[string]any {
 	result := map[string]any{}
-	clean := stripNonJSONPrefix(out)
+	clean := extractFirstJSONValue(out)
 	if uErr := json.Unmarshal(clean, &result); uErr != nil {
 		result["raw"] = strings.TrimSpace(string(out))
 	}
 	return result
 }
 
-func stripNonJSONPrefix(raw []byte) []byte {
+func extractFirstJSONValue(raw []byte) []byte {
 	trimmed := strings.TrimSpace(string(raw))
 	if trimmed == "" {
 		return raw
 	}
-	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+	idx := strings.IndexAny(trimmed, "{[")
+	if idx < 0 {
 		return []byte(trimmed)
 	}
-	if idx := strings.IndexAny(trimmed, "{["); idx >= 0 {
-		return []byte(strings.TrimSpace(trimmed[idx:]))
+	candidate := strings.TrimSpace(trimmed[idx:])
+	dec := json.NewDecoder(bytes.NewReader([]byte(candidate)))
+	var first json.RawMessage
+	if err := dec.Decode(&first); err != nil || len(first) == 0 {
+		return []byte(candidate)
 	}
-	return []byte(trimmed)
+	return first
 }

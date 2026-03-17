@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -107,7 +108,7 @@ func (r *Repository) GetWorkspacePath(ctx context.Context, agentID string) (stri
 }
 
 func parseAgentsJSON(raw []byte) ([]Agent, error) {
-	raw = stripNonJSONPrefix(raw)
+	raw = extractFirstJSONValue(raw)
 	type rawAgent struct {
 		ID        string          `json:"id"`
 		Workspace string          `json:"workspace"`
@@ -140,18 +141,22 @@ func parseAgentsJSON(raw []byte) ([]Agent, error) {
 	return out, nil
 }
 
-func stripNonJSONPrefix(raw []byte) []byte {
+func extractFirstJSONValue(raw []byte) []byte {
 	trimmed := strings.TrimSpace(string(raw))
 	if trimmed == "" {
 		return raw
 	}
-	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+	idx := strings.IndexAny(trimmed, "{[")
+	if idx < 0 {
 		return []byte(trimmed)
 	}
-	if idx := strings.IndexAny(trimmed, "{["); idx >= 0 {
-		return []byte(strings.TrimSpace(trimmed[idx:]))
+	candidate := strings.TrimSpace(trimmed[idx:])
+	dec := json.NewDecoder(bytes.NewReader([]byte(candidate)))
+	var first json.RawMessage
+	if err := dec.Decode(&first); err != nil || len(first) == 0 {
+		return []byte(candidate)
 	}
-	return []byte(trimmed)
+	return first
 }
 
 func parseBindingsCount(raw json.RawMessage) int {
