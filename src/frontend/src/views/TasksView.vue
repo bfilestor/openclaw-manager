@@ -254,7 +254,12 @@ onUnmounted(() => {
 .toolbar { margin-bottom: 8px; }
 .log-box {
   height: 320px;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   background: #111;
   color: #ddd;
   padding: 8px;
