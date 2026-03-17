@@ -117,7 +117,13 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		// 各功能 handler
 		gatewaySvc := gateway.NewSystemctlService(execer)
 		gatewayUpdateSvc := gateway.NewUpdateService(execer)
-		gatewayAPI := &gateway.APIHandler{Service: gatewaySvc, UpdateService: gatewayUpdateSvc, ServiceName: "openclaw-gateway.service"}
+		gatewayAPI := &gateway.APIHandler{
+			Service:          gatewaySvc,
+			UpdateService:    gatewayUpdateSvc,
+			Revisions:        revRepo,
+			OpenClawJSONPath: filepath.Join(cfg.Paths.OpenClawHome, "openclaw.json"),
+			ServiceName:      "openclaw-gateway.service",
+		}
 		gatewayDoctor := gateway.NewDoctorHandler(execer)
 		gatewayLogs := gateway.NewLogsHandler(execer)
 
