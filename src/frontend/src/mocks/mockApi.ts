@@ -191,11 +191,21 @@ export function setupMockApi() {
         }) as any
       }
       if (url === '/api/v1/gateway/upgrade' && method === 'post') {
-        return jsonResponse(config, { task_id: 'upgrade-task', status: 'SUCCEEDED', result: { ok: true } }) as any
+        return jsonResponse(config, {
+          task_id: 'upgrade-task',
+          status: 'SUCCEEDED',
+          openclaw_json_backup_revision_id: `rev-backup-${Date.now()}`,
+          result: { ok: true }
+        }) as any
       }
       if (url === '/api/v1/gateway/rollback' && method === 'post') {
         const body = parseRequestData(config.data)
-        return jsonResponse(config, { task_id: 'rollback-task', status: 'SUCCEEDED', result: { ok: true, version: String(body?.version || '') } }) as any
+        return jsonResponse(config, {
+          task_id: 'rollback-task',
+          status: 'SUCCEEDED',
+          openclaw_json_restored_revision_id: `rev-restored-${Date.now()}`,
+          result: { ok: true, version: String(body?.version || '') }
+        }) as any
       }
       if (url === '/api/v1/gateway/start' && method === 'post') {
         gatewayState.service.active_state = 'active'

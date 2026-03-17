@@ -236,7 +236,11 @@ async function runRollback() {
   try {
     const { data } = await axios.post('/api/v1/gateway/rollback', { version: rollbackVersion.value })
     const result = data?.result ?? data
-    upgradeLogText.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    const restoredRevisionID = String(data?.openclaw_json_restored_revision_id || '')
+    const logBody = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    upgradeLogText.value = restoredRevisionID
+      ? `[openclaw.json restored revision] ${restoredRevisionID}\n\n${logBody}`
+      : logBody
     rollbackReady.value = false
     ElMessage.success(t('dashboard.cards.version.rollbackSuccess', { version: rollbackVersion.value }))
     await refresh()
@@ -275,7 +279,11 @@ async function runUpgrade() {
   try {
     const { data } = await axios.post('/api/v1/gateway/upgrade')
     const result = data?.result ?? data
-    upgradeLogText.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    const backupRevisionID = String(data?.openclaw_json_backup_revision_id || '')
+    const logBody = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    upgradeLogText.value = backupRevisionID
+      ? `[openclaw.json backup revision] ${backupRevisionID}\n\n${logBody}`
+      : logBody
     ElMessage.success(t('dashboard.cards.version.upgradeSuccess'))
     await refresh()
   } catch (err: any) {
