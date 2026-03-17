@@ -143,13 +143,20 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog v-model="upgradeLogVisible" :title="t('dashboard.cards.version.logTitle')" width="680px">
+      <pre class="upgrade-log">{{ upgradeLogText }}</pre>
+      <template #footer>
+        <el-button @click="upgradeLogVisible = false">{{ t('common.actions.close') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const loading = ref(false)
@@ -172,6 +179,8 @@ const latestVersion = ref('-')
 const updateAvailable = ref(false)
 const updateChannel = ref('stable')
 const upgrading = ref(false)
+const upgradeLogVisible = ref(false)
+const upgradeLogText = ref('')
 
 let timer: any = null
 
@@ -211,13 +220,34 @@ const quotaAlert = computed(() => {
 
 async function runUpgrade() {
   if (!updateAvailable.value || upgrading.value) return
-  upgrading.value = true
+
   try {
-    await axios.post('/api/v1/gateway/upgrade')
+    await ElMessageBox.confirm(
+      t('dashboard.cards.version.confirmContent', { current: currentVersion.value, latest: latestVersion.value }),
+      t('dashboard.cards.version.confirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.actions.confirm'),
+        cancelButtonText: t('common.actions.cancel'),
+      },
+    )
+  } catch {
+    return
+  }
+
+  upgrading.value = true
+  upgradeLogText.value = t('dashboard.cards.version.logRunning')
+  upgradeLogVisible.value = true
+  try {
+    const { data } = await axios.post('/api/v1/gateway/upgrade')
+    const result = data?.result ?? data
+    upgradeLogText.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
     ElMessage.success(t('dashboard.cards.version.upgradeSuccess'))
     await refresh()
   } catch (err: any) {
     const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || t('dashboard.cards.version.upgradeFailed')
+    const detail = err?.response?.data || msg
+    upgradeLogText.value = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2)
     ElMessage.error(String(msg))
   } finally {
     upgrading.value = false
@@ -541,5 +571,17 @@ onUnmounted(() => clearInterval(timer))
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.upgrade-log {
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  background: #0b1020;
+  color: #d1e7ff;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

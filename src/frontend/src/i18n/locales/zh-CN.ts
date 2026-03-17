@@ -586,6 +586,10 @@ export default {
         upgrade: '立即升级',
         upgradeSuccess: '升级完成，正在刷新版本状态',
         upgradeFailed: '升级失败',
+        confirmTitle: '确认升级 OpenClaw',
+        confirmContent: '当前版本：{current}\n最新版本：{latest}\n\n确认现在执行升级吗？升级过程可能会重启服务。',
+        logTitle: '升级日志',
+        logRunning: '升级执行中，请稍候...'
       },
     },
     quotaNear: 'Token 使用量接近限额：已用 {used} / 限额 {limit}',

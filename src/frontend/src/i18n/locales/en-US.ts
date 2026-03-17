@@ -586,6 +586,10 @@ export default {
         upgrade: 'Upgrade now',
         upgradeSuccess: 'Upgrade completed, refreshing version status',
         upgradeFailed: 'Upgrade failed',
+        confirmTitle: 'Confirm OpenClaw Upgrade',
+        confirmContent: 'Current version: {current}\nLatest version: {latest}\n\nUpgrade now? The service may restart during the process.',
+        logTitle: 'Upgrade Logs',
+        logRunning: 'Upgrade is running, please wait...'
       },
     },
     quotaNear: 'Token usage is near limit: used {used} / limit {limit}',
