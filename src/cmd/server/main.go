@@ -116,7 +116,8 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 
 		// 各功能 handler
 		gatewaySvc := gateway.NewSystemctlService(execer)
-		gatewayAPI := &gateway.APIHandler{Service: gatewaySvc, ServiceName: "openclaw-gateway.service"}
+		gatewayUpdateSvc := gateway.NewUpdateService(execer)
+		gatewayAPI := &gateway.APIHandler{Service: gatewaySvc, UpdateService: gatewayUpdateSvc, ServiceName: "openclaw-gateway.service"}
 		gatewayDoctor := gateway.NewDoctorHandler(execer)
 		gatewayLogs := gateway.NewLogsHandler(execer)
 
@@ -188,6 +189,8 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		mux.HandleFunc("POST /api/v1/tasks/shell/execute", wrap(taskShell.Execute, authMW, auth.RequireRole(user.RoleOperator)))
 
 		mux.HandleFunc("GET /api/v1/gateway/status", wrap(gatewayAPI.Status, authMW))
+		mux.HandleFunc("GET /api/v1/gateway/version", wrap(gatewayAPI.VersionStatus, authMW))
+		mux.HandleFunc("POST /api/v1/gateway/upgrade", wrap(gatewayAPI.Upgrade, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/start", wrap(gatewayAPI.Start, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/stop", wrap(gatewayAPI.Stop, authMW))
 		mux.HandleFunc("POST /api/v1/gateway/restart", wrap(gatewayAPI.Restart, authMW))

@@ -9,8 +9,9 @@ import (
 )
 
 type APIHandler struct {
-	Service     *SystemctlService
-	ServiceName string
+	Service       *SystemctlService
+	UpdateService *UpdateService
+	ServiceName   string
 
 	mu            sync.Mutex
 	runningTaskID string
@@ -30,6 +31,54 @@ func (h *APIHandler) Status(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) Start(w http.ResponseWriter, r *http.Request)   { h.doAction(w, "start") }
 func (h *APIHandler) Stop(w http.ResponseWriter, r *http.Request)    { h.doAction(w, "stop") }
 func (h *APIHandler) Restart(w http.ResponseWriter, r *http.Request) { h.doAction(w, "restart") }
+
+func (h *APIHandler) VersionStatus(w http.ResponseWriter, _ *http.Request) {
+	svc := h.UpdateService
+	if svc == nil {
+		svc = NewUpdateService(OSExecutor{})
+	}
+	status, err := svc.VersionStatus()
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(status)
+}
+
+func (h *APIHandler) Upgrade(w http.ResponseWriter, _ *http.Request) {
+	h.mu.Lock()
+	if h.runningTaskID != "" {
+		rid := h.runningTaskID
+		h.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": "TASK_CONFLICT", "running_task_id": rid})
+		return
+	}
+	taskID := "upgrade-task"
+	h.runningTaskID = taskID
+	h.mu.Unlock()
+
+	svc := h.UpdateService
+	if svc == nil {
+		svc = NewUpdateService(OSExecutor{})
+	}
+	result, err := svc.Upgrade()
+
+	h.mu.Lock()
+	h.runningTaskID = ""
+	h.mu.Unlock()
+
+	if err != nil {
+		middleware.WriteAppError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"task_id": taskID, "status": "SUCCEEDED", "result": result})
+}
 
 func (h *APIHandler) doAction(w http.ResponseWriter, action string) {
 	h.mu.Lock()

@@ -145,6 +145,8 @@ export function setupMockApi() {
       url === '/api/v1/auth/login' ||
       url === '/api/v1/auth/refresh' ||
       url === '/api/v1/gateway/status' ||
+      url === '/api/v1/gateway/version' ||
+      url === '/api/v1/gateway/upgrade' ||
       url === '/api/v1/gateway/start' ||
       url === '/api/v1/gateway/stop' ||
       url === '/api/v1/gateway/restart' ||
@@ -178,6 +180,17 @@ export function setupMockApi() {
       // dashboard + operation buttons
       if (url === '/api/v1/gateway/status' && method === 'get') {
         return jsonResponse(config, gatewayState) as any
+      }
+      if (url === '/api/v1/gateway/version' && method === 'get') {
+        return jsonResponse(config, {
+          current_version: '2026.3.2',
+          latest_version: '2026.3.13',
+          channel: 'stable',
+          update_available: true,
+        }) as any
+      }
+      if (url === '/api/v1/gateway/upgrade' && method === 'post') {
+        return jsonResponse(config, { task_id: 'upgrade-task', status: 'SUCCEEDED', result: { ok: true } }) as any
       }
       if (url === '/api/v1/gateway/start' && method === 'post') {
         gatewayState.service.active_state = 'active'

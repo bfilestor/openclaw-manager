@@ -124,6 +124,24 @@
           <div class="stat-sub">{{ t('dashboard.cards.users.sub') }}</div>
         </el-card>
       </el-col>
+
+      <el-col :xs="24" :sm="12" :lg="8">
+        <el-card shadow="hover" class="stat-card version">
+          <div class="stat-head">
+            <span class="stat-icon">🦞</span>
+            <span class="stat-title">{{ t('dashboard.cards.version.title') }}</span>
+          </div>
+          <div class="stat-main version-main">{{ currentVersion }}</div>
+          <div class="stat-sub">{{ t('dashboard.cards.version.latest', { version: latestVersion }) }} · {{ t('dashboard.cards.version.channel', { channel: updateChannel }) }}</div>
+          <div class="version-actions">
+            <el-tag v-if="updateAvailable" type="warning" size="small">{{ t('dashboard.cards.version.updateAvailable') }}</el-tag>
+            <el-tag v-else type="success" size="small">{{ t('dashboard.cards.version.upToDate') }}</el-tag>
+            <el-button size="small" type="primary" :disabled="!updateAvailable" :loading="upgrading" @click="runUpgrade">
+              {{ t('dashboard.cards.version.upgrade') }}
+            </el-button>
+          </div>
+        </el-card>
+      </el-col>
     </el-row>
   </div>
 </template>
@@ -131,6 +149,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const loading = ref(false)
@@ -148,6 +167,11 @@ const { t } = useI18n()
 const quotaStatus = ref<'normal' | 'near' | 'exceeded' | ''>('')
 const quotaUsed = ref(0)
 const quotaLimit = ref(0)
+const currentVersion = ref('-')
+const latestVersion = ref('-')
+const updateAvailable = ref(false)
+const updateChannel = ref('stable')
+const upgrading = ref(false)
 
 let timer: any = null
 
@@ -184,6 +208,21 @@ const quotaAlert = computed(() => {
   }
   return t('dashboard.quotaNear', { used: formatTokenCompact(quotaUsed.value), limit: formatTokenCompact(quotaLimit.value) })
 })
+
+async function runUpgrade() {
+  if (!updateAvailable.value || upgrading.value) return
+  upgrading.value = true
+  try {
+    await axios.post('/api/v1/gateway/upgrade')
+    ElMessage.success(t('dashboard.cards.version.upgradeSuccess'))
+    await refresh()
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || t('dashboard.cards.version.upgradeFailed')
+    ElMessage.error(String(msg))
+  } finally {
+    upgrading.value = false
+  }
+}
 
 function formatTokenCompact(value: number): string {
   if (!Number.isFinite(value)) return '0'
@@ -229,6 +268,10 @@ function loadCache() {
     quotaStatus.value = String(cached.quotaStatus || '') as 'normal' | 'near' | 'exceeded' | ''
     quotaUsed.value = Number(cached.quotaUsed || 0)
     quotaLimit.value = Number(cached.quotaLimit || 0)
+    currentVersion.value = String(cached.currentVersion || '-')
+    latestVersion.value = String(cached.latestVersion || '-')
+    updateAvailable.value = !!cached.updateAvailable
+    updateChannel.value = String(cached.updateChannel || 'stable')
   } catch {
     // ignore cache parse errors
   }
@@ -249,6 +292,10 @@ function saveCache() {
       quotaStatus: quotaStatus.value,
       quotaUsed: quotaUsed.value,
       quotaLimit: quotaLimit.value,
+      currentVersion: currentVersion.value,
+      latestVersion: latestVersion.value,
+      updateAvailable: updateAvailable.value,
+      updateChannel: updateChannel.value,
     }))
   } catch {
     // ignore cache write errors
@@ -259,8 +306,9 @@ async function refresh() {
   const firstLoad = !lastRefreshAt.value
   if (firstLoad) loading.value = true
   try {
-    const [gatewayRes, skillsRes, agentsRes, configRes, usersRes, tokenUsageRes] = await Promise.all([
+    const [gatewayRes, versionRes, skillsRes, agentsRes, configRes, usersRes, tokenUsageRes] = await Promise.all([
       axios.get('/api/v1/gateway/status'),
+      axios.get('/api/v1/gateway/version').catch(() => ({ data: {} })),
       axios.get('/api/v1/skills', { params: { scope: 'global' } }),
       axios.get('/api/v1/agents'),
       axios.get('/api/v1/config/openclaw'),
@@ -285,6 +333,11 @@ async function refresh() {
       statusHint.value = t('dashboard.status.stable', { state: nextState })
     }
     previousGatewayState.value = nextState
+
+    currentVersion.value = String(versionRes.data?.current_version || '-')
+    latestVersion.value = String(versionRes.data?.latest_version || currentVersion.value)
+    updateAvailable.value = Boolean(versionRes.data?.update_available)
+    updateChannel.value = String(versionRes.data?.channel || 'stable')
 
     const skills = skillsRes.data?.skills
     skillCount.value = Array.isArray(skills) ? skills.length : 0
@@ -476,5 +529,17 @@ onUnmounted(() => clearInterval(timer))
 }
 .users {
   background: linear-gradient(145deg, #f0fdf4, #dcfce7);
+}
+.version {
+  background: linear-gradient(145deg, #eef2ff, #e0e7ff);
+}
+.version-main {
+  font-size: 22px;
+}
+.version-actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>
