@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenClaw Manager Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>OpenClaw Manager</h1>
+      <div class="actions">
+        <button id="startBtn">Start Local Manager</button>
+        <button id="reloadBtn">Reload Panel</button>
+      </div>
+    </header>
+    <p id="status">Status: initializing...</p>
+    <iframe id="panel" src="http://127.0.0.1:18799" title="OpenClaw Manager"></iframe>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

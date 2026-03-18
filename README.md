@@ -114,9 +114,33 @@ bash ./scripts/install-launchd.sh
 bash ./scripts/uninstall-launchd.sh
 ```
 
+## Tauri 桌面客户端（Windows/macOS 最小版）
+
+已提供最小可用 Tauri 桌面壳：`desktop/tauri`。
+
+打包前准备资源：
+
+```bash
+# Linux/macOS
+bash ./desktop/tauri/scripts/prepare-assets.sh
+
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -File .\desktop\tauri\scripts\prepare-assets.ps1
+```
+
+构建桌面应用：
+
+```bash
+cd desktop/tauri
+pnpm install
+pnpm run build
+```
+
+> 桌面应用会尝试拉起 `managerd`，并加载本地 `http://127.0.0.1:18799` 管理面板。
+
 ## 注意事项
 - reset_super_token是重设管理员密码的重要凭证，请妥善保管。一旦泄露，危害巨大，请定期修改！
-- Linux 仍是当前最稳定运行环境，Windows 功能正在逐步对齐。
+- Linux 仍是当前最稳定运行环境，Windows/macOS 功能正在逐步对齐。
 - 用户角色四种 admin/operator/viewer/user,admin全部权限，viewer只有查看权限，无修改权限,user普通使用者，只用户统计token使用情况
 - 第一次运行，注册的第一个用户默认为管理员权限。后续注册用户默认为普通使用者
 
