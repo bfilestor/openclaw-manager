@@ -43,5 +43,12 @@ func DefaultGatewayLogDir() string {
 		}
 		return filepath.Join(base, "openclaw")
 	}
+	if runtime.GOOS == "darwin" {
+		home, _ := os.UserHomeDir()
+		if home == "" {
+			return filepath.Join(os.TempDir(), "openclaw")
+		}
+		return filepath.Join(home, "Library", "Logs", "openclaw")
+	}
 	return filepath.Join(os.TempDir(), "openclaw")
 }

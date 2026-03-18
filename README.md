@@ -84,9 +84,9 @@ openclaw_home = "~/.openclaw"
 manager_home = "~/.openclaw-manager"
 ```
 
-## Windows 预览支持
+## Windows / macOS 预览支持
 
-> 当前处于 Windows 适配阶段（持续完善中），建议优先在 Linux/WSL2 使用完整功能。
+> 当前处于跨平台适配阶段（持续完善中），建议优先在 Linux/WSL2 使用完整功能。
 
 Windows 本地可先使用以下脚本完成最小运行：
 
@@ -99,6 +99,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-service.ps1
 
 # 3) 卸载服务（可选）
 powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1
+```
+
+macOS 本地可先使用以下脚本完成最小运行：
+
+```bash
+# 1) 构建（前后端）
+bash ./scripts/build-macos.sh --all
+
+# 2) 安装/更新 launchd 服务
+bash ./scripts/install-launchd.sh
+
+# 3) 卸载 launchd 服务（可选）
+bash ./scripts/uninstall-launchd.sh
 ```
 
 ## 注意事项
