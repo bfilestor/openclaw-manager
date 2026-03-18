@@ -6,6 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, WindowEvent};
@@ -215,6 +216,27 @@ fn check_dependencies() -> DependencyState {
     }
 }
 
+fn resolve_tray_icon(app: &tauri::AppHandle) -> Option<Image<'static>> {
+    if let Ok(path) = std::env::var("MANAGER_TRAY_ICON_PATH") {
+        let p = PathBuf::from(path);
+        if p.exists() {
+            if let Ok(icon) = Image::from_path(&p) {
+                return Some(icon);
+            }
+        }
+    }
+
+    if let Ok(p) = app.path().resolve("tray-icon.png", tauri::path::BaseDirectory::Resource) {
+        if p.exists() {
+            if let Ok(icon) = Image::from_path(&p) {
+                return Some(icon);
+            }
+        }
+    }
+
+    None
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -226,7 +248,11 @@ fn main() {
             let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
             let app_handle = app.handle().clone();
-            TrayIconBuilder::new()
+            let mut tray_builder = TrayIconBuilder::new();
+            if let Some(icon) = resolve_tray_icon(&app_handle) {
+                tray_builder = tray_builder.icon(icon);
+            }
+            tray_builder
                 .menu(&tray_menu)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
