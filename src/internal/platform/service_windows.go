@@ -61,8 +61,23 @@ func (s *WindowsServiceController) Status(service string) (map[string]string, er
 	res := map[string]string{"raw": strings.TrimSpace(string(out))}
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(strings.ToUpper(line), "STATE") {
+		upper := strings.ToUpper(line)
+		if strings.HasPrefix(upper, "STATE") {
 			res["STATE"] = line
+			switch {
+			case strings.Contains(upper, "RUNNING"):
+				res["ActiveState"] = "active"
+				res["SubState"] = "running"
+			case strings.Contains(upper, "STOPPED"):
+				res["ActiveState"] = "inactive"
+				res["SubState"] = "dead"
+			case strings.Contains(upper, "START_PENDING"):
+				res["ActiveState"] = "activating"
+				res["SubState"] = "start-pending"
+			case strings.Contains(upper, "STOP_PENDING"):
+				res["ActiveState"] = "deactivating"
+				res["SubState"] = "stop-pending"
+			}
 		}
 	}
 	return res, nil

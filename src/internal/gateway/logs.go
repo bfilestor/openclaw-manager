@@ -56,6 +56,10 @@ func (h *LogsHandler) GetLogs(w http.ResponseWriter, r *http.Request) {
 	case "file":
 		out, err = h.readFileLogs(lines)
 	case "journald":
+		if runtime.GOOS == "windows" {
+			middleware.WriteAppError(w, &middleware.AppError{Code: "NOT_SUPPORTED", Message: "journald source is not supported on windows", StatusCode: http.StatusBadRequest})
+			return
+		}
 		out, err = h.readJournalLogs(lines)
 	default:
 		middleware.WriteAppError(w, middleware.NewValidation(map[string]string{"source": "must be file or journald"}))
