@@ -36,6 +36,23 @@ button {
   font-size: 13px;
 }
 
+.deps {
+  margin: 0 16px 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.deps.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.deps.warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 #panel {
   width: calc(100vw - 24px);
   height: calc(100vh - 96px);

@@ -18,6 +18,17 @@ async function refreshStatus() {
   }
 }
 
+async function refreshDependencies() {
+  try {
+    const deps = await invoke("check_dependencies");
+    depsEl.textContent = `Dependencies: ${deps.message}`;
+    depsEl.className = deps.openclaw_cli ? "deps ok" : "deps warn";
+  } catch (err) {
+    depsEl.textContent = `Dependencies: check failed (${String(err)})`;
+    depsEl.className = "deps warn";
+  }
+}
+
 startBtn.addEventListener("click", async () => {
   try {
     await invoke("start_manager");

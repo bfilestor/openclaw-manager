@@ -15,6 +15,12 @@ struct ManagerState {
     pid: Option<u32>,
 }
 
+#[derive(Serialize)]
+struct DependencyState {
+    openclaw_cli: bool,
+    message: String,
+}
+
 fn manager_binary_path(app: &tauri::AppHandle) -> PathBuf {
     if let Ok(v) = std::env::var("MANAGERD_PATH") {
         if !v.trim().is_empty() {
@@ -143,6 +149,40 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![manager_status, start_manager, stop_manager])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+           .map(|s| s.success())
+            .unwrap_or(false)
+    }
+}
+
+#[tauri::command]
+fn check_dependencies() -> DependencyState {
+    let has_openclaw = has_command("openclaw");
+    let message = if has_openclaw {
+        "openclaw CLI detected".to_string()
+    } else {
+        "openclaw CLI not detected. Some actions (agents/gateway controls) may fail.".to_string()
+    };
+    DependencyState {
+        openclaw_cli: has_openclaw,
+        message,
+    }
+}
+
+fn main() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let _ = start_manager(app.handle().clone());
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            manager_status,
+            start_manager,
+            stop_manager,
+            check_dependencies
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
