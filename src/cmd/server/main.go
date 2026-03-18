@@ -76,10 +76,11 @@ func main() {
 	guardianCtx, guardianCancel := context.WithCancel(context.Background())
 	defer guardianCancel()
 	defaultExec := platform.NewDefaultExecutor()
+	defaultController := platform.NewDefaultServiceController(defaultExec)
 	go (&gateway.LobsterGuardian{
 		Settings:     systemSettingsRepo,
 		Revisions:    appcfg.NewRevisionRepository(db.SQL),
-		Service:      gateway.NewSystemctlService(defaultExec),
+		Service:      gateway.NewSystemctlServiceWithController(defaultExec, defaultController),
 		ServiceName:  "openclaw-gateway.service",
 		OpenClawJSON: gateway.DefaultOpenClawJSONPath(cfg.Paths.OpenClawHome),
 	}).Run(guardianCtx)
@@ -113,13 +114,14 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		}
 		validator, _ := storage.NewPathValidator(validatorPaths)
 		execer := platform.NewDefaultExecutor()
+		serviceController := platform.NewDefaultServiceController(execer)
 		revRepo := appcfg.NewRevisionRepository(sqlDB)
 		agentRepo := agent.NewRepository(execer, validator)
 		taskRepo := task.NewRepository(sqlDB)
 		accountBindRepo := auth.NewAccountBindingRepository(sqlDB)
 
 		// 各功能 handler
-		gatewaySvc := gateway.NewSystemctlService(execer)
+		gatewaySvc := gateway.NewSystemctlServiceWithController(execer, serviceController)
 		gatewayUpdateSvc := gateway.NewUpdateService(execer)
 		gatewayAPI := &gateway.APIHandler{
 			Service:          gatewaySvc,

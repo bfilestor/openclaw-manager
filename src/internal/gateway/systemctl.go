@@ -50,20 +50,42 @@ func (OSExecutor) Run(ctx context.Context, name string, args ...string) ([]byte,
 }
 
 type SystemctlService struct {
-	exec    Executor
-	timeout time.Duration
+	exec       Executor
+	controller platform.ServiceController
+	timeout    time.Duration
 }
 
 func NewSystemctlService(exec Executor) *SystemctlService {
+	return NewSystemctlServiceWithController(exec, nil)
+}
+
+func NewSystemctlServiceWithController(exec Executor, controller platform.ServiceController) *SystemctlService {
 	if exec == nil {
 		exec = platform.NewDefaultExecutor()
 	}
-	return &SystemctlService{exec: exec, timeout: 30 * time.Second}
+	return &SystemctlService{exec: exec, controller: controller, timeout: 30 * time.Second}
 }
 
-func (s *SystemctlService) Start(service string) error   { return s.runAction("start", service) }
-func (s *SystemctlService) Stop(service string) error    { return s.runAction("stop", service) }
-func (s *SystemctlService) Restart(service string) error { return s.runAction("restart", service) }
+func (s *SystemctlService) Start(service string) error {
+	if s.controller != nil {
+		return s.controller.Start(service)
+	}
+	return s.runAction("start", service)
+}
+
+func (s *SystemctlService) Stop(service string) error {
+	if s.controller != nil {
+		return s.controller.Stop(service)
+	}
+	return s.runAction("stop", service)
+}
+
+func (s *SystemctlService) Restart(service string) error {
+	if s.controller != nil {
+		return s.controller.Restart(service)
+	}
+	return s.runAction("restart", service)
+}
 
 func (s *SystemctlService) runAction(action, service string) error {
 	if !validServiceName(service) {
@@ -261,6 +283,36 @@ func parseOpenclawDeepOutput(out string) *GatewayDeepStatus {
 		}
 	}
 	return result
+}
+
+func parseSystemctlShowOutput(out []byte) *ServiceStatus {
+	st := &ServiceStatus{}
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		kv := strings.SplitN(line, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		k, v := kv[0], kv[1]
+		switch k {
+		case "ActiveState":
+			st.ActiveState = v
+		case "SubState":
+			st.SubState = v
+		case "MainPID":
+			st.MainPID = v
+		case "ExecStart":
+			st.ExecStart = v
+		case "FragmentPath":
+			st.FragmentPath = v
+		case "ActiveEnterTimestamp":
+			st.ActiveEnterTimestamp = v
+		}
+	}
+	return st
 }
 
 func parseLineKeyValue(line string) (string, string, bool) {
