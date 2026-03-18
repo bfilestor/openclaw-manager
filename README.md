@@ -84,9 +84,26 @@ openclaw_home = "~/.openclaw"
 manager_home = "~/.openclaw-manager"
 ```
 
+## Windows 预览支持
+
+> 当前处于 Windows 适配阶段（持续完善中），建议优先在 Linux/WSL2 使用完整功能。
+
+Windows 本地可先使用以下脚本完成最小运行：
+
+```powershell
+# 1) 构建（前后端）
+powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1 -All
+
+# 2) 安装/更新服务
+powershell -ExecutionPolicy Bypass -File .\scripts\install-service.ps1
+
+# 3) 卸载服务（可选）
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1
+```
+
 ## 注意事项
 - reset_super_token是重设管理员密码的重要凭证，请妥善保管。一旦泄露，危害巨大，请定期修改！
-- 只在linux环境下测试使用，其他环境不适用
+- Linux 仍是当前最稳定运行环境，Windows 功能正在逐步对齐。
 - 用户角色四种 admin/operator/viewer/user,admin全部权限，viewer只有查看权限，无修改权限,user普通使用者，只用户统计token使用情况
 - 第一次运行，注册的第一个用户默认为管理员权限。后续注册用户默认为普通使用者
 
