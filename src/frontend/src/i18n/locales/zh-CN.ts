@@ -535,6 +535,7 @@ export default {
     diagnoseSummaryNvm: '诊断完成：检测到 NVM 风险，建议执行 doctor --repair。以下是最新 Gateway 日志。',
     diagnoseFailed: '执行诊断失败：{reason}',
     noLogs: '暂无日志输出',
+    logsFallbackHint: '当前环境不支持 journald，已自动切换到文件日志。',
     operations: '操作',
     actions: {
       start: '启动',
@@ -852,3 +853,4 @@ export default {
     },
   },
 } as const
+nst

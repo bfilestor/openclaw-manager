@@ -170,14 +170,25 @@ async function runDiagnose() {
   diagnoseLogs.value = ''
   diagnoseSummary.value = ''
   try {
-    const [doctorResp, logsResp] = await Promise.all([
-      axios.post('/api/v1/gateway/doctor'),
-      axios.get('/api/v1/gateway/logs', { params: { source: 'journald', lines: 120 } }),
-    ])
+    const doctorResp = await axios.post('/api/v1/gateway/doctor')
+    let logsResp: any = null
+    let fallbackToFile = false
+    try {
+      logsResp = await axios.get('/api/v1/gateway/logs', { params: { source: 'journald', lines: 120 } })
+    } catch (err: any) {
+      const code = String(err?.response?.data?.code || '').toUpperCase()
+      if (code === 'NOT_SUPPORTED') {
+        fallbackToFile = true
+        logsResp = await axios.get('/api/v1/gateway/logs', { params: { source: 'file', lines: 120 } })
+      } else {
+        throw err
+      }
+    }
     const nvmDetected = !!doctorResp?.data?.nvm_detected
     diagnoseSummary.value = nvmDetected ? t('gateway.diagnoseSummaryNvm') : t('gateway.diagnoseSummaryOk')
     const logs = Array.isArray(logsResp?.data?.logs) ? logsResp.data.logs : []
-    diagnoseLogs.value = logs.join('\n') || t('gateway.noLogs')
+    const body = logs.join('\n') || t('gateway.noLogs')
+    diagnoseLogs.value = fallbackToFile ? `${t('gateway.logsFallbackHint')}\n\n${body}` : body
     diagnoseVisible.value = true
   } catch (err) {
     ElMessage.error(t('gateway.diagnoseFailed', { reason: classifyGatewayError(err) }))

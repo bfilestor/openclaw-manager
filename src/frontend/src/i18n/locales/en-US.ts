@@ -552,6 +552,7 @@ export default {
       gatewayDown: 'Gateway process is down or port is not listening',
       systemdIssue: 'systemd service issue (check openclaw-gateway.service)',
       browserNetwork: 'Browser-to-Manager network issue',
+      notSupported: 'This capability is not supported on current platform (for example journald on Windows)',
       unknown: 'Unknown error, check Manager/Gateway logs',
     },
   },
