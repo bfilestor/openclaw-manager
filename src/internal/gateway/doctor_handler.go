@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"openclaw-manager/internal/middleware"
+	"openclaw-manager/internal/platform"
 )
 
 type DoctorHandler struct {
@@ -16,7 +17,7 @@ type DoctorHandler struct {
 
 func NewDoctorHandler(exec Executor) *DoctorHandler {
 	if exec == nil {
-		exec = OSExecutor{}
+		exec = platform.NewDefaultExecutor()
 	}
 	return &DoctorHandler{Exec: exec, Timeout: 5 * time.Minute}
 }

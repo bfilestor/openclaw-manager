@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"openclaw-manager/internal/agent"
 	"openclaw-manager/internal/auth"
@@ -103,13 +104,14 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 		}
 
 		// 基础依赖
+		validatorPaths := []string{cfg.Paths.OpenClawHome, cfg.Paths.ManagerHome, "/tmp/openclaw"}
 		home, _ := os.UserHomeDir()
-		validator, _ := storage.NewPathValidator([]string{
-			cfg.Paths.OpenClawHome,
-			cfg.Paths.ManagerHome,
-			filepath.Join(home, ".config", "systemd", "user"),
-			"/tmp/openclaw",
-		})
+		if runtime.GOOS == "windows" {
+			validatorPaths = append(validatorPaths, filepath.Join(home, "AppData", "Roaming"))
+		} else {
+			validatorPaths = append(validatorPaths, filepath.Join(home, ".config", "systemd", "user"))
+		}
+		validator, _ := storage.NewPathValidator(validatorPaths)
 		execer := platform.NewDefaultExecutor()
 		revRepo := appcfg.NewRevisionRepository(sqlDB)
 		agentRepo := agent.NewRepository(execer, validator)

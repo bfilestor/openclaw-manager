@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"openclaw-manager/internal/middleware"
+	"openclaw-manager/internal/platform"
 	"openclaw-manager/internal/storage"
 )
 
@@ -25,7 +26,7 @@ type LogsHandler struct {
 func NewLogsHandler(exec Executor) *LogsHandler {
 	v, _ := storage.NewPathValidator([]string{"/tmp/openclaw"})
 	if exec == nil {
-		exec = OSExecutor{}
+		exec = platform.NewDefaultExecutor()
 	}
 	return &LogsHandler{Exec: exec, Validator: v, Timeout: 30 * time.Second}
 }

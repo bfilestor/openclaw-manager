@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"openclaw-manager/internal/platform"
 )
 
 var (
@@ -54,7 +56,7 @@ type SystemctlService struct {
 
 func NewSystemctlService(exec Executor) *SystemctlService {
 	if exec == nil {
-		exec = OSExecutor{}
+		exec = platform.NewDefaultExecutor()
 	}
 	return &SystemctlService{exec: exec, timeout: 30 * time.Second}
 }
