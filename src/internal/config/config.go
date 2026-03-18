@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
+	"openclaw-manager/internal/platform"
 )
 
 var ErrConfigInvalid = errors.New("config invalid")
@@ -74,6 +76,12 @@ func applyDefaults(cfg *Config) {
 	}
 	if cfg.Auth.PasswordMinLen == 0 {
 		cfg.Auth.PasswordMinLen = 8
+	}
+	if strings.TrimSpace(cfg.Paths.OpenClawHome) == "" {
+		cfg.Paths.OpenClawHome = platform.DefaultOpenClawHome()
+	}
+	if strings.TrimSpace(cfg.Paths.ManagerHome) == "" {
+		cfg.Paths.ManagerHome = platform.DefaultManagerHome()
 	}
 	if strings.TrimSpace(cfg.Auth.ResetSuperToken) == "" {
 		// 向后兼容：未配置 reset_super_token 时，临时回退到 jwt_secret

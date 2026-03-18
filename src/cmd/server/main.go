@@ -14,6 +14,7 @@ import (
 	"openclaw-manager/internal/backup"
 	appcfg "openclaw-manager/internal/config"
 	"openclaw-manager/internal/gateway"
+	"openclaw-manager/internal/platform"
 	"openclaw-manager/internal/server"
 	"openclaw-manager/internal/skills"
 	"openclaw-manager/internal/storage"
@@ -108,7 +109,7 @@ func registerAllRoutes(cfg *appcfg.Config, sqlDB *sql.DB, authHandler *auth.Hand
 			filepath.Join(home, ".config", "systemd", "user"),
 			"/tmp/openclaw",
 		})
-		execer := gateway.OSExecutor{}
+		execer := platform.NewDefaultExecutor()
 		revRepo := appcfg.NewRevisionRepository(sqlDB)
 		agentRepo := agent.NewRepository(execer, validator)
 		taskRepo := task.NewRepository(sqlDB)

@@ -4,19 +4,17 @@ package platform
 
 import (
 	"context"
-
-	"openclaw-manager/internal/gateway"
+	"os/exec"
 )
 
-// LinuxExecutor reuses the existing gateway OS executor on Linux.
-type LinuxExecutor struct {
-	delegate gateway.OSExecutor
-}
+// LinuxExecutor runs commands in native Linux environments.
+type LinuxExecutor struct{}
 
 func NewDefaultExecutor() CommandExecutor {
-	return LinuxExecutor{delegate: gateway.OSExecutor{}}
+	return LinuxExecutor{}
 }
 
-func (e LinuxExecutor) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
-	return e.delegate.Run(ctx, name, args...)
+func (LinuxExecutor) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	return cmd.CombinedOutput()
 }
