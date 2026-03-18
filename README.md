@@ -137,6 +137,7 @@ pnpm run build
 ```
 
 > 桌面应用会尝试拉起 `managerd`，并加载本地 `http://127.0.0.1:18799` 管理面板。
+> 当前桌面最小版**不集成 openclaw CLI**，仅打包 managerd 与前端资源。
 
 ## 注意事项
 - reset_super_token是重设管理员密码的重要凭证，请妥善保管。一旦泄露，危害巨大，请定期修改！
