@@ -23,7 +23,8 @@
     "targets": ["msi", "dmg"],
     "resources": [
       "resources/managerd",
-      "resources/managerd.exe"
+      "resources/managerd.exe",
+      "resources/config.template.toml"
     ]
   }
 }

@@ -2,6 +2,7 @@
 
 use once_cell::sync::Lazy;
 use serde::Serialize;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -21,33 +22,6 @@ struct DependencyState {
     message: String,
 }
 
-fn manager_binary_path(app: &tauri::AppHandle) -> PathBuf {
-    if let Ok(v) = std::env::var("MANAGERD_PATH") {
-        if !v.trim().is_empty() {
-            return PathBuf::from(v);
-        }
-    }
-
-    let resolver = app.path();
-    if cfg!(target_os = "windows") {
-        if let Ok(p) = resolver.resolve("managerd.exe", tauri::path::BaseDirectory::Resource) {
-            return p;
-        }
-    }
-    if let Ok(p) = resolver.resolve("managerd", tauri::path::BaseDirectory::Resource) {
-        return p;
-    }
-
-    let mut fallback = dirs_home();
-    fallback.push(".openclaw-manager");
-    if cfg!(target_os = "windows") {
-        fallback.push("managerd.exe");
-    } else {
-        fallback.push("managerd");
-    }
-    fallback
-}
-
 fn dirs_home() -> PathBuf {
     std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))
@@ -55,9 +29,33 @@ fn dirs_home() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-fn manager_config_path() -> PathBuf {
+fn manager_home_dir() -> PathBuf {
     let mut p = dirs_home();
     p.push(".openclaw-manager");
+    p
+}
+
+fn manager_binary_name() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "managerd.exe"
+    } else {
+        "managerd"
+    }
+}
+
+fn manager_binary_path() -> PathBuf {
+    if let Ok(v) = std::env::var("MANAGERD_PATH") {
+        if !v.trim().is_empty() {
+            return PathBuf::from(v);
+        }
+    }
+    let mut p = manager_home_dir();
+    p.push(manager_binary_name());
+    p
+}
+
+fn manager_config_path() -> PathBuf {
+    let mut p = manager_home_dir();
     p.push("config.toml");
     p
 }
@@ -72,6 +70,43 @@ fn manager_static_dir(app: &tauri::AppHandle) -> PathBuf {
     resolver
         .resolve("frontend-dist", tauri::path::BaseDirectory::Resource)
         .unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn ensure_runtime_files(app: &tauri::AppHandle) -> Result<(), String> {
+    let home = manager_home_dir();
+    fs::create_dir_all(&home).map_err(|e| format!("create manager home failed: {e}"))?;
+
+    let resolver = app.path();
+    let target_bin = manager_binary_path();
+    if !target_bin.exists() {
+        let resource_name = manager_binary_name();
+        if let Ok(src) = resolver.resolve(resource_name, tauri::path::BaseDirectory::Resource) {
+            if src.exists() {
+                fs::copy(&src, &target_bin).map_err(|e| format!("copy manager binary failed: {e}"))?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = fs::metadata(&target_bin)
+                        .map_err(|e| format!("stat copied binary failed: {e}"))?
+                        .permissions();
+                    perms.set_mode(0o755);
+                    fs::set_permissions(&target_bin, perms)
+                        .map_err(|e| format!("chmod copied binary failed: {e}"))?;
+                }
+            }
+        }
+    }
+
+    let cfg = manager_config_path();
+    if !cfg.exists() {
+        if let Ok(src) = resolver.resolve("config.template.toml", tauri::path::BaseDirectory::Resource) {
+            if src.exists() {
+                fs::copy(src, &cfg).map_err(|e| format!("copy config template failed: {e}"))?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -100,7 +135,9 @@ fn start_manager(app: tauri::AppHandle) -> Result<ManagerState, String> {
         });
     }
 
-    let bin = manager_binary_path(&app);
+    ensure_runtime_files(&app)?;
+
+    let bin = manager_binary_path();
     if !Path::new(&bin).exists() {
         return Err(format!("manager binary not found: {}", bin.display()));
     }
@@ -142,17 +179,22 @@ fn stop_manager() -> Result<ManagerState, String> {
     })
 }
 
-fn main() {
-    tauri::Builder::default()
-        .setup(|app| {
-            let _ = start_manager(app.handle().clone());
-            Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![manager_status, start_manager, stop_manager])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-           .map(|s| s.success())
+fn has_command(name: &str) -> bool {
+    if cfg!(target_os = "windows") {
+        Command::new("where")
+            .arg(name)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    } else {
+        Command::new("which")
+            .arg(name)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
             .unwrap_or(false)
     }
 }
@@ -174,6 +216,7 @@ fn check_dependencies() -> DependencyState {
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
+            let _ = ensure_runtime_files(app.handle());
             let _ = start_manager(app.handle().clone());
             Ok(())
         })

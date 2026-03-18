@@ -1,0 +1,14 @@
+[server]
+listen = "127.0.0.1:18799"
+
+[auth]
+jwt_secret = "replace-with-strong-secret-32bytes-min"
+reset_super_token = "replace-with-another-strong-secret-32bytes-min"
+access_token_ttl = "15m"
+refresh_token_ttl = "168h"
+public_registration = true
+password_min_length = 8
+
+[paths]
+openclaw_home = "~/.openclaw"
+manager_home = "~/.openclaw-manager"
