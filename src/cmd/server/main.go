@@ -74,10 +74,11 @@ func main() {
 	s := server.New(cfg.Server.Listen, dist, registerAllRoutes(cfg, db.SQL, authHandler, jwtSvc))
 	guardianCtx, guardianCancel := context.WithCancel(context.Background())
 	defer guardianCancel()
+	defaultExec := platform.NewDefaultExecutor()
 	go (&gateway.LobsterGuardian{
 		Settings:     systemSettingsRepo,
 		Revisions:    appcfg.NewRevisionRepository(db.SQL),
-		Service:      gateway.NewSystemctlService(gateway.OSExecutor{}),
+		Service:      gateway.NewSystemctlService(defaultExec),
 		ServiceName:  "openclaw-gateway.service",
 		OpenClawJSON: gateway.DefaultOpenClawJSONPath(cfg.Paths.OpenClawHome),
 	}).Run(guardianCtx)

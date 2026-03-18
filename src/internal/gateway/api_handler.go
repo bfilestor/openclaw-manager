@@ -13,6 +13,7 @@ import (
 	"openclaw-manager/internal/auth"
 	cfg "openclaw-manager/internal/config"
 	"openclaw-manager/internal/middleware"
+	"openclaw-manager/internal/platform"
 	"openclaw-manager/internal/storage"
 	"openclaw-manager/internal/task"
 )
@@ -47,7 +48,7 @@ func (h *APIHandler) Restart(w http.ResponseWriter, r *http.Request) { h.doActio
 func (h *APIHandler) VersionStatus(w http.ResponseWriter, _ *http.Request) {
 	svc := h.UpdateService
 	if svc == nil {
-		svc = NewUpdateService(OSExecutor{})
+		svc = NewUpdateService(platform.NewDefaultExecutor())
 	}
 	status, err := svc.VersionStatus()
 	if err != nil {
@@ -115,7 +116,7 @@ func (h *APIHandler) runUpgradeTask(taskID string) {
 	defer h.finishTask()
 	svc := h.UpdateService
 	if svc == nil {
-		svc = NewUpdateService(OSExecutor{})
+		svc = NewUpdateService(platform.NewDefaultExecutor())
 	}
 	logLines := []string{"[upgrade] task started"}
 	if h.TaskRepo != nil {
@@ -159,7 +160,7 @@ func (h *APIHandler) runRollbackTask(taskID, version string) {
 	defer h.finishTask()
 	svc := h.UpdateService
 	if svc == nil {
-		svc = NewUpdateService(OSExecutor{})
+		svc = NewUpdateService(platform.NewDefaultExecutor())
 	}
 	logLines := []string{"[rollback] task started", "[rollback] target version: " + version}
 	if h.TaskRepo != nil {

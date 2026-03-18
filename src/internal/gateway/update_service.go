@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"openclaw-manager/internal/platform"
 )
 
 type UpdateService struct {
@@ -23,7 +25,7 @@ type VersionStatus struct {
 
 func NewUpdateService(exec Executor) *UpdateService {
 	if exec == nil {
-		exec = OSExecutor{}
+		exec = platform.NewDefaultExecutor()
 	}
 	return &UpdateService{exec: exec, timeout: 30 * time.Second}
 }
