@@ -29,3 +29,19 @@ func DefaultManagerHome() string {
 	}
 	return filepath.Join(home, ".openclaw-manager")
 }
+
+// DefaultGatewayLogDir returns the conventional log directory used by openclaw.
+func DefaultGatewayLogDir() string {
+	if runtime.GOOS == "windows" {
+		base := os.Getenv("LOCALAPPDATA")
+		if base == "" {
+			home, _ := os.UserHomeDir()
+			base = filepath.Join(home, "AppData", "Local")
+		}
+		if base == "" {
+			return filepath.Join(os.TempDir(), "openclaw")
+		}
+		return filepath.Join(base, "openclaw")
+	}
+	return filepath.Join(os.TempDir(), "openclaw")
+}

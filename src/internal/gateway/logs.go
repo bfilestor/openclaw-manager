@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -107,6 +108,9 @@ func (h *LogsHandler) readFileLogs(lines int) ([]string, error) {
 func (h *LogsHandler) readJournalLogs(lines int) ([]string, error) {
 	if lines == 0 {
 		return []string{}, nil
+	}
+	if runtime.GOOS == "windows" {
+		return nil, errors.New("journald source not supported on windows")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), h.Timeout)
 	defer cancel()
