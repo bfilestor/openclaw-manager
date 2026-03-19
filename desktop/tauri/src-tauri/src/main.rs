@@ -234,7 +234,16 @@ fn resolve_tray_icon(app: &tauri::AppHandle) -> Option<Image<'static>> {
         }
     }
 
-    None
+    // Fallback to app icon from tauri context to avoid invisible tray icon.
+    app.default_window_icon().cloned().map(|icon| icon.to_owned())
+}
+
+fn stop_manager_child() {
+    if let Ok(mut guard) = MANAGER_CHILD.lock() {
+        if let Some(mut child) = guard.take() {
+            let _ = child.kill();
+        }
+    }
 }
 
 fn main() {
@@ -248,12 +257,13 @@ fn main() {
             let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
             let app_handle = app.handle().clone();
-            let mut tray_builder = TrayIconBuilder::new();
+            let mut tray_builder = TrayIconBuilder::with_id("main");
             if let Some(icon) = resolve_tray_icon(&app_handle) {
                 tray_builder = tray_builder.icon(icon);
             }
             tray_builder
                 .menu(&tray_menu)
+                .tooltip("OpenClaw Manager")
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
                         if let Some(win) = app.get_webview_window("main") {
@@ -262,11 +272,7 @@ fn main() {
                         }
                     }
                     "quit" => {
-                        if let Ok(mut guard) = MANAGER_CHILD.lock() {
-                            if let Some(mut child) = guard.take() {
-                                let _ = child.kill();
-                            }
-                        }
+                        stop_manager_child();
                         app.exit(0);
                     }
                     _ => {}
@@ -290,8 +296,16 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let _ = window.hide();
-                api.prevent_close();
+                let tray_ready = window.app_handle().tray_by_id("main").is_some();
+                if tray_ready {
+                    let _ = window.hide();
+                    api.prevent_close();
+                } else {
+                    stop_manager_child();
+                }
+            }
+            if let WindowEvent::Destroyed = event {
+                stop_manager_child();
             }
         })
         .invoke_handler(tauri::generate_handler![

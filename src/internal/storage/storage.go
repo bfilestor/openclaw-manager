@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -94,7 +95,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 			continue
 		}
 
-		sqlBytes, err := migrationFS.ReadFile(filepath.Join("migrations", v))
+		sqlBytes, err := migrationFS.ReadFile(path.Join("migrations", v))
 		if err != nil {
 			return err
 		}
