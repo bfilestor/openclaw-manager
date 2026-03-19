@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $src = Join-Path $root "src"
-$frontend = Join-Path $src "frontend"
+$frontendDir = Join-Path $src "frontend"
 $targetHome = Join-Path $env:USERPROFILE ".openclaw-manager"
 $targetBin = Join-Path $targetHome "managerd.exe"
 
@@ -34,7 +34,7 @@ if ($Backend) {
 
 if ($Frontend) {
   Write-Host "[build] frontend"
-  Push-Location $frontend
+  Push-Location $frontendDir
   try {
     pnpm run build
   } finally {

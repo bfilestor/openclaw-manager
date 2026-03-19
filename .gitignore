@@ -65,3 +65,5 @@ public/**
 AGENT.md
 docs/
 scripts/
+desktop/tauri/src-tauri/resources/
+pnpm-lock.yaml

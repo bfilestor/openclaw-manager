@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "frontendDist": ".."
+    "frontendDist": "resources/frontend-dist"
   },
   "app": {
     "windows": [
@@ -21,9 +21,9 @@
   "bundle": {
     "active": true,
     "targets": ["msi", "dmg"],
+    "icon": ["icons/icon.ico"],
     "resources": [
-      "resources/managerd",
-      "resources/managerd.exe",
+      "resources/managerd*",
       "resources/config.template.toml"
     ]
   }
