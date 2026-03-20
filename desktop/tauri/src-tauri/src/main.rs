@@ -2,16 +2,24 @@
 
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, WindowEvent};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 static MANAGER_CHILD: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
+const MANAGER_BOOT_CHECK_DELAY_MS: u64 = 300;
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[derive(Serialize)]
 struct ManagerState {
@@ -61,6 +69,23 @@ fn manager_config_path() -> PathBuf {
     let mut p = manager_home_dir();
     p.push("config.toml");
     p
+}
+
+fn manager_log_path() -> PathBuf {
+    let mut p = manager_home_dir();
+    p.push("managerd.log");
+    p
+}
+
+fn manager_log_file_pair() -> Option<(std::fs::File, std::fs::File)> {
+    let log_path = manager_log_path();
+    let out = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+        .ok()?;
+    let err = out.try_clone().ok()?;
+    Some((out, err))
 }
 
 fn manager_static_dir(app: &tauri::AppHandle) -> PathBuf {
@@ -114,28 +139,41 @@ fn ensure_runtime_files(app: &tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn manager_status() -> ManagerState {
-    let guard = MANAGER_CHILD.lock().expect("manager mutex poisoned");
-    if let Some(child) = guard.as_ref() {
-        ManagerState {
-            running: true,
-            pid: Some(child.id()),
+    let mut guard = MANAGER_CHILD.lock().expect("manager mutex poisoned");
+    if let Some(child) = guard.as_mut() {
+        match child.try_wait() {
+            Ok(None) => {
+                return ManagerState {
+                    running: true,
+                    pid: Some(child.id()),
+                };
+            }
+            Ok(Some(_)) | Err(_) => {
+                *guard = None;
+            }
         }
-    } else {
-        ManagerState {
-            running: false,
-            pid: None,
-        }
+    }
+    ManagerState {
+        running: false,
+        pid: None,
     }
 }
 
 #[tauri::command]
 fn start_manager(app: tauri::AppHandle) -> Result<ManagerState, String> {
     let mut guard = MANAGER_CHILD.lock().map_err(|_| "manager lock poisoned")?;
-    if let Some(child) = guard.as_ref() {
-        return Ok(ManagerState {
-            running: true,
-            pid: Some(child.id()),
-        });
+    if let Some(child) = guard.as_mut() {
+        match child.try_wait() {
+            Ok(None) => {
+                return Ok(ManagerState {
+                    running: true,
+                    pid: Some(child.id()),
+                });
+            }
+            Ok(Some(_)) | Err(_) => {
+                *guard = None;
+            }
+        }
     }
 
     ensure_runtime_files(&app)?;
@@ -151,15 +189,36 @@ fn start_manager(app: tauri::AppHandle) -> Result<ManagerState, String> {
     }
 
     let static_dir = manager_static_dir(&app);
-    let child = Command::new(&bin)
-        .arg("--config")
-        .arg(cfg)
-        .arg("--static-dir")
-        .arg(static_dir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+    let mut cmd = Command::new(&bin);
+    cmd.arg("--config").arg(cfg).arg("--static-dir").arg(static_dir);
+
+    if let Some((out, err)) = manager_log_file_pair() {
+        cmd.stdout(Stdio::from(out)).stderr(Stdio::from(err));
+    } else {
+        cmd.stdout(Stdio::null()).stderr(Stdio::null());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("start manager failed: {e}"))?;
+
+    thread::sleep(Duration::from_millis(MANAGER_BOOT_CHECK_DELAY_MS));
+    if let Some(status) = child
+        .try_wait()
+        .map_err(|e| format!("check manager status failed: {e}"))?
+    {
+        let code = status
+            .code()
+            .map_or_else(|| "unknown".to_string(), |c| c.to_string());
+        return Err(format!(
+            "manager exited immediately (exit code: {code}). check log: {}",
+            manager_log_path().display()
+        ));
+    }
 
     let pid = child.id();
     *guard = Some(child);
@@ -174,7 +233,13 @@ fn start_manager(app: tauri::AppHandle) -> Result<ManagerState, String> {
 fn stop_manager() -> Result<ManagerState, String> {
     let mut guard = MANAGER_CHILD.lock().map_err(|_| "manager lock poisoned")?;
     if let Some(mut child) = guard.take() {
-        child.kill().map_err(|e| format!("stop manager failed: {e}"))?;
+        if child
+            .try_wait()
+            .map_err(|e| format!("check manager status failed: {e}"))?
+            .is_none()
+        {
+            child.kill().map_err(|e| format!("stop manager failed: {e}"))?;
+        }
     }
     Ok(ManagerState {
         running: false,
